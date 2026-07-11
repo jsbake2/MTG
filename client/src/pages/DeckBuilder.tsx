@@ -46,9 +46,23 @@ export function DeckBuilder() {
   const [saving, setSaving] = useState(false);
   const search = useCardSearch("");
   const valTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [basicLands, setBasicLands] = useState<Record<string, CardSummary>>({});
 
   useEffect(() => {
     api.get<{ formats: FormatDef[] }>("/api/formats").then((r) => setFormats(r.formats));
+    // Query basic lands to populate the quick land inserter
+    api.get<{ groups: { cards: CardSummary[] }[] }>("/api/cards/search?q=t:basic t:land&group=0").then((r) => {
+      const basics = ["Plains", "Island", "Swamp", "Mountain", "Forest", "Wastes"];
+      const map: Record<string, CardSummary> = {};
+      const cardsList = r.groups[0]?.cards ?? [];
+      for (const name of basics) {
+        const match = cardsList.find((c) => c.name.toLowerCase() === name.toLowerCase());
+        if (match) {
+          map[name] = match;
+        }
+      }
+      setBasicLands(map);
+    }).catch(() => {});
   }, []);
 
   // Load existing deck.
@@ -202,6 +216,35 @@ export function DeckBuilder() {
             queryError={search.resp?.error}
             compact
           />
+        </div>
+        {/* Quick Basics panel */}
+        <div className="border-b border-table-border bg-table-panel2/40 px-3 py-2 flex flex-col gap-1 shrink-0">
+          <div className="text-[11px] font-semibold uppercase tracking-wider text-table-muted flex items-center justify-between">
+            <span>Quick Basics</span>
+            <span className="text-[9px] lowercase text-table-muted/80">add lands in one click</span>
+          </div>
+          <div className="flex flex-wrap gap-1">
+            {["Plains", "Island", "Swamp", "Mountain", "Forest", "Wastes"].map((name) => {
+              const card = basicLands[name];
+              return (
+                <button
+                  key={name}
+                  disabled={!card}
+                  onClick={() => card && addCard(card)}
+                  className="chip hover:border-table-accent hover:text-table-accentSoft flex items-center gap-1 text-xs disabled:opacity-50 transition active:scale-95"
+                  title={`Add ${name}`}
+                >
+                  {name === "Plains" && "☀️"}
+                  {name === "Island" && "💧"}
+                  {name === "Swamp" && "💀"}
+                  {name === "Mountain" && "🔥"}
+                  {name === "Forest" && "🌳"}
+                  {name === "Wastes" && "💎"}
+                  <span>{name}</span>
+                </button>
+              );
+            })}
+          </div>
         </div>
         <div className="min-h-0 flex-1 overflow-y-auto px-3 pb-3">
           {search.loading && <div className="p-4 text-center text-sm text-table-muted">Searching…</div>}
