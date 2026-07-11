@@ -7,6 +7,8 @@
 // use one source of truth.
 // ---------------------------------------------------------------------------
 
+import { scriptFor } from "./cardScripts.js";
+
 export type TargetKind =
   | "creature"
   | "permanent"
@@ -197,6 +199,11 @@ const PATTERNS: Pattern[] = [
   { re: /choose one\s*[—-]/i, build: () => ({ op: "manual", hint: "modal: choose one" }) },
   { re: /(target player|target opponent) (discards|reveals)/i, build: (m) => ({ op: "manual", hint: `${m[1]} ${m[2]}` }) },
   { re: /(sacrifices?|discards?)\s+(a|an|\d+|one|two|three)\s+(creature|permanent|artifact|land|card)/i, build: (m) => ({ op: "manual", hint: `${m[1]} ${m[3]}` }) },
+  { re: /exile the top \d+ cards? of (?:your|target player['’]s) library/i, build: () => ({ op: "manual", hint: "exile from top of library" }) },
+  { re: /prevent all (?:combat )?damage/i, build: () => ({ op: "manual", hint: "prevent damage (fog)" }) },
+  { re: /put target [a-z ]*?card from (?:a|your|its owner['’]s|their) graveyard onto the battlefield/i, build: () => ({ op: "manual", hint: "reanimate — pick the graveyard card" }) },
+  { re: /each player sacrifices/i, build: () => ({ op: "manual", hint: "each player sacrifices" }) },
+  { re: /\bfight(s)? (target [a-z ]*?creature)/i, build: () => ({ op: "manual", hint: "fight — assign both creatures' damage" }) },
 ];
 
 function grantKeyword(phrase: string | undefined): string | null {
@@ -207,6 +214,10 @@ function grantKeyword(phrase: string | undefined): string | null {
 }
 
 export function compileEffects(oracleText: string | null, cardName: string): CompiledEffect {
+  // A hand-authored per-card script always wins (100%-correct override).
+  const scripted = scriptFor(cardName);
+  if (scripted) return finalize(scripted);
+
   const empty: CompiledEffect = { ops: [], targets: [], matched: false };
   if (!oracleText) return empty;
   let text = oracleText.replace(/\([^)]*\)/g, " ");
@@ -219,7 +230,12 @@ export function compileEffects(oracleText: string | null, cardName: string): Com
     if (/^(whenever|when|at the beginning|as long as|if |flying|trample|first strike|deathtouch|lifelink|vigilance|haste|reach|menace|hexproof|ward|defender|indestructible|flash|convoke|cascade|storm|this spell costs|as an additional cost|kicker|flashback|equip|enchant)/i.test(raw)) continue;
     // Duration words are handled by cleanup, not matching — strip them so the
     // pattern matches whether they're at the start or end.
-    const clause = raw.replace(/\buntil end of turn\b/gi, "").replace(/\bthis turn\b/gi, "").replace(/^,\s*/, "").trim();
+    const clause = raw
+      .replace(/\buntil end of turn\b/gi, "")
+      .replace(/\bthis turn\b/gi, "")
+      .replace(/\byou may\b/gi, "you") // treat optional effects as taken
+      .replace(/^,\s*/, "")
+      .trim();
     for (const p of PATTERNS) {
       const m = clause.match(p.re);
       if (m) {
@@ -233,14 +249,17 @@ export function compileEffects(oracleText: string | null, cardName: string): Com
     }
   }
 
+  return finalize(ops);
+}
+
+// Derive target prompts from ops and package a CompiledEffect.
+function finalize(ops: EffectOp[]): CompiledEffect {
   const targets: CompiledEffect["targets"] = [];
   for (const op of ops) {
     const w = (op as { to?: EffectWho }).to ?? (op as { what?: EffectWho }).what ?? ((op.op === "draw" || op.op === "mill") ? (op as { who?: EffectWho }).who : undefined);
     if (w && w.scope === "target") targets.push({ kind: w.kind, label: targetLabel(op.op, w.kind) });
   }
-  // "matched" only when we produced at least one op that actually does something.
-  const real = ops.some((o) => o.op !== "manual");
-  return { ops, targets, matched: real || ops.length > 0 };
+  return { ops, targets, matched: ops.length > 0 };
 }
 
 function targetLabel(op: string, kind: TargetKind): string {
