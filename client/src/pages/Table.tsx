@@ -4,6 +4,7 @@ import type { Ability, CardDetailResponse, Deck, EffectMode, GameObject, PlayerS
 import { TURN_STEPS, compileEffects, parseAbilities } from "@mtg/shared";
 import { api } from "@/api/client";
 import { useAuth } from "@/store/auth";
+import { useLegalDeckIds } from "@/lib/deckLegality";
 import { useTable, type TableConn } from "@/game/useTable";
 import { CardImage } from "@/components/CardTile";
 import { Avatar } from "@/components/Avatar";
@@ -51,18 +52,38 @@ function Lobby({ t }: { t: TableConn }) {
     ]).then(([mine, pub]) => {
       setDecks(mine.decks);
       setPrecons(pub.decks);
-      
-      const allowed = lobby.formatId;
-      const validMine = mine.decks.filter(d => allowed === "house" || d.formatId === allowed);
-      const firstStarred = validMine.find(d => d.isStarred);
       setOnlyStarred(false);
-      if (firstStarred) {
-        setDeckId(firstStarred.id);
-      } else if (validMine[0]) {
-        setDeckId(validMine[0].id);
-      }
     });
   }, [lobby?.formatId]);
+
+  // Verify real legality (not just the formatId label) for this table's format.
+  // Pre-filter by label first so we only validate plausible decks.
+  const allowedFormat = lobby?.formatId ?? "house";
+  const labelMatch = (d: Deck) => allowedFormat === "house" || d.formatId === allowedFormat;
+  const myMatched = decks.filter(labelMatch);
+  const preconMatched = precons.filter(labelMatch);
+  const { legalIds, loading: checkingLegality } = useLegalDeckIds([...myMatched, ...preconMatched], allowedFormat);
+  const isLegal = (d: Deck) => allowedFormat === "house" || legalIds.has(d.id);
+
+  // Pick a sensible legal default once, without fighting the user's own choice.
+  const didDefault = useRef(false);
+  useEffect(() => {
+    if (didDefault.current || checkingLegality || allowedFormat === "house") return;
+    const legalMine = myMatched.filter(isLegal);
+    const pick = legalMine.find((d) => d.isStarred) ?? legalMine[0];
+    if (pick) {
+      setDeckId(pick.id);
+      didDefault.current = true;
+    }
+  }, [checkingLegality, legalIds]);
+
+  // Switching your deck must update your seat on the server — otherwise the seat
+  // keeps the old (or no) deck and the game refuses to start. Re-seat live.
+  function chooseDeck(v: string | null) {
+    setDeckId(v);
+    didDefault.current = true; // user has made a choice; stop auto-defaulting
+    if (lobby && lobby.you !== null) t.takeSeat(lobby.you, v);
+  }
 
   // If we arrived here from "Create & sit down" with a chosen deck, claim the
   // first open seat with it automatically (once).
@@ -89,14 +110,8 @@ function Lobby({ t }: { t: TableConn }) {
   const isHost = lobby.hostUserId === user?.id;
   const seatByIndex = (i: number) => lobby.seats.find((s) => s.seat === i);
 
-  // Only offer decks that actually match the table's format. A "house" table is
-  // anything-goes so it shows everything; any real format shows only decks built
-  // for that exact format (a mismatched deck would be blocked at game start by the
-  // legality gate anyway).
-  const allowedFormat = lobby.formatId;
-  const deckMatchesFormat = (d: Deck) => allowedFormat === "house" || d.formatId === allowedFormat;
-  const filteredDecks = decks.filter(deckMatchesFormat).filter((d) => !onlyStarred || d.isStarred);
-  const filteredPrecons = precons.filter(deckMatchesFormat);
+  const filteredDecks = myMatched.filter(isLegal).filter((d) => !onlyStarred || d.isStarred);
+  const filteredPrecons = preconMatched.filter(isLegal);
 
   return (
     <div className="mx-auto max-w-2xl p-4">
@@ -123,14 +138,14 @@ function Lobby({ t }: { t: TableConn }) {
             </label>
           )}
         </div>
-        <label className="mb-3 block text-sm">
-          <select className="input mt-1 w-full" value={deckId ?? ""} onChange={(e) => setDeckId(e.target.value || null)}>
+        <label className="mb-1 block text-sm">
+          <select className="input mt-1 w-full" value={deckId ?? ""} onChange={(e) => chooseDeck(e.target.value || null)}>
             <option value="">— none (spectate / empty) —</option>
             {filteredDecks.length > 0 && (
               <optgroup label="My decks">
                 {filteredDecks.map((d) => (
                   <option key={d.id} value={d.id}>
-                    {d.name} ({d.formatId}, {d.cardCount})
+                    {d.name} ({d.cardCount})
                   </option>
                 ))}
               </optgroup>
@@ -139,16 +154,23 @@ function Lobby({ t }: { t: TableConn }) {
               <optgroup label="Preconstructed decks">
                 {filteredPrecons.map((d) => (
                   <option key={d.id} value={d.id}>
-                    {d.name} ({d.formatId}, {d.cardCount})
+                    {d.name} ({d.cardCount})
                   </option>
                 ))}
               </optgroup>
             )}
           </select>
         </label>
-        {filteredDecks.length === 0 && filteredPrecons.length === 0 && (
+        <div className="mb-3 text-[11px] text-table-muted">
+          {checkingLegality
+            ? "Checking which decks are legal…"
+            : allowedFormat === "house"
+              ? "House format — any deck is allowed."
+              : `Only ${lobby.formatId}-legal decks are shown. Illegal ones are hidden — fix them in the Deck Builder.`}
+        </div>
+        {!checkingLegality && filteredDecks.length === 0 && filteredPrecons.length === 0 && (
           <div className="mb-3 rounded-md border border-amber-500/30 bg-amber-950/20 px-3 py-2 text-xs text-amber-200">
-            You have no <b>{lobby.formatId}</b> decks. Build one in the Deck Builder for this format, or start a table with a format you have decks for.
+            You have no legal <b>{lobby.formatId}</b> decks. Build/fix one in the Deck Builder for this format, or start a House table for casual play. You can still sit as a spectator.
           </div>
         )}
         <div className="grid grid-cols-2 gap-2">

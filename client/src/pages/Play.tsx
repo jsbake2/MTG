@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import type { CreateTableRequest, Deck, FormatDef, TableSummary } from "@mtg/shared";
 import { api } from "@/api/client";
 import { useAuth } from "@/store/auth";
+import { useLegalDeckIds } from "@/lib/deckLegality";
 
 export function Play() {
   const [tables, setTables] = useState<TableSummary[]>([]);
@@ -35,14 +36,18 @@ export function Play() {
     return () => clearInterval(iv);
   }, []);
 
-  // Only decks legal for the chosen format (house = anything-goes shows all).
+  // Label-match first, then verify real legality (not just the formatId label).
   const matches = (d: Deck) => form.formatId === "house" || d.formatId === form.formatId;
-  const myDecks = useMemo(() => decks.filter(matches), [decks, form.formatId]);
-  const preconDecks = useMemo(() => precons.filter(matches), [precons, form.formatId]);
-  // Keep the selected deck valid when the format changes.
+  const myMatched = useMemo(() => decks.filter(matches), [decks, form.formatId]);
+  const preconMatched = useMemo(() => precons.filter(matches), [precons, form.formatId]);
+  const { legalIds, loading: checkingLegality } = useLegalDeckIds([...myMatched, ...preconMatched], form.formatId);
+  const isLegal = (d: Deck) => form.formatId === "house" || legalIds.has(d.id);
+  const myDecks = myMatched.filter(isLegal);
+  const preconDecks = preconMatched.filter(isLegal);
+  // Keep the selected deck valid when the format changes or legality resolves.
   useEffect(() => {
     if (deckId && ![...myDecks, ...preconDecks].some((d) => d.id === deckId)) setDeckId("");
-  }, [form.formatId, myDecks, preconDecks]);
+  }, [form.formatId, legalIds]);
 
   async function create() {
     const r = await api.post<{ table: TableSummary }>("/api/tables", {
@@ -81,7 +86,7 @@ export function Play() {
             </select>
           </label>
           <label className="flex flex-col text-xs text-table-muted">
-            Your deck
+            Your deck {checkingLegality && <span className="text-table-muted/70">· checking legality…</span>}
             <select className="input mt-1 min-w-[12rem]" value={deckId} onChange={(e) => setDeckId(e.target.value)}>
               <option value="">— pick in lobby / spectate —</option>
               {myDecks.length > 0 && (
