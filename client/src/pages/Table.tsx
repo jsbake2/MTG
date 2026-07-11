@@ -68,12 +68,14 @@ function Lobby({ t }: { t: TableConn }) {
   const isHost = lobby.hostUserId === user?.id;
   const seatByIndex = (i: number) => lobby.seats.find((s) => s.seat === i);
 
+  // Only offer decks that actually match the table's format. A "house" table is
+  // anything-goes so it shows everything; any real format shows only decks built
+  // for that exact format (a mismatched deck would be blocked at game start by the
+  // legality gate anyway).
   const allowedFormat = lobby.formatId;
-  const filteredDecks = decks
-    .filter((d) => allowedFormat === "house" || d.formatId === allowedFormat || d.formatId === "house")
-    .filter((d) => !onlyStarred || d.isStarred);
-  const filteredPrecons = precons
-    .filter((d) => allowedFormat === "house" || d.formatId === allowedFormat || d.formatId === "house");
+  const deckMatchesFormat = (d: Deck) => allowedFormat === "house" || d.formatId === allowedFormat;
+  const filteredDecks = decks.filter(deckMatchesFormat).filter((d) => !onlyStarred || d.isStarred);
+  const filteredPrecons = precons.filter(deckMatchesFormat);
 
   return (
     <div className="mx-auto max-w-2xl p-4">
@@ -123,6 +125,11 @@ function Lobby({ t }: { t: TableConn }) {
             )}
           </select>
         </label>
+        {filteredDecks.length === 0 && filteredPrecons.length === 0 && (
+          <div className="mb-3 rounded-md border border-amber-500/30 bg-amber-950/20 px-3 py-2 text-xs text-amber-200">
+            You have no <b>{lobby.formatId}</b> decks. Build one in the Deck Builder for this format, or start a table with a format you have decks for.
+          </div>
+        )}
         <div className="grid grid-cols-2 gap-2">
           {Array.from({ length: lobby.maxPlayers }, (_, i) => {
             const occupant = seatByIndex(i);
