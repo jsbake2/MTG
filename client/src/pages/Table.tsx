@@ -127,7 +127,7 @@ function Lobby({ t }: { t: TableConn }) {
           )}
         </div>
       </div>
-      {t.error && <div className="mt-3 rounded bg-red-900/40 px-3 py-2 text-sm text-red-200">{t.error}</div>}
+      {t.error && <div className="mt-3 whitespace-pre-line rounded bg-red-900/40 px-3 py-2 text-sm text-red-200">{t.error}</div>}
     </div>
   );
 }
@@ -419,7 +419,7 @@ function GameBoard({ t, state }: { t: TableConn; state: TableState }) {
           </button>
         </div>
       )}
-      {t.error && <div className="fixed bottom-4 left-1/2 -translate-x-1/2 rounded bg-red-900/90 px-4 py-2 text-sm text-red-100 shadow-panel">{t.error}</div>}
+      {t.error && <div className="fixed bottom-4 left-1/2 max-w-[90vw] -translate-x-1/2 whitespace-pre-line rounded bg-red-900/90 px-4 py-2 text-sm text-red-100 shadow-panel">{t.error}</div>}
     </div>
   );
 }

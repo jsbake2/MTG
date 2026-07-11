@@ -7,6 +7,7 @@ import { getCardsByIds } from "../cards/repo.js";
 import { getAvatarForUser } from "../auth/users.js";
 import { getDeckDetail, getDeckRow } from "../decks/repo.js";
 import { recordResult } from "./results.js";
+import { validateDeck } from "../decks/validate.js";
 import { applyAction, checkStateBased, type ApplyResult, type CardIndex } from "./engine.js";
 import { buildInitialState, log, type SeatDeck } from "./state.js";
 import { appendGameLog } from "./gameLog.js";
@@ -81,6 +82,12 @@ export class Table {
   async start(): Promise<{ ok: boolean; error?: string }> {
     if (this.seats.length < 1) return { ok: false, error: "Need at least one seated player." };
     const format = getFormat(this.formatId);
+    // Deck-legality gate: every seated player's deck must be legal for this
+    // format before the game can start. The House / Kitchen Table format has no
+    // legality checks (legalityKey === null), so casual games are exempt and
+    // anything goes there.
+    const enforceLegality = !!format && format.legalityKey !== null;
+    const legalityErrors: string[] = [];
     const seatDecks: SeatDeck[] = [];
     const allCardIds = new Set<string>();
     for (const s of this.seats) {
@@ -89,6 +96,12 @@ export class Table {
       if (s.deckId) {
         const deck = await getDeckDetail(s.deckId);
         if (deck) {
+          if (enforceLegality) {
+            const validation = validateDeck(this.formatId, deck.cards);
+            for (const issue of validation.issues) {
+              if (issue.severity === "error") legalityErrors.push(`${s.name} — "${deck.name}": ${issue.message}`);
+            }
+          }
           for (const entry of deck.cards) {
             const target = entry.board === "commander" ? commanders : entry.board === "main" ? library : null;
             if (!target) continue;
@@ -98,9 +111,24 @@ export class Table {
             }
           }
         }
+      } else if (enforceLegality) {
+        legalityErrors.push(`${s.name} — no deck selected (${format?.name ?? this.formatId} requires a legal deck).`);
       }
       const avatarCardId = await getAvatarForUser(s.userId).catch(() => null);
       seatDecks.push({ seat: s.seat, userId: s.userId, name: s.name, avatarCardId, library, commanders });
+    }
+
+    if (legalityErrors.length > 0) {
+      const shown = legalityErrors.slice(0, 8);
+      const more = legalityErrors.length - shown.length;
+      return {
+        ok: false,
+        error:
+          `Can't start — illegal deck${legalityErrors.length > 1 ? "s" : ""} for ${format?.name ?? this.formatId}:\n` +
+          shown.map((e) => `• ${e}`).join("\n") +
+          (more > 0 ? `\n…and ${more} more issue${more > 1 ? "s" : ""}.` : "") +
+          `\nFix the deck(s) in the Deck Builder, or use the House / Kitchen Table format for casual play.`,
+      };
     }
 
     // Build the card index (types/keywords/PT) used by the engine.
