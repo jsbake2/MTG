@@ -6,6 +6,10 @@
 // engine sequences through: zones, keyword actions and their destinations,
 // state-based actions (in order), the cast/resolve sequence, priority order,
 // and the continuous-effect layer system. CR references in comments.
+//
+// AUDITED against the official Comprehensive Rules (docs/comprehensive-rules.txt,
+// effective 2026-02-27). Behaviors and section numbers below were verified
+// against that text — not from memory.
 // ---------------------------------------------------------------------------
 import type { ZoneId } from "@mtg/shared";
 
@@ -48,15 +52,16 @@ export interface KeywordActionRule {
   triggersLeaveBattlefield: boolean; // does it fire "leaves the battlefield" / dies triggers
   note: string;
 }
+// Section numbers verified against docs/comprehensive-rules.txt (eff. 2026-02-27).
 export const KEYWORD_ACTIONS: Record<KeywordAction, KeywordActionRule> = {
-  // CR 701.7 — Destroy: to owner's graveyard; indestructible/regeneration can prevent.
+  // CR 701.8 — Destroy: to owner's graveyard; indestructible (702.12b) / regeneration (701.19) can prevent.
   destroy: { dest: "graveyard", toOwner: true, preventableBy: ["indestructible", "regeneration"], triggersLeaveBattlefield: true, note: "Destroyed → owner's graveyard; indestructible/regen prevents." },
-  // CR 701.16 — Sacrifice: to owner's graveyard; NOT stopped by indestructible.
+  // CR 701.21 — Sacrifice: to owner's graveyard; NOT stopped by indestructible.
   sacrifice: { dest: "graveyard", toOwner: true, preventableBy: [], triggersLeaveBattlefield: true, note: "Sacrificed → owner's graveyard; indestructible does NOT prevent." },
-  // CR 701.19 — Exile: to the exile zone; no 'dies' trigger (it didn't go to graveyard).
+  // CR 701.13 — Exile: to the exile zone; no 'dies' trigger (it didn't go to graveyard).
   exile: { dest: "exile", toOwner: true, preventableBy: [], triggersLeaveBattlefield: true, note: "Exiled → exile zone; no death trigger; often returnable." },
-  // CR 701.5 — Counter: a spell on the stack goes to its owner's graveyard (unless an effect exiles it instead).
-  counter: { dest: "graveyard", toOwner: true, preventableBy: ["can't be countered"], triggersLeaveBattlefield: false, note: "Countered spell → owner's graveyard from the stack (unless exiled)." },
+  // CR 701.6 / 404.1 — Counter: a countered spell is put into its owner's graveyard from the stack (unless an effect exiles/tucks it instead).
+  counter: { dest: "graveyard", toOwner: true, preventableBy: ["can't be countered"], triggersLeaveBattlefield: false, note: "Countered spell → owner's graveyard from the stack (CR 404.1; unless exiled)." },
   // Return to hand ("bounce").
   bounce: { dest: "hand", toOwner: true, preventableBy: [], triggersLeaveBattlefield: true, note: "Return → owner's hand." },
   tuck_top: { dest: "library", toOwner: true, toTop: true, preventableBy: [], triggersLeaveBattlefield: true, note: "Put on top of owner's library." },
@@ -78,16 +83,16 @@ export const ZONE_CHANGE_RULES = [
 // --- State-based actions, checked whenever a player would get priority (CR 704) ---
 // Order matters: these are all checked, repeatedly, before any player receives priority.
 export const STATE_BASED_ACTIONS = [
-  { id: "life", text: "A player at 0 or less life loses." },
-  { id: "draw_empty", text: "A player who drew from an empty library loses." },
-  { id: "poison", text: "A player with 10+ poison counters loses." },
-  { id: "zero_toughness", text: "A creature with 0 or less toughness → owner's graveyard." },
-  { id: "lethal_damage", text: "A creature with lethal damage (>= toughness, or any from deathtouch) is destroyed (unless indestructible)." },
-  { id: "planeswalker", text: "A planeswalker with 0 loyalty → owner's graveyard." },
-  { id: "commander_damage", text: "A player dealt 21+ combat damage by one commander loses." },
-  { id: "token_ceases", text: "A token/copy not on the battlefield ceases to exist." },
-  { id: "illegal_aura", text: "An Aura attached illegally, or to nothing, → owner's graveyard." },
-  { id: "legend_rule", text: "Two legendaries with the same name under one controller: keep one, the rest → graveyard." },
+  { id: "life", cr: "704.5a", text: "A player at 0 or less life loses." },
+  { id: "draw_empty", cr: "704.5b", text: "A player who attempted to draw from an empty library loses." },
+  { id: "poison", cr: "704.5c", text: "A player with 10+ poison counters loses." },
+  { id: "zero_toughness", cr: "704.5f", text: "A creature with 0 or less toughness → owner's graveyard." },
+  { id: "lethal_damage", cr: "704.5g/h", text: "A creature with lethal damage (>= toughness, or any from deathtouch) is destroyed (unless indestructible, 702.12b)." },
+  { id: "planeswalker", cr: "704.5i", text: "A planeswalker with 0 loyalty → owner's graveyard." },
+  { id: "commander_damage", cr: "903.10a", text: "A player dealt 21+ combat damage by one commander loses." },
+  { id: "token_ceases", cr: "704.5d", text: "A token/copy not on the battlefield ceases to exist." },
+  { id: "illegal_aura", cr: "704.5m", text: "An Aura attached illegally, or to nothing, → owner's graveyard." },
+  { id: "legend_rule", cr: "704.5j", text: "Two legendaries with the same name under one controller: keep one, the rest → graveyard." },
 ] as const;
 
 // --- Cast & resolve sequences (CR 601, 608) ---------------------------------

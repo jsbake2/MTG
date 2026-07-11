@@ -254,6 +254,14 @@ function drawCards(state: TableState, seat: number, count: number): number {
     lib[i]!.zone = "hand";
     drawn++;
   }
+  // CR 704.5b — a player who attempts to draw from an empty library loses.
+  if (count > lib.length) {
+    const p = playerBySeat(state, seat);
+    if (p && !p.hasLost) {
+      p.hasLost = true;
+      log(state, { seat, kind: "system", text: `${p.name} tried to draw from an empty library and loses (CR 704.5b).` });
+    }
+  }
   recountHiddenZones(state);
   return drawn;
 }
@@ -1000,6 +1008,10 @@ function dealToPlayer(state: TableState, ctx: CardIndex, source: GameObject, sea
 
 // Full keyword-aware combat resolution: first-strike/regular sub-steps, deathtouch,
 // trample, lifelink, and commander damage — the "do all the math" automation.
+// Verified vs the Comprehensive Rules (docs/comprehensive-rules.txt): first strike
+// 702.7, double strike 702.4, deathtouch 702.2b / SBA 704.5h, trample 702.19b/d,
+// lifelink 702.15, vigilance 702.20, flying 702.9, reach 702.17, menace 702.111,
+// infect 702.90b/c, toxic 702.164 / 120.3g, indestructible 702.12b.
 function resolveCombat(state: TableState, ctx: CardIndex): void {
   const attackers = objectsIn(state, "battlefield").filter((o) => o.attacking !== null);
   if (attackers.length === 0) return;
