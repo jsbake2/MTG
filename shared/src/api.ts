@@ -69,6 +69,7 @@ export interface CardDetailResponse {
   card: Card;
   // Other printings of the same oracle card (for alternate-art selection).
   printings: CardSummary[];
+  decks?: Array<{ id: string; name: string; isPrecon: boolean; quantity: number; board: string }>;
 }
 
 // ---- Decks ----
@@ -90,6 +91,7 @@ export interface Deck {
   colors: string[];
   cardCount: number;
   isPrecon: boolean;
+  isStarred: boolean;
   tags: string[];
   updatedAt: string;
   createdAt: string;

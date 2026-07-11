@@ -39,23 +39,44 @@ function Lobby({ t }: { t: TableConn }) {
   const [decks, setDecks] = useState<Deck[]>([]);
   const [precons, setPrecons] = useState<Deck[]>([]);
   const [deckId, setDeckId] = useState<string | null>(null);
+  const [onlyStarred, setOnlyStarred] = useState(false);
+
+  const lobby = t.lobby;
 
   useEffect(() => {
+    if (!lobby) return;
     Promise.all([
       api.get<{ decks: Deck[] }>("/api/decks"),
       api.get<{ decks: Deck[] }>("/api/decks/public"),
     ]).then(([mine, pub]) => {
       setDecks(mine.decks);
       setPrecons(pub.decks);
-      if (mine.decks[0]) setDeckId(mine.decks[0].id);
+      
+      const allowed = lobby.formatId;
+      const validMine = mine.decks.filter(d => allowed === "house" || d.formatId === allowed);
+      const hasStarred = validMine.some(d => d.isStarred);
+      if (hasStarred) {
+        setOnlyStarred(true);
+        const firstStarred = validMine.find(d => d.isStarred);
+        if (firstStarred) setDeckId(firstStarred.id);
+      } else {
+        setOnlyStarred(false);
+        if (validMine[0]) setDeckId(validMine[0].id);
+      }
     });
-  }, []);
-
-  const lobby = t.lobby;
+  }, [lobby?.formatId]);
   if (!lobby) return <div className="p-8 text-center text-table-muted">Connecting to table…</div>;
 
   const isHost = lobby.hostUserId === user?.id;
   const seatByIndex = (i: number) => lobby.seats.find((s) => s.seat === i);
+
+  const allowedFormat = lobby.formatId;
+  const filteredDecks = decks
+    .filter((d) => allowedFormat === "house" || d.formatId === allowedFormat)
+    .filter((d) => !onlyStarred || d.isStarred);
+  const filteredPrecons = precons
+    .filter((d) => allowedFormat === "house" || d.formatId === allowedFormat)
+    .filter((d) => !onlyStarred || d.isStarred);
 
   return (
     <div className="mx-auto max-w-2xl p-4">
@@ -69,22 +90,34 @@ function Lobby({ t }: { t: TableConn }) {
         <div className="mb-3 text-sm text-table-muted">
           Format: <b className="text-table-ink">{lobby.formatId}</b> · pick your seat and deck.
         </div>
+        <div className="mb-1 flex items-center justify-between">
+          <label className="text-sm font-semibold">Your deck</label>
+          {decks.some((d) => (lobby.formatId === "house" || d.formatId === lobby.formatId) && d.isStarred) && (
+            <label className="flex items-center gap-1.5 text-xs text-table-muted cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={onlyStarred}
+                onChange={(e) => setOnlyStarred(e.target.checked)}
+              />
+              Show only favorites (★)
+            </label>
+          )}
+        </div>
         <label className="mb-3 block text-sm">
-          Your deck
           <select className="input mt-1 w-full" value={deckId ?? ""} onChange={(e) => setDeckId(e.target.value || null)}>
             <option value="">— none (spectate / empty) —</option>
-            {decks.length > 0 && (
+            {filteredDecks.length > 0 && (
               <optgroup label="My decks">
-                {decks.map((d) => (
+                {filteredDecks.map((d) => (
                   <option key={d.id} value={d.id}>
                     {d.name} ({d.formatId}, {d.cardCount})
                   </option>
                 ))}
               </optgroup>
             )}
-            {precons.length > 0 && (
+            {filteredPrecons.length > 0 && (
               <optgroup label="Preconstructed decks">
-                {precons.map((d) => (
+                {filteredPrecons.map((d) => (
                   <option key={d.id} value={d.id}>
                     {d.name} ({d.formatId}, {d.cardCount})
                   </option>
@@ -148,6 +181,16 @@ function GameBoard({ t, state }: { t: TableConn; state: TableState }) {
   const [tokenOpen, setTokenOpen] = useState(false);
   const [targeting, setTargeting] = useState<{ name: string; specs: { kind: string; label: string }[]; collected: string[]; send: (targets: string[]) => void } | null>(null);
   const [modePicker, setModePicker] = useState<{ objectId: string; name: string; modes: EffectMode[] } | null>(null);
+  const [hoveredCard, setHoveredCard] = useState<{ id: string; name: string; x: number; y: number } | null>(null);
+  const [browseZone, setBrowseZone] = useState<{ zoneId: string; title: string } | null>(null);
+
+  const handleHover = (card: { id: string; name: string } | null, e?: React.MouseEvent) => {
+    if (!card || !e) {
+      setHoveredCard(null);
+    } else {
+      setHoveredCard({ id: card.id, name: card.name, x: e.clientX, y: e.clientY });
+    }
+  };
 
   // Generic targeting: collect N targets then fire `send`.
   function beginTargeting(name: string, specs: { kind: string; label: string }[], send: (targets: string[]) => void) {
@@ -285,6 +328,8 @@ function GameBoard({ t, state }: { t: TableConn; state: TableState }) {
                 t={t}
                 objectsByZone={objectsByZone}
                 onSelect={(s) => (targeting ? addTarget(s.objectId) : setSel(s))}
+                onBrowse={(zoneId, title) => setBrowseZone({ zoneId, title })}
+                onHover={handleHover}
                 targeting={!!targeting}
                 onTargetPlayer={() => addTarget(`seat:${p.seat}`)}
               />
@@ -298,7 +343,7 @@ function GameBoard({ t, state }: { t: TableConn; state: TableState }) {
               <div className="flex gap-1 overflow-x-auto">
                 {state.stackOrder.map((oid) => {
                   const o = state.objects[oid];
-                  return o ? <MiniCard key={oid} o={o} onClick={() => (targeting ? addTarget(oid) : setSel({ objectId: oid, x: 0, y: 0 }))} /> : null;
+                  return o ? <MiniCard key={oid} o={o} onClick={(e) => (targeting ? addTarget(oid) : setSel({ objectId: oid, x: e.clientX, y: e.clientY }))} onHover={handleHover} /> : null;
                 })}
               </div>
             </div>
@@ -317,6 +362,7 @@ function GameBoard({ t, state }: { t: TableConn; state: TableState }) {
                 title="Your battlefield"
                 objects={objectsByZone[`battlefield:${you}`] ?? []}
                 onSelect={clickObject}
+                onHover={handleHover}
                 highlight
               />
             </div>
@@ -358,14 +404,20 @@ function GameBoard({ t, state }: { t: TableConn; state: TableState }) {
               <button className="chip hover:border-table-accent" onClick={() => setTokenOpen(true)}>
                 ＋ Token
               </button>
-              <ZoneButtons you={you} t={t} objectsByZone={objectsByZone} />
+              <ZoneButtons you={you} t={t} objectsByZone={objectsByZone} onBrowse={(zoneId, title) => setBrowseZone({ zoneId, title })} />
             </div>
           </div>
           <div className="overflow-x-auto px-3 pb-3 pt-2 scrollbar-thin">
             <div className="hand-fan flex justify-center min-w-max px-4">
               {myHand.map((o) => (
                 <div key={o.id} className="hand-card w-[92px] shrink-0">
-                  <button className="block w-full" onClick={(e) => setSel({ objectId: o.id, x: e.clientX, y: e.clientY })}>
+                  <button
+                    className="block w-full"
+                    onClick={(e) => (targeting ? addTarget(o.id) : setSel({ objectId: o.id, x: e.clientX, y: e.clientY }))}
+                    onMouseEnter={(e) => o.cardId && handleHover({ id: o.cardId, name: o.name }, e)}
+                    onMouseMove={(e) => o.cardId && handleHover({ id: o.cardId, name: o.name }, e)}
+                    onMouseLeave={() => handleHover(null)}
+                  >
                     <CardImage id={o.cardId} name={o.name} />
                   </button>
                 </div>
@@ -431,6 +483,84 @@ function GameBoard({ t, state }: { t: TableConn; state: TableState }) {
         </div>
       )}
       {t.error && <div className="fixed bottom-4 left-1/2 max-w-[90vw] -translate-x-1/2 whitespace-pre-line rounded bg-red-900/90 px-4 py-2 text-sm text-red-100 shadow-panel">{t.error}</div>}
+      
+      {browseZone && (
+        <ZoneBrowserModal
+          title={browseZone.title}
+          objects={objectsByZone[browseZone.zoneId] ?? []}
+          onClose={() => setBrowseZone(null)}
+          onSelect={(o, e) => (targeting ? addTarget(o.id) : setSel({ objectId: o.id, x: e.clientX, y: e.clientY }))}
+          onHover={handleHover}
+        />
+      )}
+
+      {hoveredCard && (
+        <div
+          className="pointer-events-none fixed z-50 transition-all duration-75 ease-out"
+          style={{
+            left: hoveredCard.x + 15,
+            top: Math.min(window.innerHeight - 340, Math.max(10, hoveredCard.y - 170)),
+          }}
+        >
+          <div className="rounded-lg border border-table-border bg-table-panel/95 p-1.5 shadow-2xl backdrop-blur-md animate-fade-in">
+            <img
+              src={`/api/cards/${hoveredCard.id}/image`}
+              alt={hoveredCard.name}
+              className="w-56 rounded-md shadow-lg card-aspect"
+            />
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ZoneBrowserModal({
+  title,
+  objects,
+  onClose,
+  onSelect,
+  onHover,
+}: {
+  title: string;
+  objects: GameObject[];
+  onClose: () => void;
+  onSelect: (o: GameObject, e: React.MouseEvent) => void;
+  onHover?: (card: { id: string; name: string } | null, e: React.MouseEvent) => void;
+}) {
+  return (
+    <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/80 p-4" onClick={onClose}>
+      <div className="panel flex max-h-[85vh] w-full max-w-4xl flex-col overflow-hidden" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between border-b border-table-border p-4">
+          <h2 className="font-display text-lg text-table-accentSoft">{title} ({objects.length} cards)</h2>
+          <button className="btn-ghost" onClick={onClose}>Close</button>
+        </div>
+        <div className="min-h-0 flex-1 overflow-y-auto p-4">
+          {objects.length === 0 ? (
+            <div className="p-12 text-center text-table-muted">This zone is empty.</div>
+          ) : (
+            <div className="grid grid-cols-3 gap-3 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8">
+              {objects.map((o) => (
+                <div key={o.id} className="relative flex flex-col items-center">
+                  <button
+                    className="w-full shrink-0 transition-transform hover:-translate-y-1 hover:brightness-110"
+                    onClick={(e) => onSelect(o, e)}
+                    onMouseEnter={(e) => o.cardId && onHover?.({ id: o.cardId, name: o.name }, e)}
+                    onMouseMove={(e) => o.cardId && onHover?.({ id: o.cardId, name: o.name }, e)}
+                    onMouseLeave={() => onHover?.(null, null as any)}
+                    title={o.name}
+                  >
+                    <CardImage id={o.cardId} name={o.name} />
+                  </button>
+                  <div className="mt-1 truncate w-full text-center text-[10px] text-table-muted" title={o.name}>
+                    {o.name}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
@@ -452,6 +582,8 @@ function PlayerStrip({
   t,
   objectsByZone,
   onSelect,
+  onBrowse,
+  onHover,
   targeting,
   onTargetPlayer,
 }: {
@@ -461,12 +593,21 @@ function PlayerStrip({
   t: TableConn;
   objectsByZone: Record<string, GameObject[]>;
   onSelect: (s: Selection) => void;
+  onBrowse: (zoneId: string, title: string) => void;
+  onHover?: (card: { id: string; name: string } | null, e: React.MouseEvent) => void;
   targeting?: boolean;
   onTargetPlayer?: () => void;
 }) {
+  const { user } = useAuth();
+  const isAdmin = user?.isAdmin ?? false;
+  const canEdit = you === p.seat || isAdmin;
+
   const bf = objectsByZone[`battlefield:${p.seat}`] ?? [];
+  const gy = objectsByZone[`graveyard:${p.seat}`] ?? [];
+  const ex = objectsByZone[`exile:${p.seat}`] ?? [];
   const active = state.activeSeat === p.seat;
   const hasPriority = state.prioritySeat === p.seat;
+
   return (
     <div className={`rounded-lg border p-2 ${targeting ? "cursor-crosshair ring-2 ring-red-500/60" : ""} ${active ? "border-table-accent shadow-accent/5 shadow-md" : "border-table-border"} ${p.hasLost ? "opacity-40" : ""}`}>
       <div className="mb-1 flex items-center gap-2 text-sm">
@@ -482,19 +623,40 @@ function PlayerStrip({
           <span className="animate-pulse rounded bg-table-accent/20 px-1 py-0.5 text-[9px] font-bold uppercase tracking-wider text-table-accentSoft border border-table-accent/40">Priority</span>
         )}
         <div className="flex items-center gap-1">
-          <button className="btn-ghost h-6 w-6 !px-0" onClick={() => t.send({ type: "adjust_life", seat: p.seat, delta: -1 })} title="−1 life">
-            −
-          </button>
-          <span className="life-diamond text-sm font-bold text-white">
+          {canEdit && (
+            <button className="btn-ghost h-6 w-6 !px-0" onClick={() => t.send({ type: "adjust_life", seat: p.seat, delta: -1 })} title="−1 life">
+              −
+            </button>
+          )}
+          <span className={`life-diamond text-sm font-bold text-white ${p.life <= 5 ? "animate-pulse border-red-500 shadow-red-500/55 shadow-[0_0_12px]" : ""}`}>
             <span>{p.life}</span>
           </span>
-          <button className="btn-ghost h-6 w-6 !px-0" onClick={() => t.send({ type: "adjust_life", seat: p.seat, delta: 1 })} title="+1 life">
-            +
-          </button>
+          {canEdit && (
+            <button className="btn-ghost h-6 w-6 !px-0" onClick={() => t.send({ type: "adjust_life", seat: p.seat, delta: 1 })} title="+1 life">
+              +
+            </button>
+          )}
         </div>
-        <span className="text-xs text-table-muted">✋{p.handCount} 📚{p.libraryCount}</span>
+        <span className="text-xs text-table-muted flex gap-2 ml-1">
+          <span title="Cards in hand">✋{p.handCount}</span>
+          <button className="hover:text-table-accentSoft" onClick={() => onBrowse(`library:${p.seat}`, `${p.name}'s Library`)} title="Search/View library">
+            📚{p.libraryCount}
+          </button>
+          <button className="hover:text-table-accentSoft" onClick={() => onBrowse(`graveyard:${p.seat}`, `${p.name}'s Graveyard`)} title="View graveyard">
+            🪦{gy.length}
+          </button>
+          <button className="hover:text-table-accentSoft" onClick={() => onBrowse(`exile:${p.seat}`, `${p.name}'s Exile`)} title="View exile">
+            🌀{ex.length}
+          </button>
+        </span>
         {p.poison > 0 && (
-          <button className="chip text-green-300" title="Poison (right-click −1)" onClick={() => t.send({ type: "set_poison", seat: p.seat, value: p.poison + 1 })} onContextMenu={(e) => { e.preventDefault(); t.send({ type: "set_poison", seat: p.seat, value: p.poison - 1 }); }}>
+          <button
+            disabled={!canEdit}
+            className="chip text-green-300 disabled:opacity-100"
+            title={canEdit ? "Poison (right-click −1)" : "Poison counters"}
+            onClick={() => canEdit && t.send({ type: "set_poison", seat: p.seat, value: p.poison + 1 })}
+            onContextMenu={(e) => { e.preventDefault(); if (canEdit) t.send({ type: "set_poison", seat: p.seat, value: p.poison - 1 }); }}
+          >
             ☠{p.poison}
           </button>
         )}
@@ -508,7 +670,7 @@ function PlayerStrip({
           </button>
         )}
       </div>
-      <BattlefieldRow objects={bf} onSelect={(o, e) => onSelect({ objectId: o.id, x: e.clientX, y: e.clientY })} compact />
+      <BattlefieldRow objects={bf} onSelect={(o, e) => onSelect({ objectId: o.id, x: e.clientX, y: e.clientY })} onHover={onHover} compact />
     </div>
   );
 }
@@ -517,19 +679,21 @@ function BattlefieldRow({
   title,
   objects,
   onSelect,
+  onHover,
   highlight,
   compact,
 }: {
   title?: string;
   objects: GameObject[];
   onSelect: (o: GameObject, e: React.MouseEvent) => void;
+  onHover?: (card: { id: string; name: string } | null, e: React.MouseEvent) => void;
   highlight?: boolean;
   compact?: boolean;
 }) {
   const isLand = (o: GameObject) => o.cardTypes?.includes("Land") ?? false;
   const lands = objects.filter(isLand);
   const nonlands = objects.filter((o) => !isLand(o));
-  const size = compact ? 72 : 96;
+  const size = compact ? 72 : 100;
   return (
     <div className={`rounded-lg ${highlight ? "border border-table-accent/30 bg-table-panel2/40 p-2" : ""}`}>
       {title && <div className="mb-1 text-xs uppercase tracking-wide text-table-muted">{title}</div>}
@@ -538,14 +702,14 @@ function BattlefieldRow({
       {nonlands.length > 0 && (
         <div className="mb-1 flex flex-wrap gap-1">
           {nonlands.map((o) => (
-            <GameCard key={o.id} o={o} onClick={(e) => onSelect(o, e)} size={size} />
+            <GameCard key={o.id} o={o} onClick={(e) => onSelect(o, e)} onHover={onHover} size={size} />
           ))}
         </div>
       )}
       {lands.length > 0 && (
         <div className="flex flex-wrap gap-1 opacity-95">
           {lands.map((o) => (
-            <GameCard key={o.id} o={o} onClick={(e) => onSelect(o, e)} size={size * 0.82} />
+            <GameCard key={o.id} o={o} onClick={(e) => onSelect(o, e)} onHover={onHover} size={size * 0.82} />
           ))}
         </div>
       )}
@@ -553,12 +717,25 @@ function BattlefieldRow({
   );
 }
 
-function GameCard({ o, onClick, size }: { o: GameObject; onClick: (e: React.MouseEvent) => void; size: number }) {
+function GameCard({
+  o,
+  onClick,
+  size,
+  onHover,
+}: {
+  o: GameObject;
+  onClick: (e: React.MouseEvent) => void;
+  size: number;
+  onHover?: (card: { id: string; name: string } | null, e: React.MouseEvent) => void;
+}) {
   const w = size * 0.72;
   return (
     <button
       onClick={onClick}
-      className="relative shrink-0"
+      onMouseEnter={(e) => o.cardId && onHover?.({ id: o.cardId, name: o.name }, e)}
+      onMouseMove={(e) => o.cardId && onHover?.({ id: o.cardId, name: o.name }, e)}
+      onMouseLeave={() => onHover?.(null, null as any)}
+      className="relative shrink-0 transition-transform hover:scale-105 hover:z-10"
       style={{ width: o.tapped ? size : w, height: o.tapped ? w : size }}
       title={o.name}
     >
@@ -588,9 +765,24 @@ function GameCard({ o, onClick, size }: { o: GameObject; onClick: (e: React.Mous
   );
 }
 
-function MiniCard({ o, onClick }: { o: GameObject; onClick: () => void }) {
+function MiniCard({
+  o,
+  onClick,
+  onHover,
+}: {
+  o: GameObject;
+  onClick: (e: React.MouseEvent) => void;
+  onHover?: (card: { id: string; name: string } | null, e: React.MouseEvent) => void;
+}) {
   return (
-    <button className="w-[56px] shrink-0" onClick={onClick} title={o.name}>
+    <button
+      className="w-[56px] shrink-0 transition-transform hover:scale-105"
+      onClick={onClick}
+      onMouseEnter={(e) => o.cardId && onHover?.({ id: o.cardId, name: o.name }, e)}
+      onMouseMove={(e) => o.cardId && onHover?.({ id: o.cardId, name: o.name }, e)}
+      onMouseLeave={() => onHover?.(null, null as any)}
+      title={o.name}
+    >
       <CardImage id={o.cardId} name={o.name} />
     </button>
   );
@@ -613,10 +805,15 @@ function PhaseControls({ state, t, isActive, hasPriority, you }: { state: TableS
       <button className="btn-primary !py-1" onClick={() => t.send({ type: "advance_step" })} disabled={!isActive}>
         Next step
       </button>
+      {state.step === "main1" && (
+        <button className="btn-ghost !py-1 text-amber-200 border-amber-500/30 hover:border-amber-500/50" onClick={() => t.send({ type: "skip_combat", seat: you })} disabled={!hasPriority}>
+          Skip Combat
+        </button>
+      )}
       <button className="btn-ghost !py-1" onClick={() => t.send({ type: "untap_all", seat: you })}>
         Untap all
       </button>
-      <button className="btn-ghost !py-1" onClick={() => t.send({ type: "draw", seat: you, count: 1 })}>
+      <button className="btn-ghost !py-1" onClick={() => t.send({ type: "draw", seat: you, count: 1 })} disabled={!hasPriority}>
         Draw
       </button>
     </div>
@@ -630,7 +827,7 @@ function LifeControl({ p, t }: { p: PlayerState; t: TableConn }) {
       <button className="btn-ghost h-8 w-8 !px-0 text-lg" onClick={() => t.send({ type: "adjust_life", seat: p.seat, delta: -1 })} title="−1 life">
         −
       </button>
-      <span className="life-diamond font-display text-lg font-bold text-white" style={{ width: 42, height: 42 }}>
+      <span className={`life-diamond font-display text-lg font-bold text-white ${p.life <= 5 ? "animate-pulse border-red-500 shadow-red-500/55 shadow-[0_0_12px]" : ""}`} style={{ width: 42, height: 42 }}>
         <span>{p.life}</span>
       </span>
       <button className="btn-ghost h-8 w-8 !px-0 text-lg" onClick={() => t.send({ type: "adjust_life", seat: p.seat, delta: 1 })} title="+1 life">
@@ -678,9 +875,20 @@ function ManaControl({ p, t }: { p: PlayerState; t: TableConn }) {
   );
 }
 
-function ZoneButtons({ you, t, objectsByZone }: { you: number; t: TableConn; objectsByZone: Record<string, GameObject[]> }) {
+function ZoneButtons({
+  you,
+  t,
+  objectsByZone,
+  onBrowse,
+}: {
+  you: number;
+  t: TableConn;
+  objectsByZone: Record<string, GameObject[]>;
+  onBrowse: (zoneId: string, title: string) => void;
+}) {
   const gy = objectsByZone[`graveyard:${you}`] ?? [];
   const ex = objectsByZone[`exile:${you}`] ?? [];
+  const lib = objectsByZone[`library:${you}`] ?? [];
   return (
     <div className="flex items-center gap-1 text-xs">
       <button className="chip hover:border-table-accent hover:text-table-accentSoft" onClick={() => t.send({ type: "shuffle", seat: you })}>
@@ -689,8 +897,15 @@ function ZoneButtons({ you, t, objectsByZone }: { you: number; t: TableConn; obj
       <button className="chip hover:border-table-accent hover:text-table-accentSoft text-amber-200" onClick={() => { if (confirm("Mulligan your hand (shuffles hand back and draws 7 new cards)?")) t.send({ type: "mulligan", seat: you }); }}>
         Mulligan
       </button>
-      <span className="chip">GY {gy.length}</span>
-      <span className="chip">Exile {ex.length}</span>
+      <button className="chip hover:border-table-accent hover:text-table-accentSoft" onClick={() => onBrowse(`graveyard:${you}`, "Your Graveyard")}>
+        GY {gy.length}
+      </button>
+      <button className="chip hover:border-table-accent hover:text-table-accentSoft" onClick={() => onBrowse(`exile:${you}`, "Your Exile")}>
+        Exile {ex.length}
+      </button>
+      <button className="chip hover:border-table-accent hover:text-table-accentSoft" onClick={() => onBrowse(`library:${you}`, "Your Library (Search)")}>
+        Library {lib.length}
+      </button>
     </div>
   );
 }
@@ -949,11 +1164,12 @@ function CardMenu({
           <Item label="Counter → exile" onClick={() => t.send({ type: "keyword_action", objectId: o.id, action: "exile" })} danger />
         </>
       )}
-      {(o.zone === "graveyard" || o.zone === "exile") && (
+      {(o.zone === "graveyard" || o.zone === "exile" || o.zone.startsWith("library")) && (
         <>
           <Item label="→ Hand" onClick={() => move("hand")} />
           <Item label="→ Battlefield" onClick={() => move("battlefield")} />
           <Item label="→ Library (top)" onClick={() => move("library", true)} />
+          <Item label="→ Library (bottom)" onClick={() => move("library", false)} />
         </>
       )}
     </div>

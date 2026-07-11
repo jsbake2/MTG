@@ -10,6 +10,7 @@ interface DeckRow {
   format_id: string;
   description: string;
   is_precon: boolean;
+  is_starred: boolean;
   tags: string[];
   created_at: string;
   updated_at: string;
@@ -40,6 +41,7 @@ function toDeck(r: DeckRow, colors: string[]): Deck {
     colors,
     cardCount: Number(r.card_count),
     isPrecon: r.is_precon,
+    isStarred: r.is_starred,
     tags: r.tags ?? [],
     createdAt: r.created_at,
     updatedAt: r.updated_at,
@@ -148,6 +150,10 @@ export async function deleteDeck(deckId: string): Promise<void> {
   await query(`DELETE FROM decks WHERE id = $1`, [deckId]);
 }
 
+export async function starDeck(deckId: string, starred: boolean): Promise<void> {
+  await query(`UPDATE decks SET is_starred = $1 WHERE id = $2`, [starred, deckId]);
+}
+
 export async function duplicateDeck(deckId: string, ownerId: string, newName: string): Promise<string | null> {
   const detail = await getDeckDetail(deckId);
   if (!detail) return null;
@@ -157,4 +163,25 @@ export async function duplicateDeck(deckId: string, ownerId: string, newName: st
     description: detail.description,
     cards: detail.cards.map((c) => ({ cardId: c.cardId, board: c.board, quantity: c.quantity })),
   });
+}
+
+export async function getDecksContainingCard(oracleId: string, userId: string | null): Promise<Array<{ id: string; name: string; isPrecon: boolean; quantity: number; board: string }>> {
+  const rows = (
+    await query<{ id: string; name: string; is_precon: boolean; quantity: number; board: string }>(
+      `SELECT d.id, d.name, d.is_precon, dc.quantity, dc.board
+       FROM decks d
+       JOIN deck_cards dc ON dc.deck_id = d.id
+       JOIN cards c ON c.id = dc.card_id
+       WHERE c.oracle_id = $1 AND (d.is_precon = true ${userId ? "OR d.owner_id = $2" : ""})
+       ORDER BY d.is_precon DESC, d.name ASC`,
+      userId ? [oracleId, userId] : [oracleId],
+    )
+  ).rows;
+  return rows.map((r) => ({
+    id: r.id,
+    name: r.name,
+    isPrecon: r.is_precon,
+    quantity: r.quantity,
+    board: r.board,
+  }));
 }

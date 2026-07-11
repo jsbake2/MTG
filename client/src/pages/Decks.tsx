@@ -37,6 +37,10 @@ export function Decks() {
     const r = await api.post<{ id: string }>(`/api/decks/${id}/duplicate`);
     nav(`/decks/${r.id}`);
   }
+  async function toggleStar(id: string, starred: boolean) {
+    await api.post(`/api/decks/${id}/star`, { starred });
+    load();
+  }
   const byName = (a: Deck, b: Deck) => a.name.localeCompare(b.name);
   const byUpdated = (a: Deck, b: Deck) => (a.updatedAt < b.updatedAt ? 1 : -1);
   const sorter = sort === "name" ? byName : byUpdated;
@@ -58,9 +62,9 @@ export function Decks() {
         <h1 className="font-display text-2xl text-table-accentSoft">Your Decks</h1>
         <select className="input !py-1" value={ownFormat} onChange={(e) => setOwnFormat(e.target.value)} title="Filter by format">
           <option value="">All formats</option>
-          {usedFormats.map((f) => (
-            <option key={f} value={f}>
-              {formatName(f)}
+          {formats.map((f) => (
+            <option key={f.id} value={f.id}>
+              {f.name}
             </option>
           ))}
         </select>
@@ -84,9 +88,18 @@ export function Decks() {
           {filteredDecks.map((d) => (
             <div key={d.id} className="panel flex flex-col p-4">
               <div className="flex items-start justify-between gap-2">
-                <Link to={`/decks/${d.id}`} className="font-display text-lg text-table-ink hover:text-table-accentSoft">
-                  {d.name}
-                </Link>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => toggleStar(d.id, !d.isStarred)}
+                    className={`text-lg transition-all duration-150 hover:scale-110 active:scale-90 ${d.isStarred ? "text-amber-400" : "text-table-muted/30 hover:text-amber-300/80"}`}
+                    title={d.isStarred ? "Remove Favorite" : "Add Favorite"}
+                  >
+                    ★
+                  </button>
+                  <Link to={`/decks/${d.id}`} className="font-display text-lg text-table-ink hover:text-table-accentSoft">
+                    {d.name}
+                  </Link>
+                </div>
                 <div className="flex gap-0.5">
                   {d.colors.map((c) => (
                     <span key={c} className="h-3.5 w-3.5 rounded-full border border-white/25" style={{ background: MANA_DOT[c] ?? "#c9c6be" }} />
@@ -129,9 +142,9 @@ export function Decks() {
           <span className="text-sm text-table-muted">{filteredPrecons.length} of {precons.length} decks</span>
           <select className="input ml-auto !py-1" value={preconFormat} onChange={(e) => setPreconFormat(e.target.value)} title="Filter by format">
             <option value="">All formats</option>
-            {[...new Set(precons.map((p) => p.formatId))].map((f) => (
-              <option key={f} value={f}>
-                {formatName(f)}
+            {formats.map((f) => (
+              <option key={f.id} value={f.id}>
+                {f.name}
               </option>
             ))}
           </select>

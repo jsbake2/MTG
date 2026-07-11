@@ -42,3 +42,17 @@ tablesRouter.get("/:id", (req, res) => {
   }
   res.json({ table: t.summary() });
 });
+
+tablesRouter.delete("/:id", (req, res) => {
+  if (!req.user!.isAdmin) {
+    res.status(403).json({ error: "Only admins can delete tables" });
+    return;
+  }
+  const t = tables.get(String(req.params.id));
+  if (!t) {
+    res.status(404).json({ error: "Table not found" });
+    return;
+  }
+  tables.remove(t.id);
+  res.json({ ok: true });
+});

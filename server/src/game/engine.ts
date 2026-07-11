@@ -131,7 +131,7 @@ export function checkStateBased(state: TableState, ctx: CardIndex): void {
     }
   }
   const alive = aliveSeats(state);
-  if (alive.length === 1 && state.status === "playing") {
+  if (state.players.length > 1 && alive.length === 1 && state.status === "playing") {
     state.winnerSeat = alive[0]!;
     state.status = "finished";
     log(state, { seat: alive[0]!, kind: "system", text: `${playerBySeat(state, alive[0]!)?.name} wins the game!` });
@@ -185,8 +185,20 @@ function moveObject(
 // ---- turn / step advancement -------------------------------------------
 function advanceStep(state: TableState, ctx: CardIndex): void {
   const idx = TURN_STEPS.findIndex((s) => s.phase === state.phase && s.step === state.step);
-  const next = idx + 1;
+  let next = idx + 1;
   state.passStreak = 0;
+
+  if (state.step === "declare_attackers") {
+    const attackers = objectsIn(state, "battlefield").filter((o) => o.attacking !== null);
+    if (attackers.length === 0) {
+      // Rule 508.8: Skip blockers and damage steps if 0 attackers are declared.
+      state.phase = "postcombat_main";
+      state.step = "main2";
+      onEnterStep(state, ctx);
+      return;
+    }
+  }
+
   if (next >= TURN_STEPS.length) {
     // New turn.
     const nextActive = nextSeatInTurnOrder(state, state.activeSeat);
@@ -216,6 +228,8 @@ function onEnterStep(state: TableState, ctx: CardIndex): void {
       o.summoningSick = false; // controlled since last turn
     }
     log(state, { seat: state.activeSeat, kind: "phase", text: `Turn ${state.turnNumber}: ${active?.name}'s untap.` });
+    // Untap step has no priority, immediately advance to Upkeep.
+    advanceStep(state, ctx);
   } else if (state.step === "upkeep") {
     for (const o of objectsIn(state, "battlefield", state.activeSeat)) runTriggers(state, ctx, o, "upkeep");
   } else if (state.step === "draw") {
@@ -225,6 +239,8 @@ function onEnterStep(state: TableState, ctx: CardIndex): void {
       drawCards(state, state.activeSeat, 1);
       log(state, { seat: state.activeSeat, kind: "phase", text: `${active.name} draws for the turn.` });
     }
+    // Auto-advance to Main 1.
+    advanceStep(state, ctx);
   } else if (state.step === "combat_damage") {
     // Auto-resolve all combat damage/keywords when reaching the damage step.
     resolveCombat(state, ctx);
@@ -239,6 +255,8 @@ function onEnterStep(state: TableState, ctx: CardIndex): void {
       o.tempBoost = { power: 0, toughness: 0 }; // "until end of turn" pump wears off
       o.grantedKeywords = [];
     }
+    // Cleanup step immediately transitions to the next turn.
+    advanceStep(state, ctx);
   } else if (state.step === "end_combat") {
     for (const o of objectsIn(state, "battlefield")) {
       o.attacking = null;
@@ -585,16 +603,22 @@ function dispatch(state: TableState, ctx: CardIndex, seat: number, action: GameA
       return null;
     }
     case "draw": {
+      const prio = enforce(state, seat === state.prioritySeat, "You do not have priority.");
+      if (prio) return prio;
       const n = drawCards(state, action.seat, action.count);
       log(state, { seat: action.seat, kind: "action", text: `${playerBySeat(state, action.seat)?.name} draws ${n}.` });
       return null;
     }
     case "mill": {
+      const prio = enforce(state, seat === state.prioritySeat, "You do not have priority.");
+      if (prio) return prio;
       const lib = libraryOrdered(state, action.seat);
       for (let i = 0; i < action.count && i < lib.length; i++) moveObject(state, ctx, lib[i]!, "graveyard", action.seat, {});
       return null;
     }
     case "shuffle": {
+      const prio = enforce(state, seat === state.prioritySeat, "You do not have priority.");
+      if (prio) return prio;
       const lib = libraryOrdered(state, action.seat);
       const ys = lib.map((o) => o.y);
       for (let i = ys.length - 1; i > 0; i--) {
@@ -625,11 +649,17 @@ function dispatch(state: TableState, ctx: CardIndex, seat: number, action: GameA
       return null;
     }
     case "set_life": {
+      const isSelf = seat === action.seat;
+      const valid = enforce(state, isSelf, "You can only adjust your own life total.");
+      if (valid) return valid;
       const p = playerBySeat(state, action.seat);
       if (p) p.life = action.life;
       return null;
     }
     case "adjust_life": {
+      const isSelf = seat === action.seat;
+      const valid = enforce(state, isSelf, "You can only adjust your own life total.");
+      if (valid) return valid;
       const p = playerBySeat(state, action.seat);
       if (p) {
         p.life += action.delta;
@@ -638,6 +668,9 @@ function dispatch(state: TableState, ctx: CardIndex, seat: number, action: GameA
       return null;
     }
     case "set_poison": {
+      const isSelf = seat === action.seat;
+      const valid = enforce(state, isSelf, "You can only adjust your own poison counters.");
+      if (valid) return valid;
       const p = playerBySeat(state, action.seat);
       if (p) p.poison = Math.max(0, action.value);
       return null;
@@ -797,6 +830,17 @@ function dispatch(state: TableState, ctx: CardIndex, seat: number, action: GameA
       const timing = enforce(state, false, "In strict mode, steps advance automatically when all players pass priority on an empty stack.");
       if (timing) return timing;
       advanceStep(state, ctx);
+      return null;
+    }
+    case "skip_combat": {
+      const timing = enforce(state, state.step === "main1", "You can only skip combat during Main 1.");
+      if (timing) return timing;
+      const prio = enforce(state, seat === state.activeSeat && seat === state.prioritySeat && state.stackOrder.length === 0, "You can only skip combat when it is your priority and the stack is empty.");
+      if (prio) return prio;
+      state.phase = "postcombat_main";
+      state.step = "main2";
+      log(state, { seat, kind: "phase", text: `${playerBySeat(state, seat)?.name} skips combat.` });
+      onEnterStep(state, ctx);
       return null;
     }
     case "set_active_player": {

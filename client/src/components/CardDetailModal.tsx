@@ -70,6 +70,22 @@ export function CardDetailModal({
                   })}
                 </div>
               </div>
+              {data.decks && data.decks.length > 0 && (
+                <div className="mt-4">
+                  <div className="mb-1 text-xs font-semibold uppercase tracking-wide text-table-muted">Associated Decks</div>
+                  <div className="flex flex-wrap gap-1">
+                    {data.decks.map((dk) => (
+                      <span
+                        key={dk.id}
+                        className={`rounded px-2 py-0.5 text-xs font-semibold ${dk.isPrecon ? "bg-indigo-950/40 text-indigo-300 border border-indigo-500/20" : "bg-table-panel2/60 text-table-accentSoft border border-table-border/60"}`}
+                        title={`${dk.name} (${dk.board === "commander" ? "commander" : dk.board === "sideboard" ? "sideboard" : "mainboard"})`}
+                      >
+                        {dk.name} ({dk.quantity}x {dk.board !== "main" ? dk.board : ""})
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
               <div className="mt-4 text-xs text-table-muted">
                 {data.card.setName} ({data.card.setCode.toUpperCase()}) · #{data.card.collectorNumber} · {data.card.rarity} · {data.card.year}
                 {data.card.artist ? ` · illus. ${data.card.artist}` : ""}

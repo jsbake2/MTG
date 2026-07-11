@@ -2,12 +2,14 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import type { CreateTableRequest, FormatDef, TableSummary } from "@mtg/shared";
 import { api } from "@/api/client";
+import { useAuth } from "@/store/auth";
 
 export function Play() {
   const [tables, setTables] = useState<TableSummary[]>([]);
   const [formats, setFormats] = useState<FormatDef[]>([]);
   const [form, setForm] = useState<CreateTableRequest>({ name: "", formatId: "commander", maxPlayers: 4, enforcement: "relaxed" });
   const nav = useNavigate();
+  const { user } = useAuth();
 
   async function load() {
     const [t, f] = await Promise.all([
@@ -29,6 +31,12 @@ export function Play() {
       name: form.name || `${form.formatId} table`,
     });
     nav(`/table/${r.table.id}`);
+  }
+
+  async function removeTable(id: string) {
+    if (!confirm("Are you sure you want to delete this table?")) return;
+    await api.del(`/api/tables/${id}`);
+    load();
   }
 
   return (
@@ -92,7 +100,12 @@ export function Play() {
                   {t.formatId} · {t.playerCount}/{t.maxPlayers} seated · {t.status}
                 </div>
               </div>
-              <button className="btn-primary ml-auto" onClick={() => nav(`/table/${t.id}`)}>
+              {user?.isAdmin && (
+                <button className="btn-danger ml-auto" onClick={() => removeTable(t.id)}>
+                  Delete
+                </button>
+              )}
+              <button className={`${user?.isAdmin ? "" : "ml-auto"} btn-primary`} onClick={() => nav(`/table/${t.id}`)}>
                 {t.status === "lobby" ? "Join" : "Open"}
               </button>
             </div>

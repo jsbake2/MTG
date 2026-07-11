@@ -11,6 +11,7 @@ import {
   getDeckRow,
   listDecks,
   listPrecons,
+  starDeck,
   updateDeck,
 } from "./repo.js";
 import { analyzeDeckTags, validateDeck, type DeckEntryWithCard } from "./validate.js";
@@ -108,6 +109,10 @@ async function assertOwner(req: import("express").Request, res: import("express"
     res.status(404).json({ error: "Deck not found" });
     return false;
   }
+  if (row.is_precon) {
+    res.status(400).json({ error: "Cannot modify or delete preconstructed decks" });
+    return false;
+  }
   if (row.owner_id !== req.user!.id && !req.user!.isAdmin) {
     res.status(403).json({ error: "Not your deck" });
     return false;
@@ -140,4 +145,15 @@ decksRouter.post("/:id/duplicate", async (req, res) => {
   }
   const newId = await duplicateDeck(String(req.params.id), req.user!.id, `${detail.name} (copy)`);
   res.json({ id: newId });
+});
+
+decksRouter.post("/:id/star", async (req, res) => {
+  if (!(await assertOwner(req, res))) return;
+  const parsed = z.object({ starred: z.boolean() }).safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: "Invalid request body" });
+    return;
+  }
+  await starDeck(String(req.params.id), parsed.data.starred);
+  res.json({ ok: true });
 });

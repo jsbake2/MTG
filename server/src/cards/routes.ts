@@ -2,6 +2,7 @@ import { Router } from "express";
 import type { CardDetailResponse, SearchRequest } from "@mtg/shared";
 import { getCardById, getImportMeta, getPrintings, listSets, searchCards, searchTokens } from "./repo.js";
 import { getCardArt, getCardImage } from "./images.js";
+import { getDecksContainingCard } from "../decks/repo.js";
 
 export const cardsRouter = Router();
 
@@ -61,6 +62,7 @@ cardsRouter.get("/:id", async (req, res) => {
     return;
   }
   const printings = await getPrintings(card.oracleId);
-  const response: CardDetailResponse = { card, printings };
+  const decks = await getDecksContainingCard(card.oracleId, req.user ? req.user.id : null);
+  const response: CardDetailResponse = { card, printings, decks };
   res.json(response);
 });
