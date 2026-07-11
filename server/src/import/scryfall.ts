@@ -172,7 +172,8 @@ export function mapCard(c: ScryfallCard): CardRow {
 // strings/escapes so braces inside strings don't confuse depth tracking.
 export async function* streamJsonArray(stream: Readable): AsyncGenerator<unknown> {
   let buf = "";
-  let depth = 0; // object/array nesting depth relative to the top-level array
+  let pos = 0; // persistent scan position into buf (NOT reset per chunk)
+  let depth = 0; // brace nesting depth relative to the top-level array
   let inString = false;
   let escaped = false;
   let started = false; // seen the opening '['
@@ -180,48 +181,44 @@ export async function* streamJsonArray(stream: Readable): AsyncGenerator<unknown
 
   for await (const chunkRaw of stream) {
     buf += chunkRaw.toString();
-    let i = 0;
-    while (i < buf.length) {
-      const ch = buf[i]!;
+    while (pos < buf.length) {
+      const ch = buf[pos]!;
       if (!started) {
-        if (ch === "[") {
-          started = true;
-        }
-        i++;
+        if (ch === "[") started = true;
+        pos++;
         continue;
       }
       if (inString) {
         if (escaped) escaped = false;
         else if (ch === "\\") escaped = true;
         else if (ch === '"') inString = false;
-        i++;
+        pos++;
         continue;
       }
       if (ch === '"') {
         inString = true;
-        i++;
+        pos++;
         continue;
       }
       if (ch === "{") {
-        if (depth === 0) objStart = i;
+        if (depth === 0) objStart = pos;
         depth++;
-      } else if (ch === "}") {
-        depth--;
-        if (depth === 0 && objStart >= 0) {
-          const slice = buf.slice(objStart, i + 1);
-          yield JSON.parse(slice);
-          // Trim the consumed portion to keep the buffer small.
-          buf = buf.slice(i + 1);
-          i = 0;
-          objStart = -1;
-          continue;
-        }
+        pos++;
+        continue;
       }
-      i++;
-    }
-    // Keep buffer from growing unbounded when between objects.
-    if (depth === 0 && objStart < 0 && buf.length > 1_000_000) {
-      buf = buf.slice(-8);
+      if (ch === "}") {
+        depth--;
+        pos++;
+        if (depth === 0 && objStart >= 0) {
+          yield JSON.parse(buf.slice(objStart, pos));
+          // Drop the consumed prefix and restart scanning from 0.
+          buf = buf.slice(pos);
+          pos = 0;
+          objStart = -1;
+        }
+        continue;
+      }
+      pos++;
     }
   }
 }
