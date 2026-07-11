@@ -4,6 +4,7 @@ import type { CardSummary, DeckDetail, DeckTag, DeckValidation, FormatDef } from
 import { api } from "@/api/client";
 import { CardImage } from "@/components/CardTile";
 import { CardDetailModal } from "@/components/CardDetailModal";
+import { ArtPicker } from "@/components/ArtPicker";
 import { ManaCost } from "@/components/ManaCost";
 import { MANA_HEX } from "@/lib/mana";
 import { useCardSearch } from "@/hooks/useCardSearch";
@@ -38,6 +39,7 @@ export function DeckBuilder() {
   const [tagInput, setTagInput] = useState("");
   const [detailId, setDetailId] = useState<string | null>(null);
   const [preview, setPreview] = useState<CardSummary | null>(null);
+  const [artPickerFor, setArtPickerFor] = useState<{ cardId: string; board: Board } | null>(null);
   const [importOpen, setImportOpen] = useState(false);
   const [deckView, setDeckView] = useState<"list" | "visual">("list");
   const [saving, setSaving] = useState(false);
@@ -128,6 +130,21 @@ export function DeckBuilder() {
       if (existing) return rest.map((x) => (x === existing ? { ...x, quantity: x.quantity + e.quantity } : x));
       return [...rest, { ...e, board: to }];
     });
+  }
+
+  // Swap a deck entry to a different printing/art of the same card.
+  function swapArt(oldCardId: string, board: Board, printing: CardSummary) {
+    setCache((c) => ({ ...c, [printing.id]: printing }));
+    setEntries((es) => {
+      const idx = es.findIndex((e) => e.cardId === oldCardId && e.board === board);
+      if (idx < 0) return es;
+      const qty = es[idx]!.quantity;
+      const rest = es.filter((_, i) => i !== idx);
+      const existing = rest.find((e) => e.cardId === printing.id && e.board === board);
+      if (existing) return rest.map((e) => (e === existing ? { ...e, quantity: e.quantity + qty } : e));
+      return [...rest, { cardId: printing.id, quantity: qty, board }];
+    });
+    setArtPickerFor(null);
   }
 
   const format = formats.find((f) => f.id === formatId);
@@ -273,6 +290,7 @@ export function DeckBuilder() {
                   onQty={(cid, q) => setQty(cid, "commander", q)}
                   onInfo={setDetailId}
                   onMove={(cid) => moveBoard(cid, "commander", "main")}
+                  onArt={(cid) => setArtPickerFor({ cardId: cid, board: "commander" })}
                   moveLabel="→ main"
                 />
               )}
@@ -291,6 +309,7 @@ export function DeckBuilder() {
                       onQty={(cid, q) => setQty(cid, "main", q)}
                       onInfo={setDetailId}
                       onMove={format?.requiresCommander ? (cid) => moveBoard(cid, "main", "commander") : undefined}
+                      onArt={(cid) => setArtPickerFor({ cardId: cid, board: "main" })}
                       moveLabel="set commander"
                     />
                   ))
@@ -303,6 +322,7 @@ export function DeckBuilder() {
                       onQty={(cid, q) => setQty(cid, "main", q)}
                       onInfo={setDetailId}
                       onHover={setPreview}
+                      onArt={(cid) => setArtPickerFor({ cardId: cid, board: "main" })}
                     />
                   ))}
             </div>
@@ -351,6 +371,9 @@ export function DeckBuilder() {
         </div>
       </div>
 
+      {artPickerFor && (
+        <ArtPicker cardId={artPickerFor.cardId} onPick={(p) => swapArt(artPickerFor.cardId, artPickerFor.board, p)} onClose={() => setArtPickerFor(null)} />
+      )}
       {detailId && <CardDetailModal cardId={detailId} onClose={() => setDetailId(null)} onAdd={(cid) => cache[cid] && addCard(cache[cid]!)} />}
       {importOpen && (
         <ImportModal
@@ -505,6 +528,7 @@ function BoardSection({
   onQty,
   onInfo,
   onMove,
+  onArt,
   moveLabel,
 }: {
   title: string;
@@ -513,6 +537,7 @@ function BoardSection({
   onQty: (cardId: string, q: number) => void;
   onInfo: (id: string) => void;
   onMove?: (cardId: string) => void;
+  onArt?: (cardId: string) => void;
   moveLabel?: string;
 }) {
   return (
@@ -535,6 +560,12 @@ function BoardSection({
               <button className="flex-1 truncate text-left hover:text-table-accentSoft" onClick={() => onInfo(e.cardId)}>
                 {c?.name ?? e.cardId}
               </button>
+              <span className="text-[10px] text-table-muted">{c?.setCode.toUpperCase()}</span>
+              {onArt && (
+                <button className="text-xs text-table-muted hover:text-table-accentSoft" title="Choose art / printing" onClick={() => onArt(e.cardId)}>
+                  🎨
+                </button>
+              )}
               <ManaCost cost={c?.manaCost ?? null} size={13} />
               {onMove && (
                 <button className="text-xs text-table-muted hover:text-table-accentSoft" onClick={() => onMove(e.cardId)}>
@@ -556,6 +587,7 @@ function VisualSection({
   onQty,
   onInfo,
   onHover,
+  onArt,
 }: {
   title: string;
   entries: Entry[];
@@ -563,6 +595,7 @@ function VisualSection({
   onQty: (cardId: string, q: number) => void;
   onInfo: (id: string) => void;
   onHover: (c: CardSummary | null) => void;
+  onArt: (cardId: string) => void;
 }) {
   return (
     <div className="mb-4">
@@ -576,6 +609,13 @@ function VisualSection({
                 <CardImage id={e.cardId} name={c?.name ?? e.cardId} />
               </button>
               <span className="absolute left-1 top-1 rounded bg-black/80 px-1.5 text-xs font-bold text-white">{e.quantity}×</span>
+              <button
+                className="absolute right-1 top-1 hidden rounded bg-black/80 px-1 text-xs group-hover:block"
+                title="Choose art / printing"
+                onClick={() => onArt(e.cardId)}
+              >
+                🎨
+              </button>
               <div className="absolute bottom-1 left-1 right-1 hidden items-center justify-between group-hover:flex">
                 <button className="rounded bg-black/80 px-1.5 text-sm text-white hover:bg-red-700" onClick={() => onQty(e.cardId, e.quantity - 1)}>
                   −
