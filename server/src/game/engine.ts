@@ -11,7 +11,7 @@ import {
   type TableState,
   type ZoneId,
 } from "@mtg/shared";
-import { getFormat, compileEffects, type EffectOp, type EffectWho } from "@mtg/shared";
+import { getFormat, compileEffects, type EffectOp, type EffectWho, type MassFilter } from "@mtg/shared";
 import { KEYWORD_ACTIONS } from "./rules.js";
 import {
   effectivePT,
@@ -57,9 +57,10 @@ function isLand(ctx: CardIndex, o: GameObject): boolean {
   return hasType(ctx, o, "Land");
 }
 function hasKeyword(ctx: CardIndex, o: GameObject, kw: string): boolean {
+  const k = kw.toLowerCase();
+  if (o.grantedKeywords?.some((x) => x.toLowerCase() === k)) return true; // until-end-of-turn grants
   const ci = info(ctx, o);
   if (!ci) return false;
-  const k = kw.toLowerCase();
   return ci.keywords.some((x) => x.toLowerCase() === k) || (ci.oracleText ?? "").toLowerCase().includes(k);
 }
 function isInstantSpeed(ctx: CardIndex, o: GameObject): boolean {
@@ -227,6 +228,8 @@ function onEnterStep(state: TableState, ctx: CardIndex): void {
       o.attacking = null;
       o.blocking = null;
       o.deathtouched = false;
+      o.tempBoost = { power: 0, toughness: 0 }; // "until end of turn" pump wears off
+      o.grantedKeywords = [];
     }
   } else if (state.step === "end_combat") {
     for (const o of objectsIn(state, "battlefield")) {
@@ -362,11 +365,55 @@ function applyEffects(state: TableState, ctx: CardIndex, source: GameObject): bo
         if (tgt.object) tgt.object.tapped = false;
         break;
       case "plus_counter":
+        if (tgt.object) addCounter(tgt.object, op.kind, op.count);
+        break;
+      case "pump":
         if (tgt.object) {
-          const existing = tgt.object.counters.find((c) => c.type === "+1/+1");
-          if (existing) existing.count += op.count;
-          else tgt.object.counters.push({ type: "+1/+1", count: op.count });
+          tgt.object.tempBoost.power += op.power;
+          tgt.object.tempBoost.toughness += op.toughness;
         }
+        break;
+      case "grant":
+        if (tgt.object && !tgt.object.grantedKeywords.includes(op.keyword)) tgt.object.grantedKeywords.push(op.keyword);
+        break;
+      case "gain_control":
+        if (tgt.object) {
+          tgt.object.controllerSeat = source.controllerSeat;
+          tgt.object.summoningSick = true;
+          log(state, { seat: source.controllerSeat, kind: "action", text: `${playerBySeat(state, source.controllerSeat)?.name} gains control of ${tgt.object.name}.` });
+        }
+        break;
+      case "tuck":
+        if (tgt.object) moveObject(state, ctx, tgt.object, "library", tgt.object.ownerSeat, { toTop: op.top });
+        break;
+      case "mass_damage":
+        for (const o of massObjects(state, ctx, source, op.filter)) o.damage += op.amount;
+        log(state, { seat: source.controllerSeat, kind: "action", text: `${source.name} deals ${op.amount} to each ${op.filter.controller === "all" ? "" : op.filter.controller + "'s "}creature.` });
+        break;
+      case "mass_destroy":
+        for (const o of massObjects(state, ctx, source, op.filter)) routeZone(state, ctx, o, "destroy");
+        log(state, { seat: source.controllerSeat, kind: "action", text: `${source.name} destroys permanents.` });
+        break;
+      case "mass_exile":
+        for (const o of massObjects(state, ctx, source, op.filter)) routeZone(state, ctx, o, "exile");
+        break;
+      case "mass_pump":
+        for (const o of massObjects(state, ctx, source, op.filter)) {
+          o.tempBoost.power += op.power;
+          o.tempBoost.toughness += op.toughness;
+        }
+        break;
+      case "mass_grant":
+        for (const o of massObjects(state, ctx, source, op.filter)) if (!o.grantedKeywords.includes(op.keyword)) o.grantedKeywords.push(op.keyword);
+        break;
+      case "mass_counter":
+        for (const o of massObjects(state, ctx, source, op.filter)) addCounter(o, op.kind, op.count);
+        break;
+      case "tap_all":
+        for (const o of massObjects(state, ctx, source, op.filter)) o.tapped = op.tapped;
+        break;
+      case "manual":
+        log(state, { seat: source.controllerSeat, kind: "action", text: `${source.name}: ${op.hint} — finish manually.` });
         break;
       case "token":
         for (const s of tgt.seats.length ? tgt.seats : [source.controllerSeat]) {
@@ -384,14 +431,25 @@ function applyEffects(state: TableState, ctx: CardIndex, source: GameObject): bo
           for (let i = 0; i < op.count && i < lib.length; i++) moveObject(state, ctx, lib[i]!, "graveyard", s, {});
         }
         break;
-      case "discard":
-      case "scry":
-        // Choice-heavy; leave for the player (logged).
-        log(state, { seat: source.controllerSeat, kind: "action", text: `${source.name}: ${op.op} — choose manually.` });
-        break;
     }
   }
   return true;
+}
+
+function addCounter(o: GameObject, kind: "+1/+1" | "-1/-1", count: number): void {
+  const existing = o.counters.find((c) => c.type === kind);
+  if (existing) existing.count += count;
+  else o.counters.push({ type: kind, count });
+}
+
+function massObjects(state: TableState, ctx: CardIndex, source: GameObject, filter: MassFilter): GameObject[] {
+  return objectsIn(state, "battlefield").filter((o) => {
+    if (filter.creaturesOnly && !isCreature(ctx, o)) return false;
+    if (filter.types.length > 0 && !info(ctx, o)?.cardTypes.some((t) => filter.types.includes(t))) return false;
+    if (filter.controller === "you" && o.controllerSeat !== source.controllerSeat) return false;
+    if (filter.controller === "opponents" && o.controllerSeat === source.controllerSeat) return false;
+    return true;
+  });
 }
 
 // ---- main dispatcher ----------------------------------------------------
@@ -784,6 +842,8 @@ function newTokenObject(seat: number, name: string): GameObject {
     blocking: null,
     deathtouched: false,
     targets: [],
+    tempBoost: { power: 0, toughness: 0 },
+    grantedKeywords: [],
     cardTypes: null,
     keywords: null,
   };

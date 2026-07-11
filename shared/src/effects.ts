@@ -1,15 +1,23 @@
 // ---------------------------------------------------------------------------
 // Oracle-text EFFECT COMPILER. Parses common Magic rules-text patterns into a
-// structured list of EffectOps that the engine executes automatically on
-// resolution (mapping onto the rules table in game/rules.ts). It intentionally
-// covers the high-frequency patterns; anything it can't parse falls back to
-// manual play (matched=false), so every card still works.
-//
-// Shared so the client can compile a card to know what targets to ask for, and
-// the server compiles the same text to execute it — one source of truth.
+// structured list of EffectOps the engine executes automatically on resolution
+// (mapping onto the rules table in game/rules.ts). Covers the high-frequency
+// templates; anything it can't parse falls back to manual play (matched=false),
+// so every card still works. Shared so client (targeting) and server (execute)
+// use one source of truth.
 // ---------------------------------------------------------------------------
 
-export type TargetKind = "creature" | "permanent" | "player" | "any" | "spell" | "artifact" | "enchantment" | "planeswalker" | "land" | "opponent";
+export type TargetKind =
+  | "creature"
+  | "permanent"
+  | "player"
+  | "any"
+  | "spell"
+  | "artifact"
+  | "enchantment"
+  | "planeswalker"
+  | "land"
+  | "opponent";
 
 export type EffectWho =
   | { scope: "target"; kind: TargetKind }
@@ -17,6 +25,13 @@ export type EffectWho =
   | { scope: "controller" }
   | { scope: "each_opponent" }
   | { scope: "each_player" };
+
+// Set filter for mass effects ("all creatures", "creatures you control", …).
+export interface MassFilter {
+  creaturesOnly: boolean;
+  types: string[]; // e.g. ["Artifact"] for "destroy all artifacts"
+  controller: "you" | "opponents" | "all";
+}
 
 export type EffectOp =
   | { op: "draw"; who: EffectWho; count: number }
@@ -29,15 +44,26 @@ export type EffectOp =
   | { op: "counter"; what: EffectWho }
   | { op: "tap"; what: EffectWho }
   | { op: "untap"; what: EffectWho }
-  | { op: "plus_counter"; what: EffectWho; count: number }
+  | { op: "plus_counter"; what: EffectWho; count: number; kind: "+1/+1" | "-1/-1" }
+  | { op: "pump"; what: EffectWho; power: number; toughness: number }
+  | { op: "grant"; what: EffectWho; keyword: string }
+  | { op: "gain_control"; what: EffectWho }
+  | { op: "tuck"; what: EffectWho; top: boolean }
   | { op: "token"; who: EffectWho; count: number; power: number; toughness: number; name: string; colors: string[] }
-  | { op: "discard"; who: EffectWho; count: number }
   | { op: "mill"; who: EffectWho; count: number }
-  | { op: "scry"; who: EffectWho; count: number };
+  // Mass (no single target) effects over a filtered set of permanents.
+  | { op: "mass_damage"; filter: MassFilter; amount: number }
+  | { op: "mass_destroy"; filter: MassFilter }
+  | { op: "mass_exile"; filter: MassFilter }
+  | { op: "mass_pump"; filter: MassFilter; power: number; toughness: number }
+  | { op: "mass_grant"; filter: MassFilter; keyword: string }
+  | { op: "mass_counter"; filter: MassFilter; count: number; kind: "+1/+1" | "-1/-1" }
+  | { op: "tap_all"; filter: MassFilter; tapped: boolean }
+  // Recognized but choice-heavy — engine prompts the player to finish.
+  | { op: "manual"; hint: string };
 
 export interface CompiledEffect {
   ops: EffectOp[];
-  // Target specs the caster must choose, in order (from ops with scope 'target').
   targets: { kind: TargetKind; label: string }[];
   matched: boolean;
 }
@@ -45,9 +71,11 @@ export interface CompiledEffect {
 const NUM: Record<string, number> = { a: 1, an: 1, one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10, x: 1 };
 function num(w: string | undefined): number {
   if (!w) return 1;
-  if (/^\d+$/.test(w)) return parseInt(w, 10);
+  if (/^[+-]?\d+$/.test(w)) return parseInt(w, 10);
   return NUM[w.toLowerCase()] ?? 1;
 }
+
+const KEYWORDS = ["flying", "first strike", "double strike", "deathtouch", "lifelink", "trample", "vigilance", "haste", "menace", "reach", "hexproof", "indestructible", "flash", "defender", "shroud", "protection", "unblockable", "intimidate", "skulk"];
 
 function who(phrase: string): EffectWho {
   const p = phrase.trim().toLowerCase();
@@ -57,9 +85,7 @@ function who(phrase: string): EffectWho {
     if (p.includes("each player")) return { scope: "each_player" };
     return { scope: "you" };
   }
-  // A targeted phrase — detect the target kind by the type word (tolerates
-  // qualifiers like "nonblack", "another", "you control", "an opponent controls").
-  if (p.includes("any target") || p.includes("or player") || p.includes("or planeswalker or player")) return { scope: "target", kind: "any" };
+  if (p.includes("any target") || p.includes("or player")) return { scope: "target", kind: "any" };
   if (p.includes("player") || p.includes("opponent")) return { scope: "target", kind: "player" };
   if (p.includes("spell")) return { scope: "target", kind: "spell" };
   if (p.includes("planeswalker")) return { scope: "target", kind: "planeswalker" };
@@ -71,38 +97,92 @@ function who(phrase: string): EffectWho {
   return { scope: "target", kind: "any" };
 }
 
+function massFilter(phrase: string): MassFilter {
+  const p = phrase.toLowerCase();
+  let controller: MassFilter["controller"] = "all";
+  if (/you control/.test(p)) controller = "you";
+  else if (/you don't control|your opponents control|an opponent controls|opponents? control/.test(p)) controller = "opponents";
+  const types: string[] = [];
+  for (const [w, t] of [["artifact", "Artifact"], ["enchantment", "Enchantment"], ["land", "Land"], ["planeswalker", "Planeswalker"]] as const) {
+    if (p.includes(w)) types.push(t);
+  }
+  const creaturesOnly = p.includes("creature") || types.length === 0;
+  return { creaturesOnly: creaturesOnly && types.length === 0, types, controller };
+}
+
 const COLORS: Record<string, string> = { white: "W", blue: "U", black: "B", red: "R", green: "G" };
 
-// Each entry: a regex over a clause, and a builder returning an EffectOp (or null).
-type Pattern = { re: RegExp; build: (m: RegExpMatchArray) => EffectOp | null };
+type Pattern = { re: RegExp; build: (m: RegExpMatchArray) => EffectOp | EffectOp[] | null };
 const PATTERNS: Pattern[] = [
-  // Damage: "deals N damage to <target>"
-  {
-    re: /deals?\s+(\d+|a|one|two|three|four|five|six|seven|x)\s+damage\s+to\s+(any target|target creature or planeswalker or player|target creature or player|target creature|target planeswalker|target player|each opponent|each player|you)/i,
-    build: (m) => ({ op: "damage", amount: num(m[1]), to: who(m[2]!) }),
-  },
-  // Counter (check before draw so "counter target spell" isn't mis-read)
+  // --- Counter (before draw) ---
   { re: /counter\s+target\s+(spell|creature spell|noncreature spell|activated ability|triggered ability|ability)/i, build: () => ({ op: "counter", what: { scope: "target", kind: "spell" } }) },
-  // Destroy / Exile / Bounce / Tap / Untap target
+
+  // --- Mass damage / single damage ---
+  { re: /deals?\s+(\d+|x)\s+damage\s+to\s+each\s+(creature and player|creature and planeswalker|creature)/i, build: (m) => [{ op: "mass_damage", filter: { creaturesOnly: true, types: [], controller: "all" }, amount: num(m[1]) }, ...(/player/.test(m[2]!) ? [{ op: "damage" as const, to: { scope: "each_player" as const }, amount: num(m[1]) }] : [])] },
+  { re: /deals?\s+(\d+|a|one|two|three|four|five|six|seven|x)\s+damage\s+to\s+(any target|target creature or planeswalker or player|target creature or player|target creature|target planeswalker|target player|target opponent|each opponent|each player|you)/i, build: (m) => ({ op: "damage", amount: num(m[1]), to: who(m[2]!) }) },
+
+  // --- Destroy / Exile (mass first, then single) ---
+  { re: /destroy\s+all\s+([a-z ]*?(?:creatures|permanents|artifacts|enchantments|lands|planeswalkers))/i, build: (m) => ({ op: "mass_destroy", filter: massFilter(m[1]!) }) },
+  { re: /exile\s+all\s+([a-z ]*?(?:creatures|permanents|artifacts|enchantments|lands|planeswalkers))/i, build: (m) => ({ op: "mass_exile", filter: massFilter(m[1]!) }) },
   { re: /destroy\s+(target [a-z ]*?(?:creature|permanent|artifact|enchantment|planeswalker|land))/i, build: (m) => ({ op: "destroy", what: who(m[1]!) }) },
   { re: /exile\s+(target [a-z ]*?(?:creature|permanent|artifact|enchantment|planeswalker|land|spell))/i, build: (m) => ({ op: "exile", what: who(m[1]!) }) },
-  { re: /return\s+(target [a-z ]*?(?:creature|permanent|artifact|enchantment|land))\s+to\s+(?:its|their) owner['’]s hand/i, build: (m) => ({ op: "bounce", what: who(m[1]!) }) },
+
+  // --- Return to hand (bounce) ---
+  { re: /return\s+(target[a-z' ]*?(?:creature|permanent|artifact|enchantment|land)[a-z' ]*?)\s+to\s+(?:its owner['’]s|their owner['’]s|your|owner['’]s|their owners['’]?)\s+hand/i, build: (m) => ({ op: "bounce", what: who(m[1]!) }) },
+  { re: /return\s+(?:up to\s+)?(?:\w+\s+)?target\s+[a-z ]*?card from (?:a|your|its owner['’]s|their) graveyard/i, build: () => ({ op: "manual", hint: "return from graveyard — pick the card" }) },
+  { re: /return\s+all\s+([a-z ]*?(?:creatures|permanents|artifacts|enchantments))\s+to\s+(?:their|its) owners?['’] hands?/i, build: () => ({ op: "manual", hint: "return all to hand" }) },
+
+  // --- Gain control ---
+  { re: /gain(s)? control of\s+(target [a-z ]*?(?:creature|permanent|artifact|enchantment|planeswalker|land))/i, build: (m) => ({ op: "gain_control", what: who(m[2]!) }) },
+
+  // --- Put on top/bottom of library (tuck) ---
+  { re: /put\s+(target[a-z' ]*?(?:creature|permanent|artifact|enchantment)[a-z' ]*?)\s+on\s+(top|the bottom)\s+of\s+(?:its owner['’]s|their owner['’]s|your|owner['’]s) library/i, build: (m) => ({ op: "tuck", what: who(m[1]!), top: /top/i.test(m[2]!) }) },
+  // --- Return up to N target … to hand (bounce one) ---
+  { re: /return up to \w+ (target[a-z' ]*?(?:creature|permanent|artifact|enchantment|land)[a-z' ]*?)\s+to\s+(?:their|its) owners?['’]?s? hands?/i, build: (m) => ({ op: "bounce", what: who(m[1]!) }) },
+
+  // --- Tap / Untap (all, then single) ---
+  { re: /\btap\s+all\s+([a-z ]*?(?:creatures|permanents|artifacts|lands))/i, build: (m) => ({ op: "tap_all", filter: massFilter(m[1]!), tapped: true }) },
+  { re: /\buntap\s+all\s+([a-z ]*?(?:creatures|permanents|artifacts|lands))/i, build: (m) => ({ op: "tap_all", filter: massFilter(m[1]!), tapped: false }) },
   { re: /\btap\s+(target [a-z ]*?(?:creature|permanent|artifact|land))/i, build: (m) => ({ op: "tap", what: who(m[1]!) }) },
   { re: /\buntap\s+(target [a-z ]*?(?:creature|permanent|artifact|land))/i, build: (m) => ({ op: "untap", what: who(m[1]!) }) },
-  // +1/+1 counters
-  { re: /put\s+(\d+|a|one|two|three|four|five)\s+\+1\/\+1 counters?\s+on\s+(target [a-z ]*?creature)/i, build: (m) => ({ op: "plus_counter", count: num(m[1]), what: who(m[2]!) }) },
-  // Draw
-  { re: /(you|target player|each player|target opponent)?\s*draws?\s+(\d+|a|one|two|three|four|five|seven)\s+cards?/i, build: (m) => ({ op: "draw", who: who(m[1] ?? "you"), count: num(m[2]) }) },
-  // Life
-  { re: /(you|target player)?\s*gains?\s+(\d+|one|two|three|four|five)\s+life/i, build: (m) => ({ op: "gain_life", who: who(m[1] ?? "you"), amount: num(m[2]) }) },
-  { re: /(you|target player|each opponent|each player)?\s*loses?\s+(\d+|one|two|three|four|five)\s+life/i, build: (m) => ({ op: "lose_life", who: who(m[1] ?? "you"), amount: num(m[2]) }) },
-  // Discard / Mill / Scry
-  { re: /(you|target player|each player|each opponent)?\s*discards?\s+(\d+|a|one|two|three)\s+cards?/i, build: (m) => ({ op: "discard", who: who(m[1] ?? "you"), count: num(m[2]) }) },
-  { re: /(target player|each player|you)?\s*mills?\s+(\d+|one|two|three|four|five)\s+cards?/i, build: (m) => ({ op: "mill", who: who(m[1] ?? "you"), count: num(m[2]) }) },
-  { re: /\bscry\s+(\d+)/i, build: (m) => ({ op: "scry", who: { scope: "you" }, count: num(m[1]) }) },
-  // Tokens: "create N P/T [colors] <name> creature token(s)"
+
+  // --- Pump (mass, then single); optional keyword grant appended ---
   {
-    re: /create\s+(\d+|a|one|two|three|four|five)\s+(\d+)\/(\d+)\s+([a-z, and]*?)\s*([a-z][a-z '-]*?)\s+creature tokens?/i,
+    re: /(creatures you control|creatures your opponents control|all creatures|creatures you don't control|each creature you control)\s+get\s+([+-]\d+)\/([+-]\d+)(?:\s+and gains?\s+([a-z ,]+))?/i,
+    build: (m) => {
+      const ops: EffectOp[] = [{ op: "mass_pump", filter: massFilter(m[1]!), power: num(m[2]), toughness: num(m[3]) }];
+      const kw = grantKeyword(m[4]);
+      if (kw) ops.push({ op: "mass_grant", filter: massFilter(m[1]!), keyword: kw });
+      return ops;
+    },
+  },
+  {
+    re: /(target[a-z' ]*?creature[a-z' ]*?)\s+gets\s+([+-]\d+)\/([+-]\d+)(?:\s+and gains?\s+([a-z ,]+))?/i,
+    build: (m) => {
+      const ops: EffectOp[] = [{ op: "pump", what: who(m[1]!), power: num(m[2]), toughness: num(m[3]) }];
+      const kw = grantKeyword(m[4]);
+      if (kw) ops.push({ op: "grant", what: who(m[1]!), keyword: kw });
+      return ops;
+    },
+  },
+
+  // --- Grant keyword (no P/T change) ---
+  { re: /(target[a-z' ]*?creature[a-z' ]*?)\s+gains?\s+([a-z ,]+)/i, build: (m) => { const kw = grantKeyword(m[2]); return kw ? { op: "grant", what: who(m[1]!), keyword: kw } : null; } },
+  { re: /(creatures you control[a-z' ]*?)\s+gains?\s+([a-z ,]+)/i, build: (m) => { const kw = grantKeyword(m[2]); return kw ? { op: "mass_grant", filter: massFilter(m[1]!), keyword: kw } : null; } },
+
+  // --- Counters (+1/+1, -1/-1) single + mass ---
+  { re: /put\s+(\d+|a|one|two|three|four|five)\s+(\+1\/\+1|-1\/-1) counters?\s+on\s+(target [a-z ]*?creature)/i, build: (m) => ({ op: "plus_counter", count: num(m[1]), kind: m[2] as "+1/+1" | "-1/-1", what: who(m[3]!) }) },
+  { re: /put\s+(\d+|a|one|two|three|four|five)\s+(\+1\/\+1|-1\/-1) counters?\s+on\s+each\s+(creature[a-z ]*)/i, build: (m) => ({ op: "mass_counter", count: num(m[1]), kind: m[2] as "+1/+1" | "-1/-1", filter: massFilter(m[3]!) }) },
+
+  // --- Draw / Life / Mill ---
+  { re: /(you|target player|each player|target opponent)?\s*draws?\s+(\d+|a|one|two|three|four|five|six|seven)\s+cards?/i, build: (m) => ({ op: "draw", who: who(m[1] ?? "you"), count: num(m[2]) }) },
+  { re: /(you|target player)?\s*gains?\s+(\d+|one|two|three|four|five|six|seven|eight|ten)\s+life/i, build: (m) => ({ op: "gain_life", who: who(m[1] ?? "you"), amount: num(m[2]) }) },
+  { re: /(you|target player|each opponent|each player)?\s*loses?\s+(\d+|one|two|three|four|five)\s+life/i, build: (m) => ({ op: "lose_life", who: who(m[1] ?? "you"), amount: num(m[2]) }) },
+  { re: /(target player|each player|you)?\s*mills?\s+(\d+|one|two|three|four|five|ten)\s+cards?/i, build: (m) => ({ op: "mill", who: who(m[1] ?? "you"), count: num(m[2]) }) },
+
+  // --- Tokens ---
+  {
+    re: /create\s+(\d+|a|one|two|three|four|five|x)\s+(\d+)\/(\d+)\s+([a-z, and]*?)\s*([a-z][a-z '-]*?)\s+creature tokens?/i,
     build: (m) => {
       const colorWords = (m[4] ?? "").toLowerCase();
       const colors = Object.entries(COLORS).filter(([w]) => colorWords.includes(w)).map(([, c]) => c);
@@ -110,40 +190,60 @@ const PATTERNS: Pattern[] = [
       return { op: "token", who: { scope: "you" }, count: num(m[1]), power: parseInt(m[2]!, 10), toughness: parseInt(m[3]!, 10), name: `${name} Token`, colors };
     },
   },
+
+  // --- Choice-heavy: recognized, engine prompts to finish (still automation of setup) ---
+  { re: /search your library for/i, build: () => ({ op: "manual", hint: "search your library, then shuffle" }) },
+  { re: /(look at the top|reveal the top|surveil|scry)\s*\d*/i, build: (m) => ({ op: "manual", hint: m[1]!.toLowerCase() }) },
+  { re: /choose one\s*[—-]/i, build: () => ({ op: "manual", hint: "modal: choose one" }) },
+  { re: /(target player|target opponent) (discards|reveals)/i, build: (m) => ({ op: "manual", hint: `${m[1]} ${m[2]}` }) },
+  { re: /(sacrifices?|discards?)\s+(a|an|\d+|one|two|three)\s+(creature|permanent|artifact|land|card)/i, build: (m) => ({ op: "manual", hint: `${m[1]} ${m[3]}` }) },
 ];
+
+function grantKeyword(phrase: string | undefined): string | null {
+  if (!phrase) return null;
+  const p = phrase.toLowerCase();
+  for (const k of KEYWORDS) if (p.includes(k)) return k;
+  return null;
+}
 
 export function compileEffects(oracleText: string | null, cardName: string): CompiledEffect {
   const empty: CompiledEffect = { ops: [], targets: [], matched: false };
   if (!oracleText) return empty;
-  // Strip reminder text and the card's own name; split into clauses.
   let text = oracleText.replace(/\([^)]*\)/g, " ");
   if (cardName) text = text.split("//")[0]!.replaceAll(cardName, "this").replaceAll(cardName.split(",")[0]!, "this");
   const clauses = text.split(/[.;\n]/).map((c) => c.trim()).filter(Boolean);
 
   const ops: EffectOp[] = [];
-  for (const clause of clauses) {
-    // Skip conditional/triggered/keyword-ability clauses we don't model yet.
-    if (/^(whenever|when|at the beginning|as long as|if |flying|trample|first strike|deathtouch|lifelink|vigilance|haste|reach|menace|hexproof|ward|defender|indestructible)/i.test(clause)) continue;
+  for (const raw of clauses) {
+    // Skip triggered/static/keyword-line clauses (not spell resolution effects).
+    if (/^(whenever|when|at the beginning|as long as|if |flying|trample|first strike|deathtouch|lifelink|vigilance|haste|reach|menace|hexproof|ward|defender|indestructible|flash|convoke|cascade|storm|this spell costs|as an additional cost|kicker|flashback|equip|enchant)/i.test(raw)) continue;
+    // Duration words are handled by cleanup, not matching — strip them so the
+    // pattern matches whether they're at the start or end.
+    const clause = raw.replace(/\buntil end of turn\b/gi, "").replace(/\bthis turn\b/gi, "").replace(/^,\s*/, "").trim();
     for (const p of PATTERNS) {
       const m = clause.match(p.re);
       if (m) {
-        const op = p.build(m);
-        if (op) ops.push(op);
-        break; // one op per clause (keeps it conservative)
+        const built = p.build(m);
+        if (built) {
+          if (Array.isArray(built)) ops.push(...built);
+          else ops.push(built);
+        }
+        break; // one pattern per clause
       }
     }
   }
 
   const targets: CompiledEffect["targets"] = [];
   for (const op of ops) {
-    const spec = (op as { to?: EffectWho; what?: EffectWho; who?: EffectWho });
-    const w = spec.to ?? spec.what ?? (op.op === "draw" || op.op === "discard" || op.op === "mill" ? spec.who : undefined);
+    const w = (op as { to?: EffectWho }).to ?? (op as { what?: EffectWho }).what ?? ((op.op === "draw" || op.op === "mill") ? (op as { who?: EffectWho }).who : undefined);
     if (w && w.scope === "target") targets.push({ kind: w.kind, label: targetLabel(op.op, w.kind) });
   }
-  return { ops, targets, matched: ops.length > 0 };
+  // "matched" only when we produced at least one op that actually does something.
+  const real = ops.some((o) => o.op !== "manual");
+  return { ops, targets, matched: real || ops.length > 0 };
 }
 
 function targetLabel(op: string, kind: TargetKind): string {
-  const verb: Record<string, string> = { damage: "deal damage to", destroy: "destroy", exile: "exile", bounce: "return", counter: "counter", tap: "tap", untap: "untap", plus_counter: "counter up", draw: "draw for" };
+  const verb: Record<string, string> = { damage: "deal damage to", destroy: "destroy", exile: "exile", bounce: "return", counter: "counter", tap: "tap", untap: "untap", plus_counter: "counter up", pump: "pump", grant: "buff", gain_control: "gain control of", draw: "draw for" };
   return `Choose ${kind === "any" ? "any target" : `target ${kind}`} to ${verb[op] ?? op}`;
 }

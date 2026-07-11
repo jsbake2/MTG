@@ -54,6 +54,9 @@ export interface GameObject {
   // Chosen targets for an auto-effect while on the stack. Object ids, or
   // "seat:<n>" for a player target.
   targets: string[];
+  // "Until end of turn" pump and granted keywords (cleared at cleanup).
+  tempBoost: { power: number; toughness: number };
+  grantedKeywords: string[];
   // Card type/keyword info surfaced to the client for public objects (populated
   // on send for battlefield/stack cards; used for combat UX + land/creature rows).
   cardTypes: string[] | null;

@@ -45,6 +45,8 @@ export function newObject(partial: Partial<GameObject> & Pick<GameObject, "name"
     blocking: null,
     deathtouched: false,
     targets: [],
+    tempBoost: { power: 0, toughness: 0 },
+    grantedKeywords: [],
     cardTypes: null,
     keywords: null,
     ...partial,
@@ -195,6 +197,9 @@ export function effectivePT(state: TableState, o: GameObject, printed?: { power:
       toughness -= c.count;
     }
   }
+  // "Until end of turn" pump.
+  power += o.tempBoost?.power ?? 0;
+  toughness += o.tempBoost?.toughness ?? 0;
   return { power, toughness };
 }
 
