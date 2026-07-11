@@ -180,6 +180,7 @@ function GameBoard({ t, state }: { t: TableConn; state: TableState }) {
   const [modePicker, setModePicker] = useState<{ objectId: string; name: string; modes: EffectMode[] } | null>(null);
   const [hoveredCard, setHoveredCard] = useState<{ id: string; name: string; x: number; y: number } | null>(null);
   const [browseZone, setBrowseZone] = useState<{ zoneId: string; title: string } | null>(null);
+  const [manualOpen, setManualOpen] = useState(false);
 
   const handleHover = (card: { id: string; name: string } | null, e?: React.MouseEvent) => {
     if (!card || !e) {
@@ -395,15 +396,22 @@ function GameBoard({ t, state }: { t: TableConn; state: TableState }) {
           <div className="flex flex-wrap items-center gap-2 px-3 py-1.5 text-sm">
             <PhaseControls state={state} t={t} isActive={isActive} hasPriority={hasPriority} you={you} />
             <div className="ml-auto flex items-center gap-2">
-              <LifeControl p={me} t={t} />
-              <ManaControl p={me} t={t} />
+              <LifeDisplay p={me} />
               <DiceRoller t={t} seat={you} />
               <button className="chip hover:border-table-accent" onClick={() => setTokenOpen(true)}>
                 ＋ Token
               </button>
               <ZoneButtons you={you} t={t} objectsByZone={objectsByZone} onBrowse={(zoneId, title) => setBrowseZone({ zoneId, title })} />
+              <button
+                className={`chip ${manualOpen ? "border-table-accent text-table-accentSoft" : "hover:border-table-accent"}`}
+                onClick={() => setManualOpen((v) => !v)}
+                title="Manual override tools — bypass the game engine when it can't do something yet. Every use is logged."
+              >
+                ⚙ Manual
+              </button>
             </div>
           </div>
+          {manualOpen && <ManualOverridePanel me={me} t={t} you={you} />}
           <div className="overflow-x-auto px-3 pb-3 pt-2 scrollbar-thin">
             <div className="hand-fan flex justify-center min-w-max px-4">
               {myHand.map((o) => (
@@ -620,19 +628,9 @@ function PlayerStrip({
           <span className="animate-pulse rounded bg-table-accent/20 px-1 py-0.5 text-[9px] font-bold uppercase tracking-wider text-table-accentSoft border border-table-accent/40">Priority</span>
         )}
         <div className="flex items-center gap-1">
-          {canEdit && (
-            <button className="btn-ghost h-6 w-6 !px-0" onClick={() => t.send({ type: "adjust_life", seat: p.seat, delta: -1 })} title="−1 life">
-              −
-            </button>
-          )}
-          <span className={`life-diamond text-sm font-bold text-white ${p.life <= 5 ? "animate-pulse border-red-500 shadow-red-500/55 shadow-[0_0_12px]" : ""}`}>
+          <span className={`life-diamond text-sm font-bold text-white ${p.life <= 5 ? "animate-pulse border-red-500 shadow-red-500/55 shadow-[0_0_12px]" : ""}`} title="Life (controlled by the game engine)">
             <span>{p.life}</span>
           </span>
-          {canEdit && (
-            <button className="btn-ghost h-6 w-6 !px-0" onClick={() => t.send({ type: "adjust_life", seat: p.seat, delta: 1 })} title="+1 life">
-              +
-            </button>
-          )}
         </div>
         <span className="text-xs text-table-muted flex gap-2 ml-1">
           <span title="Cards in hand">✋{p.handCount}</span>
@@ -817,40 +815,55 @@ function PhaseControls({ state, t, isActive, hasPriority, you }: { state: TableS
           Skip Combat
         </button>
       )}
-      <button className="btn-ghost !py-1" onClick={() => t.send({ type: "untap_all", seat: you })}>
-        Untap all
-      </button>
-      <button className="btn-ghost !py-1" onClick={() => t.send({ type: "draw", seat: you, count: 1 })} disabled={!hasPriority}>
-        Draw
-      </button>
+      {/* Draw and untap happen automatically on the draw/untap steps — the manual
+          versions live in the ⚙ Manual override panel so they can't be spammed. */}
     </div>
   );
 }
 
-function LifeControl({ p, t }: { p: PlayerState; t: TableConn }) {
+// Read-only life for the bottom bar — life is controlled by the game engine
+// (combat, effects). Manual adjustment lives in the ⚙ Manual override panel.
+function LifeDisplay({ p }: { p: PlayerState }) {
   return (
-    <div className="flex items-center gap-1 rounded-lg bg-table-panel2 px-1.5 py-0.5">
+    <div className="flex items-center gap-1.5 rounded-lg bg-table-panel2 px-2 py-0.5">
       <Avatar cardId={p.avatarCardId} name={p.name} size={30} ring />
-      <button className="btn-ghost h-8 w-8 !px-0 text-lg" onClick={() => t.send({ type: "adjust_life", seat: p.seat, delta: -1 })} title="−1 life">
-        −
-      </button>
       <span className={`life-diamond font-display text-lg font-bold text-white ${p.life <= 5 ? "animate-pulse border-red-500 shadow-red-500/55 shadow-[0_0_12px]" : ""}`} style={{ width: 42, height: 42 }}>
         <span>{p.life}</span>
       </span>
-      <button className="btn-ghost h-8 w-8 !px-0 text-lg" onClick={() => t.send({ type: "adjust_life", seat: p.seat, delta: 1 })} title="+1 life">
-        +
-      </button>
-      <button
-        className={`chip ${p.poison > 0 ? "text-green-300" : "text-table-muted"}`}
-        title="Poison counters (right-click to remove)"
-        onClick={() => t.send({ type: "set_poison", seat: p.seat, value: p.poison + 1 })}
-        onContextMenu={(e) => {
-          e.preventDefault();
-          t.send({ type: "set_poison", seat: p.seat, value: p.poison - 1 });
-        }}
-      >
-        ☠{p.poison}
-      </button>
+      {p.poison > 0 && <span className="chip text-green-300" title="Poison counters">☠{p.poison}</span>}
+    </div>
+  );
+}
+
+// Escape hatches for when the engine can't yet do something. Clearly separated
+// from normal play, and every action here is a logged manual override.
+function ManualOverridePanel({ me, t, you }: { me: PlayerState; t: TableConn; you: number }) {
+  return (
+    <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 border-t border-amber-500/30 bg-amber-950/20 px-3 py-2 text-sm">
+      <span className="text-[10px] font-bold uppercase tracking-wider text-amber-300">⚙ Manual override</span>
+      <span className="text-[10px] text-table-muted">— bypasses the engine · logged</span>
+
+      <div className="flex items-center gap-1">
+        <span className="text-xs text-table-muted">Life</span>
+        <button className="btn-ghost h-7 w-7 !px-0" onClick={() => t.send({ type: "adjust_life", seat: you, delta: -1 })} title="−1 life">−</button>
+        <span className="w-7 text-center tabular-nums font-semibold">{me.life}</span>
+        <button className="btn-ghost h-7 w-7 !px-0" onClick={() => t.send({ type: "adjust_life", seat: you, delta: 1 })} title="+1 life">+</button>
+      </div>
+
+      <div className="flex items-center gap-1">
+        <span className="text-xs text-table-muted">Poison</span>
+        <button className="btn-ghost h-7 w-7 !px-0" onClick={() => t.send({ type: "set_poison", seat: you, value: Math.max(0, me.poison - 1) })} title="−1 poison">−</button>
+        <span className="w-6 text-center tabular-nums font-semibold text-green-300">{me.poison}</span>
+        <button className="btn-ghost h-7 w-7 !px-0" onClick={() => t.send({ type: "set_poison", seat: you, value: me.poison + 1 })} title="+1 poison">+</button>
+      </div>
+
+      <ManaControl p={me} t={t} />
+
+      <div className="flex items-center gap-1">
+        <button className="chip hover:border-table-accent" onClick={() => t.send({ type: "draw", seat: you, count: 1 })}>Draw 1</button>
+        <button className="chip hover:border-table-accent" onClick={() => t.send({ type: "untap_all", seat: you })}>Untap all</button>
+        <button className="chip hover:border-table-accent" onClick={() => t.send({ type: "shuffle", seat: you })}>Shuffle</button>
+      </div>
     </div>
   );
 }
@@ -898,9 +911,6 @@ function ZoneButtons({
   const lib = objectsByZone[`library:${you}`] ?? [];
   return (
     <div className="flex items-center gap-1 text-xs">
-      <button className="chip hover:border-table-accent hover:text-table-accentSoft" onClick={() => t.send({ type: "shuffle", seat: you })}>
-        Shuffle
-      </button>
       <button className="chip hover:border-table-accent hover:text-table-accentSoft text-amber-200" onClick={() => { if (confirm("Mulligan your hand (shuffles hand back and draws 7 new cards)?")) t.send({ type: "mulligan", seat: you }); }}>
         Mulligan
       </button>
@@ -1080,20 +1090,26 @@ function CardMenu({
 }) {
   const o = state.objects[sel.objectId];
   const ref = useRef<HTMLDivElement>(null);
+  const { user } = useAuth();
+  const isAdmin = user?.isAdmin ?? false;
   const [abilities, setAbilities] = useState<Ability[]>([]);
+  const [detail, setDetail] = useState<CardDetailResponse["card"] | null>(null);
   const cardId = o?.cardId;
-  const onBattlefield = o?.zone === "battlefield";
   useEffect(() => {
-    if (!onBattlefield || !cardId) return;
+    if (!cardId) return;
     let cancelled = false;
     api
       .get<CardDetailResponse>(`/api/cards/${cardId}`)
-      .then((d) => !cancelled && setAbilities(parseAbilities(d.card.oracleText, d.card.name)))
+      .then((d) => {
+        if (cancelled) return;
+        setDetail(d.card);
+        setAbilities(parseAbilities(d.card.oracleText, d.card.name));
+      })
       .catch(() => {});
     return () => {
       cancelled = true;
     };
-  }, [cardId, onBattlefield]);
+  }, [cardId]);
   useEffect(() => {
     const h = (e: MouseEvent) => {
       if (ref.current && !ref.current.contains(e.target as Node)) onClose();
@@ -1120,47 +1136,90 @@ function CardMenu({
     </button>
   );
 
+  // Rules-aware flags. Prefer the fetched card's types; fall back to what the
+  // engine surfaced on the object. Keywords are matched case-insensitively.
+  const types = detail?.cardTypes ?? o.cardTypes ?? [];
+  const kw = (detail?.keywords ?? o.keywords ?? []).map((k) => k.toLowerCase());
+  const isLand = types.includes("Land");
+  const isCreature = types.includes("Creature");
+  const isInstantSorcery = types.includes("Instant") || types.includes("Sorcery");
+  const hasHaste = kw.includes("haste");
+  const hasDefender = kw.includes("defender");
+
+  const mine = you !== null && o.controllerSeat === you;
+  const canManipulate = mine || isAdmin; // only your own permanents (admin = referee)
+
+  // Attack only in your combat with a creature that can legally attack.
+  const canAttack =
+    mine &&
+    isCreature &&
+    !o.tapped &&
+    !hasDefender &&
+    (!o.summoningSick || hasHaste) &&
+    o.attacking === null &&
+    you === state.activeSeat &&
+    (state.step === "declare_attackers" || state.step === "begin_combat");
+  // Block only during the opponent's declare-blockers step with an untapped creature.
+  const attackers = Object.values(state.objects).filter((a) => a.attacking !== null && a.zone === "battlefield" && a.controllerSeat !== you);
+  const canBlock = mine && isCreature && !o.tapped && you !== state.activeSeat && state.step === "declare_blockers" && attackers.length > 0;
+
   return (
-    <div ref={ref} className="panel fixed z-50 w-48 overflow-hidden py-1" style={style}>
-      <div className="truncate border-b border-table-border px-3 py-1 text-xs text-table-muted">{o.name}</div>
+    <div ref={ref} className="panel fixed z-50 w-52 overflow-hidden py-1" style={style}>
+      <div className="truncate border-b border-table-border px-3 py-1 text-xs text-table-muted">
+        {o.name}
+        {!mine && o.zone === "battlefield" && <span className="ml-1 text-[10px] text-amber-300/80">· opponent's</span>}
+      </div>
       {o.zone === "battlefield" && (
         <>
-          {abilities.map((ab) => (
-            <Item
-              key={`ab${ab.index}`}
-              label={`▶ ${ab.cost}`}
-              onClick={() => onActivate(o, ab.index, ab.effect.targets, ab.effect.ops.some((op) => (op as { xScaled?: boolean }).xScaled))}
-            />
-          ))}
-          {abilities.length > 0 && <div className="my-1 border-t border-table-border" />}
-          <Item label={o.tapped ? "Untap" : "Tap"} onClick={() => t.send({ type: "tap", objectId: o.id, tapped: !o.tapped })} />
-          {/* Combat: attack (your turn) or block (a defender). The engine does the math. */}
-          {you !== null && o.controllerSeat === you && you === state.activeSeat && o.attacking === null &&
-            state.players
-              .filter((p) => p.seat !== you && !p.hasLost)
-              .map((p) => (
-                <Item key={`atk${p.seat}`} label={`⚔ Attack ${p.name}`} onClick={() => t.send({ type: "declare_attacker", objectId: o.id, defendingSeat: p.seat })} />
-              ))}
-          {you !== null && o.controllerSeat === you && you !== state.activeSeat &&
-            Object.values(state.objects)
-              .filter((a) => a.attacking !== null && a.zone === "battlefield" && a.controllerSeat !== you)
-              .map((a) => (
-                <Item key={`blk${a.id}`} label={`🛡 Block ${a.name}`} onClick={() => t.send({ type: "declare_blocker", blockerId: o.id, attackerId: a.id })} />
-              ))}
-          {o.attacking !== null && <Item label="✖ Remove from combat" onClick={() => t.send({ type: "declare_attacker", objectId: o.id, defendingSeat: -1 })} />}
-          <Item label="Add +1/+1" onClick={() => t.send({ type: "add_counter", objectId: o.id, counterType: "+1/+1", delta: 1 })} />
-          <Item label="Add -1/-1" onClick={() => t.send({ type: "add_counter", objectId: o.id, counterType: "-1/-1", delta: 1 })} />
-          <Item label="Flip face down/up" onClick={() => t.send({ type: "flip", objectId: o.id, faceDown: !o.faceDown })} />
-          <Item label="Return to hand" onClick={() => t.send({ type: "keyword_action", objectId: o.id, action: "bounce" })} />
-          <Item label="Destroy" onClick={() => t.send({ type: "keyword_action", objectId: o.id, action: "destroy" })} danger />
-          <Item label="Sacrifice" onClick={() => t.send({ type: "keyword_action", objectId: o.id, action: "sacrifice" })} danger />
-          <Item label="Exile" onClick={() => t.send({ type: "keyword_action", objectId: o.id, action: "exile" })} />
+          {/* Opponent's permanent: no direct manipulation — you affect it through
+              your own spells/abilities (targeting), not by hand. */}
+          {!canManipulate && (
+            <div className="px-3 py-2 text-xs text-table-muted">
+              You can't act on an opponent's permanent directly. Target it with a spell or ability instead.
+            </div>
+          )}
+          {canManipulate && (
+            <>
+              {mine &&
+                abilities.map((ab) => (
+                  <Item
+                    key={`ab${ab.index}`}
+                    label={`▶ ${ab.cost}`}
+                    onClick={() => onActivate(o, ab.index, ab.effect.targets, ab.effect.ops.some((op) => (op as { xScaled?: boolean }).xScaled))}
+                  />
+                ))}
+              {mine && abilities.length > 0 && <div className="my-1 border-t border-table-border" />}
+              {canAttack &&
+                state.players
+                  .filter((p) => p.seat !== you && !p.hasLost)
+                  .map((p) => (
+                    <Item key={`atk${p.seat}`} label={`⚔ Attack ${p.name}`} onClick={() => t.send({ type: "declare_attacker", objectId: o.id, defendingSeat: p.seat })} />
+                  ))}
+              {canBlock &&
+                attackers.map((a) => (
+                  <Item key={`blk${a.id}`} label={`🛡 Block ${a.name}`} onClick={() => t.send({ type: "declare_blocker", blockerId: o.id, attackerId: a.id })} />
+                ))}
+              {o.attacking !== null && mine && <Item label="✖ Remove from combat" onClick={() => t.send({ type: "declare_attacker", objectId: o.id, defendingSeat: -1 })} />}
+              <Item label={o.tapped ? "Untap" : "Tap"} onClick={() => t.send({ type: "tap", objectId: o.id, tapped: !o.tapped })} />
+              <Item label="Add +1/+1" onClick={() => t.send({ type: "add_counter", objectId: o.id, counterType: "+1/+1", delta: 1 })} />
+              <Item label="Add -1/-1" onClick={() => t.send({ type: "add_counter", objectId: o.id, counterType: "-1/-1", delta: 1 })} />
+              <Item label="Flip face down/up" onClick={() => t.send({ type: "flip", objectId: o.id, faceDown: !o.faceDown })} />
+              <Item label="Return to hand" onClick={() => t.send({ type: "keyword_action", objectId: o.id, action: "bounce" })} />
+              <Item label="Destroy" onClick={() => t.send({ type: "keyword_action", objectId: o.id, action: "destroy" })} danger />
+              <Item label="Sacrifice" onClick={() => t.send({ type: "keyword_action", objectId: o.id, action: "sacrifice" })} danger />
+              <Item label="Exile" onClick={() => t.send({ type: "keyword_action", objectId: o.id, action: "exile" })} />
+            </>
+          )}
         </>
       )}
-      {(o.zone === "hand" || o.zone === "command") && (
+      {(o.zone === "hand" || o.zone === "command") && mine && (
         <>
-          <Item label="Play to battlefield" onClick={() => move("battlefield")} />
-          <Item label="Cast (auto-resolve)" onClick={() => onCast(o)} />
+          {/* Type-aware: lands are played, everything else is cast. */}
+          {isLand ? (
+            <Item label="Play land" onClick={() => move("battlefield")} />
+          ) : (
+            <Item label={isInstantSorcery ? "Cast" : "Cast (to stack)"} onClick={() => onCast(o)} />
+          )}
           <Item label="→ Graveyard (discard)" onClick={() => move("graveyard")} />
         </>
       )}
