@@ -213,43 +213,58 @@ function grantKeyword(phrase: string | undefined): string | null {
   return null;
 }
 
-export function compileEffects(oracleText: string | null, cardName: string): CompiledEffect {
-  // A hand-authored per-card script always wins (100%-correct override).
-  const scripted = scriptFor(cardName);
-  if (scripted) return finalize(scripted);
-
-  const empty: CompiledEffect = { ops: [], targets: [], matched: false };
-  if (!oracleText) return empty;
+function normalize(oracleText: string, cardName: string): string {
   let text = oracleText.replace(/\([^)]*\)/g, " ");
   if (cardName) text = text.split("//")[0]!.replaceAll(cardName, "this").replaceAll(cardName.split(",")[0]!, "this");
-  const clauses = text.split(/[.;\n]/).map((c) => c.trim()).filter(Boolean);
+  return text;
+}
 
+// Match a set of clauses into ops. When skipTriggers is true, triggered/static
+// clauses are ignored (spell-resolution mode); ETB extraction passes false.
+function opsFromClauses(clauses: string[], skipTriggers: boolean): EffectOp[] {
   const ops: EffectOp[] = [];
   for (const raw of clauses) {
-    // Skip triggered/static/keyword-line clauses (not spell resolution effects).
-    if (/^(whenever|when|at the beginning|as long as|if |flying|trample|first strike|deathtouch|lifelink|vigilance|haste|reach|menace|hexproof|ward|defender|indestructible|flash|convoke|cascade|storm|this spell costs|as an additional cost|kicker|flashback|equip|enchant)/i.test(raw)) continue;
-    // Duration words are handled by cleanup, not matching — strip them so the
-    // pattern matches whether they're at the start or end.
+    if (skipTriggers && /^(whenever|when|at the beginning|as long as|if |flying|trample|first strike|deathtouch|lifelink|vigilance|haste|reach|menace|hexproof|ward|defender|indestructible|flash|convoke|cascade|storm|this spell costs|as an additional cost|kicker|flashback|equip|enchant)/i.test(raw)) continue;
     const clause = raw
       .replace(/\buntil end of turn\b/gi, "")
       .replace(/\bthis turn\b/gi, "")
-      .replace(/\byou may\b/gi, "you") // treat optional effects as taken
+      .replace(/\byou may\b/gi, "you")
       .replace(/^,\s*/, "")
       .trim();
     for (const p of PATTERNS) {
       const m = clause.match(p.re);
       if (m) {
         const built = p.build(m);
-        if (built) {
-          if (Array.isArray(built)) ops.push(...built);
-          else ops.push(built);
-        }
-        break; // one pattern per clause
+        if (built) Array.isArray(built) ? ops.push(...built) : ops.push(built);
+        break;
       }
     }
   }
+  return ops;
+}
 
-  return finalize(ops);
+export function compileEffects(oracleText: string | null, cardName: string): CompiledEffect {
+  // A hand-authored per-card script always wins (100%-correct override).
+  const scripted = scriptFor(cardName);
+  if (scripted) return finalize(scripted);
+  if (!oracleText) return { ops: [], targets: [], matched: false };
+  const clauses = normalize(oracleText, cardName).split(/[.;\n]/).map((c) => c.trim()).filter(Boolean);
+  return finalize(opsFromClauses(clauses, true));
+}
+
+// Compile the effect(s) of "When/Whenever ~ enters the battlefield, <effect>"
+// triggers, so permanents' ETB abilities auto-run when they enter.
+export function compileEtbEffects(oracleText: string | null, cardName: string): CompiledEffect {
+  if (!oracleText) return { ops: [], targets: [], matched: false };
+  const text = normalize(oracleText, cardName);
+  const clauses: string[] = [];
+  const re = /when(?:ever)?\s+(?:this|another|a|an|one or more|[\w' ]+?)\s+enters(?: the battlefield)?(?:\s+under[^,]*)?,\s*([^.]+)\.?/gi;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(text)) !== null) {
+    // Split the trigger's effect on " and " into sub-clauses too.
+    for (const part of m[1]!.split(/,? and /i)) clauses.push(part.trim());
+  }
+  return finalize(opsFromClauses(clauses, false));
 }
 
 // Derive target prompts from ops and package a CompiledEffect.

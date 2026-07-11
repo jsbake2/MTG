@@ -11,7 +11,7 @@ import {
   type TableState,
   type ZoneId,
 } from "@mtg/shared";
-import { getFormat, compileEffects, type EffectOp, type EffectWho, type MassFilter } from "@mtg/shared";
+import { getFormat, compileEffects, compileEtbEffects, type EffectOp, type EffectWho, type MassFilter } from "@mtg/shared";
 import { KEYWORD_ACTIONS } from "./rules.js";
 import {
   effectivePT,
@@ -174,6 +174,8 @@ function moveObject(
     o.y = opts.toTop ? minY - 1 : maxY + 1;
   }
   recountHiddenZones(state);
+  // Enter-the-battlefield triggers auto-run when a permanent enters.
+  if (toZone === "battlefield" && fromZone !== "battlefield") runEtb(state, ctx, o);
 }
 
 // ---- turn / step advancement -------------------------------------------
@@ -311,9 +313,35 @@ function applyEffects(state: TableState, ctx: CardIndex, source: GameObject): bo
   const ci = info(ctx, source);
   const comp = compileEffects(ci?.oracleText ?? null, source.name);
   if (!comp.matched) return false;
+  applyOps(state, ctx, source, comp.ops, source.targets);
+  return true;
+}
+
+// Run an enter-the-battlefield trigger's auto-effects (the non-targeted ones;
+// targeted ETB effects are left for the player to resolve). Applies to any
+// permanent that enters — thousands of cards, no per-card work.
+function runEtb(state: TableState, ctx: CardIndex, source: GameObject): void {
+  const ci = info(ctx, source);
+  if (!ci?.oracleText) return;
+  const comp = compileEtbEffects(ci.oracleText, source.name);
+  if (!comp.matched) return;
+  const auto = comp.ops.filter((op) => {
+    const w = whoOf(op);
+    return op.op !== "manual" && !(w && w.scope === "target");
+  });
+  if (auto.length > 0) {
+    applyOps(state, ctx, source, auto, []);
+    log(state, { seat: source.controllerSeat, kind: "action", text: `${source.name} enters — its ability resolves.` });
+  }
+  if (comp.ops.length > auto.length) {
+    log(state, { seat: source.controllerSeat, kind: "system", text: `${source.name}'s enter ability needs a target/choice — resolve it manually.` });
+  }
+}
+
+function applyOps(state: TableState, ctx: CardIndex, source: GameObject, ops: EffectOp[], targetIds: string[]): void {
   let ti = 0;
-  const nextTarget = () => source.targets[ti++];
-  for (const op of comp.ops) {
+  const nextTarget = () => targetIds[ti++];
+  for (const op of ops) {
     const tgt = resolveWho(state, source, whoOf(op), nextTarget);
     switch (op.op) {
       case "draw":
@@ -433,7 +461,6 @@ function applyEffects(state: TableState, ctx: CardIndex, source: GameObject): bo
         break;
     }
   }
-  return true;
 }
 
 function addCounter(o: GameObject, kind: "+1/+1" | "-1/-1", count: number): void {
