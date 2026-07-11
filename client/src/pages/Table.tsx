@@ -181,6 +181,9 @@ function GameBoard({ t, state }: { t: TableConn; state: TableState }) {
   const [hoveredCard, setHoveredCard] = useState<{ id: string; name: string; x: number; y: number } | null>(null);
   const [browseZone, setBrowseZone] = useState<{ zoneId: string; title: string } | null>(null);
   const [manualOpen, setManualOpen] = useState(false);
+  const [handSort, setHandSort] = useState<"none" | "cmc" | "type" | "color" | "name">("none");
+  const [handFilter, setHandFilter] = useState("");
+  const [handMeta, setHandMeta] = useState<Record<string, { cmc: number; cardTypes: string[]; colors: string[] }>>({});
 
   const handleHover = (card: { id: string; name: string } | null, e?: React.MouseEvent) => {
     if (!card || !e) {
@@ -255,7 +258,7 @@ function GameBoard({ t, state }: { t: TableConn; state: TableState }) {
   const isActive = you === state.activeSeat;
   const hasPriority = you === state.prioritySeat;
 
-  const { sound, turnLimitSeconds, setTurnLimit } = useSettings();
+  const { sound, turnLimitSeconds, setTurnLimit, handCardWidth, setHandCardWidth } = useSettings();
   // Chime when it becomes your turn.
   const prevActiveSeat = useRef(state.activeSeat);
   useEffect(() => {
@@ -264,6 +267,56 @@ function GameBoard({ t, state }: { t: TableConn; state: TableState }) {
       if (sound && you !== null && state.activeSeat === you && state.status === "playing") playTurnChime();
     }
   }, [state.activeSeat, you, sound, state.status]);
+
+  // Fetch light metadata (mana value / types / colors) for hand cards so we can
+  // sort and filter them. Cached by cardId; only fetches ones we haven't seen.
+  useEffect(() => {
+    const missing = myHand.map((o) => o.cardId).filter((id): id is string => !!id && !(id in handMeta));
+    if (missing.length === 0) return;
+    let cancelled = false;
+    Promise.all(
+      missing.map((id) =>
+        api
+          .get<CardDetailResponse>(`/api/cards/${id}`)
+          .then((d) => [id, { cmc: d.card.cmc, cardTypes: d.card.cardTypes, colors: d.card.colors }] as const)
+          .catch(() => null),
+      ),
+    ).then((rows) => {
+      if (cancelled) return;
+      const add: Record<string, { cmc: number; cardTypes: string[]; colors: string[] }> = {};
+      for (const r of rows) if (r) add[r[0]] = r[1];
+      if (Object.keys(add).length) setHandMeta((m) => ({ ...m, ...add }));
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [myHand.map((o) => o.cardId).join(","), handMeta]);
+
+  // Apply the hand filter + sort. Sorting falls back gracefully before metadata loads.
+  const displayHand = useMemo(() => {
+    const TYPE_RANK = ["Creature", "Planeswalker", "Instant", "Sorcery", "Artifact", "Enchantment", "Battle", "Land"];
+    const f = handFilter.trim().toLowerCase();
+    let list = myHand;
+    if (f) {
+      list = list.filter((o) => {
+        const meta = o.cardId ? handMeta[o.cardId] : undefined;
+        return o.name.toLowerCase().includes(f) || (meta?.cardTypes ?? []).some((t) => t.toLowerCase().includes(f));
+      });
+    }
+    const rank = (o: GameObject) => {
+      const meta = o.cardId ? handMeta[o.cardId] : undefined;
+      if (handSort === "cmc") return meta?.cmc ?? 99;
+      if (handSort === "type") {
+        const t = meta?.cardTypes?.find((x) => TYPE_RANK.includes(x));
+        return t ? TYPE_RANK.indexOf(t) : 99;
+      }
+      if (handSort === "color") return (meta?.colors ?? []).length === 0 ? 99 : "WUBRG".indexOf((meta!.colors[0] as string) ?? "");
+      return 0;
+    };
+    if (handSort === "name") return [...list].sort((a, b) => a.name.localeCompare(b.name));
+    if (handSort !== "none") return [...list].sort((a, b) => rank(a) - rank(b) || a.name.localeCompare(b.name));
+    return list;
+  }, [myHand, handMeta, handSort, handFilter]);
 
   return (
     <div className="flex h-full min-h-0 flex-col bg-table-bg">
@@ -412,10 +465,44 @@ function GameBoard({ t, state }: { t: TableConn; state: TableState }) {
             </div>
           </div>
           {manualOpen && <ManualOverridePanel me={me} t={t} you={you} />}
+          {/* Hand toolbar: sort, filter, and size. */}
+          <div className="flex flex-wrap items-center gap-2 px-3 pt-1.5 text-xs text-table-muted">
+            <span className="font-semibold uppercase tracking-wide">Hand ({myHand.length})</span>
+            <select className="input !py-0.5 !px-1" value={handSort} onChange={(e) => setHandSort(e.target.value as typeof handSort)} title="Sort your hand">
+              <option value="none">Sort: dealt order</option>
+              <option value="cmc">Sort: mana value</option>
+              <option value="type">Sort: type</option>
+              <option value="color">Sort: color</option>
+              <option value="name">Sort: name</option>
+            </select>
+            <input
+              className="input !py-0.5 !px-2 w-36"
+              placeholder="Filter — name or type…"
+              value={handFilter}
+              onChange={(e) => setHandFilter(e.target.value)}
+            />
+            {handFilter && (
+              <button className="hover:text-table-accentSoft" onClick={() => setHandFilter("")}>
+                clear ✕
+              </button>
+            )}
+            <label className="ml-auto flex items-center gap-1" title="Card size">
+              <span>🔍</span>
+              <input
+                type="range"
+                min={72}
+                max={200}
+                step={4}
+                value={handCardWidth}
+                onChange={(e) => setHandCardWidth(Number(e.target.value))}
+                className="w-28 accent-table-accent"
+              />
+            </label>
+          </div>
           <div className="overflow-x-auto px-3 pb-3 pt-2 scrollbar-thin">
             <div className="hand-fan flex justify-center min-w-max px-4">
-              {myHand.map((o) => (
-                <div key={o.id} className="hand-card w-[92px] shrink-0">
+              {displayHand.map((o) => (
+                <div key={o.id} className="hand-card shrink-0" style={{ width: handCardWidth }}>
                   <button
                     className="block w-full"
                     onClick={(e) => (targeting ? addTarget(o.id) : setSel({ objectId: o.id, x: e.clientX, y: e.clientY }))}
@@ -428,6 +515,7 @@ function GameBoard({ t, state }: { t: TableConn; state: TableState }) {
                 </div>
               ))}
               {myHand.length === 0 && <div className="py-6 text-sm text-table-muted">Your hand is empty.</div>}
+              {myHand.length > 0 && displayHand.length === 0 && <div className="py-6 text-sm text-table-muted">No cards match "{handFilter}".</div>}
             </div>
           </div>
         </div>
@@ -670,6 +758,25 @@ function PlayerStrip({
   );
 }
 
+// Group identical, "idle" permanents (same printing, untapped, no counters/damage,
+// not in combat) into a single stack with a count — like MTGO/MTGA piling up basic
+// lands. Anything with distinct state (tapped, counters, attacking…) stands alone.
+function stackGroups(objects: GameObject[]): { rep: GameObject; count: number }[] {
+  const idle = (o: GameObject) =>
+    !o.tapped && o.counters.length === 0 && o.attacking === null && !o.blocking && !o.ptOverride && o.damage === 0 && !o.faceDown && !o.isCommander;
+  const order: string[] = [];
+  const groups = new Map<string, GameObject[]>();
+  for (const o of objects) {
+    const key = idle(o) && o.cardId ? `stk:${o.cardId}` : `id:${o.id}`;
+    if (!groups.has(key)) {
+      groups.set(key, []);
+      order.push(key);
+    }
+    groups.get(key)!.push(o);
+  }
+  return order.map((k) => ({ rep: groups.get(k)![0]!, count: groups.get(k)!.length }));
+}
+
 function BattlefieldRow({
   title,
   objects,
@@ -686,25 +793,27 @@ function BattlefieldRow({
   compact?: boolean;
 }) {
   const isLand = (o: GameObject) => o.cardTypes?.includes("Land") ?? false;
-  const lands = objects.filter(isLand);
-  const nonlands = objects.filter((o) => !isLand(o));
-  const size = compact ? 72 : 100;
+  const lands = stackGroups(objects.filter(isLand));
+  const nonlands = stackGroups(objects.filter((o) => !isLand(o)));
+  const size = compact ? 96 : 128;
+  const landSize = size * 0.86;
   return (
-    <div className={`rounded-lg ${highlight ? "border border-table-accent/30 bg-table-panel2/40 p-2" : ""}`}>
-      {title && <div className="mb-1 text-xs uppercase tracking-wide text-table-muted">{title}</div>}
-      {objects.length === 0 && <div className="py-3 text-xs text-table-muted">— empty —</div>}
-      {/* Creatures / other permanents in front, lands in a tidy back row. */}
+    <div className={`battlefield-felt rounded-xl p-2 ${highlight ? "ring-1 ring-table-accent/30" : ""}`}>
+      {title && <div className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-table-muted/80">{title}</div>}
+      {objects.length === 0 && <div className="py-4 text-center text-xs text-table-muted/70">— no permanents —</div>}
+      {/* Creatures / other nonland permanents up front. */}
       {nonlands.length > 0 && (
-        <div className="mb-1 flex flex-wrap gap-1">
-          {nonlands.map((o) => (
-            <GameCard key={o.id} o={o} onClick={(e) => onSelect(o, e)} onHover={onHover} size={size} />
+        <div className="mb-2 flex flex-wrap items-end gap-1.5">
+          {nonlands.map(({ rep, count }) => (
+            <GameCard key={rep.id} o={rep} count={count} onClick={(e) => onSelect(rep, e)} onHover={onHover} size={size} />
           ))}
         </div>
       )}
+      {/* Lands in a tidy back row, stacked by name. */}
       {lands.length > 0 && (
-        <div className="flex flex-wrap gap-1 opacity-95">
-          {lands.map((o) => (
-            <GameCard key={o.id} o={o} onClick={(e) => onSelect(o, e)} onHover={onHover} size={size * 0.82} />
+        <div className="flex flex-wrap items-end gap-1.5">
+          {lands.map(({ rep, count }) => (
+            <GameCard key={rep.id} o={rep} count={count} onClick={(e) => onSelect(rep, e)} onHover={onHover} size={landSize} />
           ))}
         </div>
       )}
@@ -717,13 +826,16 @@ function GameCard({
   onClick,
   size,
   onHover,
+  count = 1,
 }: {
   o: GameObject;
   onClick: (e: React.MouseEvent) => void;
   size: number;
   onHover?: (card: { id: string; name: string } | null, e: React.MouseEvent) => void;
+  count?: number;
 }) {
   const w = size * 0.72;
+  const stacked = count > 1;
   return (
     <button
       onClick={onClick}
@@ -732,8 +844,15 @@ function GameCard({
       onMouseLeave={() => onHover?.(null, null as any)}
       className={`game-card-wrapper relative shrink-0 transition-transform hover:scale-105 hover:z-10 ${o.tapped ? "opacity-85" : ""}`}
       style={{ width: o.tapped ? size : w, height: o.tapped ? w : size }}
-      title={o.name}
+      title={stacked ? `${o.name} ×${count}` : o.name}
     >
+      {/* Depth: peek a couple of cards behind when this is a stack. */}
+      {stacked && (
+        <>
+          <div className="absolute rounded-md bg-black/40 shadow-card" style={{ width: w, height: size, left: 5, top: 5 }} />
+          <div className="absolute rounded-md bg-black/30 shadow-card" style={{ width: w, height: size, left: 2.5, top: 2.5 }} />
+        </>
+      )}
       <div
         className="absolute left-0 top-0 origin-top-left transition-transform"
         style={{ width: w, height: size, transform: o.tapped ? `rotate(90deg) translateY(-${w}px)` : "none" }}
@@ -742,10 +861,10 @@ function GameCard({
           id={o.cardId}
           name={o.name}
           className={`rounded-md shadow-card ${
-            o.attacking !== null 
-              ? "ring-2 ring-red-500 card-attacking" 
-              : o.blocking 
-                ? "ring-2 ring-sky-400 card-blocking" 
+            o.attacking !== null
+              ? "ring-2 ring-red-500 card-attacking"
+              : o.blocking
+                ? "ring-2 ring-sky-400 card-blocking"
                 : ""
           }`}
         />
@@ -766,6 +885,12 @@ function GameCard({
         {o.damage > 0 && <span className="absolute right-0 top-0 rounded bg-red-700 px-1 text-[10px] text-white">{o.damage}</span>}
         {o.isCommander && <span className="absolute left-0 top-0 rounded bg-table-accent px-1 text-[9px] text-black">CMD</span>}
       </div>
+      {/* Stack count badge. */}
+      {stacked && (
+        <span className="absolute -right-1 -top-1 z-10 flex h-5 min-w-5 items-center justify-center rounded-full border border-black/50 bg-table-accent px-1 text-[11px] font-bold text-black shadow">
+          ×{count}
+        </span>
+      )}
     </button>
   );
 }
