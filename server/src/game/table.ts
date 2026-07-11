@@ -9,6 +9,7 @@ import { getDeckDetail, getDeckRow } from "../decks/repo.js";
 import { recordResult } from "./results.js";
 import { applyAction, checkStateBased, type ApplyResult, type CardIndex } from "./engine.js";
 import { buildInitialState, log, type SeatDeck } from "./state.js";
+import { appendGameLog } from "./gameLog.js";
 
 export interface SeatAssignment {
   seat: number;
@@ -131,6 +132,13 @@ export class Table {
     log(this.state, { seat: null, kind: "system", text: `Game started — ${format?.name ?? this.formatId}. Good luck!` });
     this.history = [];
     this.recorded = false;
+    appendGameLog({
+      ts: Date.now(),
+      kind: "game_start",
+      tableId: this.id,
+      format: this.formatId,
+      players: this.seats.map((s) => ({ seat: s.seat, name: s.name, deckId: s.deckId })),
+    });
     this.notify();
     return { ok: true };
   }
@@ -148,7 +156,29 @@ export class Table {
     // Snapshot for undo (cap history).
     this.history.push(structuredClone(this.state));
     if (this.history.length > 50) this.history.shift();
+    const logLenBefore = this.state.log.length;
+    const card = actionCardName(this.state, action);
     const res = applyAction(this.state, this.cardIndex, seat, action);
+    // Persistent audit log: every action, its result, and the resulting state.
+    appendGameLog({
+      ts: Date.now(),
+      kind: "action",
+      tableId: this.id,
+      seat,
+      actor: this.state.players.find((p) => p.seat === seat)?.name,
+      action,
+      card,
+      ok: res.ok,
+      error: res.error,
+      turn: this.state.turnNumber,
+      phase: this.state.phase,
+      step: this.state.step,
+      activeSeat: this.state.activeSeat,
+      revision: this.state.revision,
+      life: Object.fromEntries(this.state.players.map((p) => [p.seat, p.life])),
+      stack: this.state.stackOrder.map((id) => this.state!.objects[id]?.name ?? "?"),
+      events: this.state.log.slice(logLenBefore).map((e) => e.text),
+    });
     if (!res.ok) {
       // roll back the snapshot we just took
       this.history.pop();
@@ -187,6 +217,7 @@ export class Table {
     this.state = this.history.pop()!;
     checkStateBased(this.state, this.cardIndex);
     this.state.revision += 1;
+    appendGameLog({ ts: Date.now(), kind: "undo", tableId: this.id, turn: this.state.turnNumber, revision: this.state.revision });
     this.notify();
     return true;
   }
@@ -215,6 +246,13 @@ export class Table {
     }
     return { state: clone, hands };
   }
+}
+
+// Resolve the primary card a GameAction affects, for the audit log.
+function actionCardName(state: TableState, action: GameAction): string | null {
+  const id = (action as { objectId?: string }).objectId;
+  if (id && state.objects[id]) return state.objects[id]!.name;
+  return null;
 }
 
 // ---- global store -------------------------------------------------------

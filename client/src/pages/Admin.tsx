@@ -33,6 +33,7 @@ export function Admin() {
     <div className="mx-auto max-w-3xl p-4">
       <h1 className="mb-4 font-display text-2xl text-table-accentSoft">Admin</h1>
       <CatalogRefresh />
+      <GameLogs />
       <h2 className="mb-3 mt-6 font-display text-lg">Accounts</h2>
       <div className="panel mb-6 p-4">
         <h2 className="mb-3 font-display text-lg">Create an account for a kid</h2>
@@ -119,6 +120,89 @@ function CatalogRefresh() {
         </button>
       )}
       {status?.refresh.lastError && <div className="mt-2 text-xs text-red-300">Last error: {status.refresh.lastError}</div>}
+    </div>
+  );
+}
+
+interface LogSummary {
+  tableId: string;
+  bytes: number;
+  modified: string;
+}
+interface LogEntryRow {
+  ts: number;
+  kind: string;
+  actor?: string;
+  action?: { type?: string };
+  card?: string | null;
+  ok?: boolean;
+  error?: string;
+  turn?: number;
+  step?: string;
+  events?: string[];
+}
+
+function GameLogs() {
+  const [logs, setLogs] = useState<LogSummary[]>([]);
+  const [open, setOpen] = useState<string | null>(null);
+  const [entries, setEntries] = useState<LogEntryRow[]>([]);
+
+  useEffect(() => {
+    api.get<{ logs: LogSummary[] }>("/api/admin/game-logs").then((r) => setLogs(r.logs)).catch(() => {});
+  }, []);
+  async function view(id: string) {
+    setOpen(id);
+    const r = await api.get<{ entries: LogEntryRow[] }>(`/api/admin/game-logs/${id}`);
+    setEntries(r.entries);
+  }
+
+  return (
+    <div className="panel mt-6 p-4">
+      <h2 className="mb-1 font-display text-lg">Game logs</h2>
+      <p className="mb-3 text-xs text-table-muted">
+        Every game is recorded action-by-action. If something goes wrong in a game, open it here and give me the game ID — I can see exactly what happened.
+      </p>
+      {logs.length === 0 ? (
+        <div className="text-sm text-table-muted">No games logged yet.</div>
+      ) : (
+        <div className="max-h-40 overflow-y-auto rounded border border-table-border">
+          {logs.map((l) => (
+            <button key={l.tableId} className="flex w-full items-center gap-3 px-3 py-1.5 text-left text-xs hover:bg-table-panel2" onClick={() => view(l.tableId)}>
+              <span className="font-mono text-table-accentSoft">{l.tableId.slice(0, 8)}</span>
+              <span className="text-table-muted">{new Date(l.modified).toLocaleString()}</span>
+              <span className="ml-auto text-table-muted">{(l.bytes / 1024).toFixed(1)} KB</span>
+            </button>
+          ))}
+        </div>
+      )}
+      {open && (
+        <div className="mt-3">
+          <div className="mb-1 flex items-center gap-2 text-xs">
+            <span className="font-mono text-table-accentSoft">Game {open}</span>
+            <button className="text-table-muted hover:text-red-300" onClick={() => setOpen(null)}>
+              close
+            </button>
+          </div>
+          <div className="max-h-80 overflow-y-auto rounded border border-table-border bg-table-bg p-2 font-mono text-[11px] leading-snug">
+            {entries.map((e, i) => (
+              <div key={i} className={e.ok === false ? "text-red-300" : "text-table-muted"}>
+                {e.kind === "game_start" ? (
+                  <span className="text-table-accentSoft">— game start —</span>
+                ) : e.kind === "undo" ? (
+                  <span className="text-amber-300">↶ undo (turn {e.turn})</span>
+                ) : (
+                  <>
+                    T{e.turn}/{e.step} · {e.actor}: {e.action?.type}
+                    {e.card ? ` (${e.card})` : ""}
+                    {e.ok === false ? ` ✗ ${e.error}` : ""}
+                    {e.events && e.events.length > 0 ? ` — ${e.events.join(" | ")}` : ""}
+                  </>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

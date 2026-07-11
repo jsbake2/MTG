@@ -4,6 +4,7 @@ import { Router } from "express";
 import { requireAdmin, requireAuth } from "../auth/sessions.js";
 import { importCards } from "../import/scryfall.js";
 import { getImportMeta } from "../cards/repo.js";
+import { listGameLogs, readGameLog } from "../game/gameLog.js";
 
 export const adminRouter = Router();
 
@@ -52,4 +53,13 @@ adminRouter.post("/refresh-cards", (req, res) => {
 
 adminRouter.get("/refresh-status", async (_req, res) => {
   res.json({ refresh, catalog: await getImportMeta() });
+});
+
+// Game audit logs — list all logged games, and fetch one game's full history.
+adminRouter.get("/game-logs", async (_req, res) => {
+  res.json({ logs: await listGameLogs() });
+});
+adminRouter.get("/game-logs/:tableId", async (req, res) => {
+  const tail = req.query.tail ? Math.min(5000, Number(req.query.tail)) : 2000;
+  res.json({ tableId: req.params.tableId, entries: await readGameLog(String(req.params.tableId), tail) });
 });
