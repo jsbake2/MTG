@@ -11,7 +11,7 @@ import {
   requireAuth,
   setSessionCookie,
 } from "./sessions.js";
-import { createUser, getUserByUsername, listUsers, toUser } from "./users.js";
+import { createUser, getUserById, getUserByUsername, listUsers, setAvatar, toUser } from "./users.js";
 
 export const authRouter = Router();
 
@@ -82,6 +82,19 @@ authRouter.get("/me", (req, res) => {
     return;
   }
   res.json({ user: req.user } satisfies AuthResponse);
+});
+
+// Set (or clear) your profile avatar to a card's art.
+const avatarSchema = z.object({ cardId: z.string().uuid().nullable() });
+authRouter.put("/avatar", requireAuth, async (req, res) => {
+  const parsed = avatarSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: "Invalid request" });
+    return;
+  }
+  await setAvatar(req.user!.id, parsed.data.cardId);
+  const row = await getUserById(req.user!.id);
+  res.json({ user: row ? toUser(row) : req.user! } satisfies AuthResponse);
 });
 
 // --- Admin: provision kids' accounts ---

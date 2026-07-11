@@ -8,6 +8,7 @@ export interface User {
   username: string;
   displayName: string;
   isAdmin: boolean;
+  avatarCardId: string | null;
   createdAt: string;
 }
 

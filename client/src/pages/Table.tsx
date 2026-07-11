@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import type { Deck, GameObject, PlayerState, TableState, ZoneId } from "@mtg/shared";
+import type { Deck, GameObject, PlayerState, RollResult, TableState, ZoneId } from "@mtg/shared";
 import { TURN_STEPS } from "@mtg/shared";
 import { api } from "@/api/client";
 import { useAuth } from "@/store/auth";
 import { useTable, type TableConn } from "@/game/useTable";
 import { CardImage } from "@/components/CardTile";
+import { Avatar } from "@/components/Avatar";
 
 const STEP_LABELS: Record<string, string> = {
   untap: "Untap",
@@ -82,7 +83,10 @@ function Lobby({ t }: { t: TableConn }) {
                 onClick={() => t.takeSeat(i, deckId)}
               >
                 <div className="text-xs text-table-muted">Seat {i + 1}</div>
-                <div className="font-semibold">{occupant ? occupant.name : "— empty —"}</div>
+                <div className="flex items-center gap-2">
+                  {occupant && <Avatar cardId={occupant.avatarCardId} name={occupant.name} size={28} />}
+                  <span className="font-semibold">{occupant ? occupant.name : "— empty —"}</span>
+                </div>
               </button>
             );
           })}
@@ -153,6 +157,9 @@ function GameBoard({ t, state }: { t: TableConn; state: TableState }) {
           </span>
         )}
         <div className="ml-auto flex items-center gap-1">
+          <button className="btn-ghost" onClick={() => t.raw({ type: "action", action: { type: "roll_first" } })} title="Roll a d20 for each player; highest goes first">
+            🎲 Who's first
+          </button>
           <button className="btn-ghost" onClick={() => t.undo()}>
             Undo
           </button>
@@ -232,6 +239,7 @@ function GameBoard({ t, state }: { t: TableConn; state: TableState }) {
             <div className="ml-auto flex items-center gap-2">
               <LifeControl p={me} t={t} />
               <ManaControl p={me} t={t} />
+              <DiceRoller t={t} seat={you} />
               <button className="chip hover:border-table-accent" onClick={() => setTokenOpen(true)}>
                 ＋ Token
               </button>
@@ -266,6 +274,7 @@ function GameBoard({ t, state }: { t: TableConn; state: TableState }) {
         />
       )}
       {sel && <CardMenu sel={sel} state={state} you={you} t={t} onClose={() => setSel(null)} />}
+      <RollOverlay roll={state.lastRoll} />
       {t.error && <div className="fixed bottom-4 left-1/2 -translate-x-1/2 rounded bg-red-900/90 px-4 py-2 text-sm text-red-100 shadow-panel">{t.error}</div>}
     </div>
   );
@@ -301,12 +310,24 @@ function PlayerStrip({
   return (
     <div className={`rounded-lg border p-2 ${active ? "border-table-accent" : "border-table-border"} ${p.hasLost ? "opacity-40" : ""}`}>
       <div className="mb-1 flex items-center gap-2 text-sm">
+        <Avatar cardId={p.avatarCardId} name={p.name} size={28} ring={active} />
         <span className={`h-2 w-2 rounded-full ${p.connected ? "bg-green-400" : "bg-gray-500"}`} />
         <span className="font-semibold">{p.name}</span>
-        <button className="chip" onClick={() => you !== null && t.send({ type: "adjust_life", seat: p.seat, delta: -1 })} title="They lose 1 life">
-          ♥ {p.life}
-        </button>
+        <div className="flex items-center gap-0.5">
+          <button className="btn-ghost h-6 w-6 !px-0" onClick={() => t.send({ type: "adjust_life", seat: p.seat, delta: -1 })} title="−1 life">
+            −
+          </button>
+          <span className="w-9 text-center font-display text-base text-table-accentSoft">♥{p.life}</span>
+          <button className="btn-ghost h-6 w-6 !px-0" onClick={() => t.send({ type: "adjust_life", seat: p.seat, delta: 1 })} title="+1 life">
+            +
+          </button>
+        </div>
         <span className="text-xs text-table-muted">✋{p.handCount} 📚{p.libraryCount}</span>
+        {p.poison > 0 && (
+          <button className="chip text-green-300" title="Poison (right-click −1)" onClick={() => t.send({ type: "set_poison", seat: p.seat, value: p.poison + 1 })} onContextMenu={(e) => { e.preventDefault(); t.send({ type: "set_poison", seat: p.seat, value: p.poison - 1 }); }}>
+            ☠{p.poison}
+          </button>
+        )}
         {state.formatId === "commander" && you !== null && (
           <button
             className="chip"
@@ -422,13 +443,25 @@ function PhaseControls({ state, t, isActive, hasPriority, you }: { state: TableS
 
 function LifeControl({ p, t }: { p: PlayerState; t: TableConn }) {
   return (
-    <div className="flex items-center gap-1">
-      <button className="btn-ghost h-7 w-7 !px-0" onClick={() => t.send({ type: "adjust_life", seat: p.seat, delta: -1 })}>
+    <div className="flex items-center gap-1 rounded-lg bg-table-panel2 px-1.5 py-0.5">
+      <Avatar cardId={p.avatarCardId} name={p.name} size={30} ring />
+      <button className="btn-ghost h-8 w-8 !px-0 text-lg" onClick={() => t.send({ type: "adjust_life", seat: p.seat, delta: -1 })} title="−1 life">
         −
       </button>
-      <span className="w-10 text-center font-display text-lg text-table-accentSoft">♥ {p.life}</span>
-      <button className="btn-ghost h-7 w-7 !px-0" onClick={() => t.send({ type: "adjust_life", seat: p.seat, delta: 1 })}>
+      <span className="w-11 text-center font-display text-2xl leading-none text-table-accentSoft">{p.life}</span>
+      <button className="btn-ghost h-8 w-8 !px-0 text-lg" onClick={() => t.send({ type: "adjust_life", seat: p.seat, delta: 1 })} title="+1 life">
         +
+      </button>
+      <button
+        className={`chip ${p.poison > 0 ? "text-green-300" : "text-table-muted"}`}
+        title="Poison counters (right-click to remove)"
+        onClick={() => t.send({ type: "set_poison", seat: p.seat, value: p.poison + 1 })}
+        onContextMenu={(e) => {
+          e.preventDefault();
+          t.send({ type: "set_poison", seat: p.seat, value: p.poison - 1 });
+        }}
+      >
+        ☠{p.poison}
       </button>
     </div>
   );
@@ -471,6 +504,53 @@ function ZoneButtons({ you, t, objectsByZone }: { you: number; t: TableConn; obj
       </button>
       <span className="chip">GY {gy.length}</span>
       <span className="chip">Exile {ex.length}</span>
+    </div>
+  );
+}
+
+// ---- dice ---------------------------------------------------------------
+function DiceRoller({ t, seat }: { t: TableConn; seat: number }) {
+  return (
+    <div className="flex items-center gap-0.5">
+      <button className="chip hover:border-table-accent" onClick={() => t.send({ type: "roll", seat, sides: 6, count: 1 })} title="Roll a d6">
+        d6
+      </button>
+      <button className="chip hover:border-table-accent" onClick={() => t.send({ type: "roll", seat, sides: 20, count: 1 })} title="Roll a d20">
+        d20
+      </button>
+      <button className="chip hover:border-table-accent" onClick={() => t.send({ type: "roll", seat, sides: 2, count: 1, label: "coin" })} title="Flip a coin">
+        🪙
+      </button>
+    </div>
+  );
+}
+
+// Shows an animated overlay whenever a new roll appears in the shared state, so
+// every player sees the same roll animate.
+function RollOverlay({ roll }: { roll: RollResult | null }) {
+  const [show, setShow] = useState(false);
+  const [current, setCurrent] = useState<RollResult | null>(null);
+  const lastId = useRef<number>(-1);
+  useEffect(() => {
+    if (roll && roll.id !== lastId.current) {
+      lastId.current = roll.id;
+      setCurrent(roll);
+      setShow(true);
+      const to = setTimeout(() => setShow(false), 2200);
+      return () => clearTimeout(to);
+    }
+  }, [roll]);
+  if (!show || !current) return null;
+  const isCoin = current.sides === 2;
+  const faceText = isCoin ? (current.values[0] === 1 ? "Heads" : "Tails") : String(current.total);
+  return (
+    <div className="pointer-events-none fixed inset-0 z-40 flex items-center justify-center">
+      <div className="flex flex-col items-center gap-3">
+        <div className="dice-animate flex h-28 w-28 items-center justify-center rounded-3xl bg-table-accent text-4xl font-black text-black shadow-panel">
+          {isCoin ? "🪙" : faceText}
+        </div>
+        <div className="max-w-md rounded-lg bg-black/85 px-4 py-2 text-center text-sm text-table-ink shadow-panel">{current.text}</div>
+      </div>
     </div>
   );
 }

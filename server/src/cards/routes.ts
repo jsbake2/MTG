@@ -1,7 +1,7 @@
 import { Router } from "express";
 import type { CardDetailResponse, SearchRequest } from "@mtg/shared";
 import { getCardById, getImportMeta, getPrintings, searchCards, searchTokens } from "./repo.js";
-import { getCardImage } from "./images.js";
+import { getCardArt, getCardImage } from "./images.js";
 
 export const cardsRouter = Router();
 
@@ -32,6 +32,17 @@ cardsRouter.get("/:id/image", async (req, res) => {
   const img = await getCardImage(String(req.params.id), Number.isFinite(face) ? face : 0);
   if (!img) {
     res.status(404).json({ error: "Image not available" });
+    return;
+  }
+  res.setHeader("Content-Type", img.contentType);
+  res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
+  res.send(img.data);
+});
+
+cardsRouter.get("/:id/art", async (req, res) => {
+  const img = await getCardArt(String(req.params.id));
+  if (!img) {
+    res.status(404).json({ error: "Art not available" });
     return;
   }
   res.setHeader("Content-Type", img.contentType);

@@ -9,6 +9,7 @@ interface UserRow {
   display_name: string;
   password_hash: string;
   is_admin: boolean;
+  avatar_card_id: string | null;
   created_at: string;
 }
 
@@ -18,8 +19,18 @@ export function toUser(r: UserRow): User {
     username: r.username,
     displayName: r.display_name,
     isAdmin: r.is_admin,
+    avatarCardId: r.avatar_card_id ?? null,
     createdAt: r.created_at,
   };
+}
+
+export async function setAvatar(userId: string, cardId: string | null): Promise<void> {
+  await query("UPDATE users SET avatar_card_id = $1 WHERE id = $2", [cardId, userId]);
+}
+
+export async function getAvatarForUser(userId: string): Promise<string | null> {
+  const r = (await query<{ avatar_card_id: string | null }>("SELECT avatar_card_id FROM users WHERE id = $1", [userId])).rows[0];
+  return r?.avatar_card_id ?? null;
 }
 
 export async function getUserByUsername(username: string): Promise<UserRow | null> {

@@ -9,16 +9,17 @@ export default {
         ui: ['"Inter"', "system-ui", "-apple-system", "Segoe UI", "Roboto", "sans-serif"],
       },
       colors: {
-        // Parchment / dark-slate table theme.
+        // Theme-driven via CSS variables (see index.css). Swapping [data-theme]
+        // on <html> recolors the whole app.
         table: {
-          bg: "#12161d",
-          panel: "#1b212b",
-          panel2: "#232b38",
-          border: "#323c4d",
-          ink: "#e8e6df",
-          muted: "#9aa3b2",
-          accent: "#c9a227",
-          accentSoft: "#e5c866",
+          bg: "rgb(var(--c-bg) / <alpha-value>)",
+          panel: "rgb(var(--c-panel) / <alpha-value>)",
+          panel2: "rgb(var(--c-panel2) / <alpha-value>)",
+          border: "rgb(var(--c-border) / <alpha-value>)",
+          ink: "rgb(var(--c-ink) / <alpha-value>)",
+          muted: "rgb(var(--c-muted) / <alpha-value>)",
+          accent: "rgb(var(--c-accent) / <alpha-value>)",
+          accentSoft: "rgb(var(--c-accent-soft) / <alpha-value>)",
         },
         mana: {
           W: "#f8f6d8",

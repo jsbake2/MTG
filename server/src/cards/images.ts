@@ -6,7 +6,7 @@ import { createHash } from "node:crypto";
 import { mkdir, readFile, writeFile, access } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { env } from "../env.js";
-import { getFaceImageUrl } from "./repo.js";
+import { getArtCropUrl, getFaceImageUrl } from "./repo.js";
 
 const USER_AGENT = "MtgPvP-selfhosted/0.1 (private family game)";
 
@@ -108,6 +108,26 @@ export async function getCardImage(id: string, face: number): Promise<CachedImag
     }
   } catch (e) {
     console.error("[images] fetch failed for", id, e);
+  } finally {
+    release();
+  }
+  return null;
+}
+
+// The art-crop image (used for profile avatars).
+export async function getCardArt(id: string): Promise<CachedImage | null> {
+  const url = await getArtCropUrl(id);
+  if (!url) return null;
+  const file = cacheFileFor(url);
+  if (await exists(file)) return { data: await readFile(file), contentType: "image/jpeg" };
+  await acquire();
+  try {
+    const buf = await fetchWithRetry(url);
+    if (buf) {
+      await mkdir(dirname(file), { recursive: true });
+      await writeFile(file, buf);
+      return { data: buf, contentType: "image/jpeg" };
+    }
   } finally {
     release();
   }

@@ -293,6 +293,11 @@ export async function getImageSource(id: string): Promise<{ url: string; face: n
   return { url: r.image_normal ?? "", face: 0 };
 }
 
+export async function getArtCropUrl(id: string): Promise<string | null> {
+  const r = (await query<{ image_art_crop: string | null }>(`SELECT image_art_crop FROM cards WHERE id = $1`, [id])).rows[0];
+  return r?.image_art_crop ?? null;
+}
+
 export async function getFaceImageUrl(id: string, face: number): Promise<string | null> {
   const r = (
     await query<{ image_normal: string | null; faces: Array<{ imageUrl: string | null }> }>(

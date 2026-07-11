@@ -13,6 +13,7 @@ interface Conn {
   userId: string;
   name: string;
   isAdmin: boolean;
+  avatarCardId: string | null;
   tableId: string | null;
   table: Table | null;
   unsub: (() => void) | null;
@@ -32,7 +33,7 @@ function pushState(conn: Conn): void {
     // Lobby snapshot (game not started yet).
     send(conn.ws, {
       type: "lobby",
-      seats: conn.table.seats.map((s) => ({ seat: s.seat, name: s.name, userId: s.userId, deckId: s.deckId })),
+      seats: conn.table.seats.map((s) => ({ seat: s.seat, name: s.name, userId: s.userId, deckId: s.deckId, avatarCardId: s.avatarCardId })),
       maxPlayers: conn.table.maxPlayers,
       formatId: conn.table.formatId,
       name: conn.table.name,
@@ -58,6 +59,7 @@ export function attachWebSocket(server: Server): void {
       userId: user.id,
       name: user.displayName,
       isAdmin: user.isAdmin,
+      avatarCardId: user.avatarCardId,
       tableId: null,
       table: null,
       unsub: null,
@@ -119,7 +121,7 @@ async function handle(conn: Conn, msg: ClientMessage): Promise<void> {
     }
     case "take_seat": {
       if (!conn.table) return;
-      const r = conn.table.takeSeat(conn.userId, conn.name, msg.seat, msg.deckId);
+      const r = conn.table.takeSeat(conn.userId, conn.name, msg.seat, msg.deckId, conn.avatarCardId);
       if (!r.ok) send(conn.ws, { type: "error", message: r.error ?? "Cannot take seat", recoverable: true });
       return;
     }

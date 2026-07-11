@@ -2,8 +2,56 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
+/* ---- Themes: swap [data-theme] on <html> to recolor the app ----
+   Colors are space-separated RGB triplets so Tailwind's `/opacity` works. */
+:root,
+[data-theme="midnight"] {
   color-scheme: dark;
+  --c-bg: 18 22 29;
+  --c-panel: 27 33 43;
+  --c-panel2: 35 43 56;
+  --c-border: 50 60 77;
+  --c-ink: 232 230 223;
+  --c-muted: 154 163 178;
+  --c-accent: 201 162 39;
+  --c-accent-soft: 229 200 102;
+  --c-page: 13 16 21;
+}
+[data-theme="ravnica"] {
+  color-scheme: dark;
+  --c-bg: 26 16 36;
+  --c-panel: 36 22 52;
+  --c-panel2: 47 30 68;
+  --c-border: 74 47 102;
+  --c-ink: 239 231 247;
+  --c-muted: 176 156 196;
+  --c-accent: 176 108 240;
+  --c-accent-soft: 211 166 255;
+  --c-page: 18 10 26;
+}
+[data-theme="forest"] {
+  color-scheme: dark;
+  --c-bg: 15 26 18;
+  --c-panel: 22 38 26;
+  --c-panel2: 30 51 35;
+  --c-border: 47 74 53;
+  --c-ink: 231 242 230;
+  --c-muted: 155 182 156;
+  --c-accent: 197 155 58;
+  --c-accent-soft: 230 199 102;
+  --c-page: 10 19 12;
+}
+[data-theme="parchment"] {
+  color-scheme: light;
+  --c-bg: 236 227 207;
+  --c-panel: 245 238 222;
+  --c-panel2: 230 219 192;
+  --c-border: 201 185 143;
+  --c-ink: 44 36 22;
+  --c-muted: 122 108 78;
+  --c-accent: 154 107 43;
+  --c-accent-soft: 182 133 61;
+  --c-page: 221 208 179;
 }
 
 html,
@@ -14,8 +62,8 @@ body,
 
 body {
   margin: 0;
-  background: #0d1015;
-  color: theme("colors.table.ink");
+  background: rgb(var(--c-page));
+  color: rgb(var(--c-ink));
   font-family: theme("fontFamily.ui");
   -webkit-tap-highlight-color: transparent;
 }
@@ -49,6 +97,30 @@ body {
 /* Card grid image aspect ratio (MTG cards are 63x88 ~ 0.716). */
 .card-aspect {
   aspect-ratio: 63 / 88;
+}
+
+/* Dice/coin roll animation: tumble then settle. */
+@keyframes dice-tumble {
+  0% {
+    transform: rotate(0deg) scale(0.4);
+    opacity: 0;
+  }
+  15% {
+    opacity: 1;
+  }
+  60% {
+    transform: rotate(720deg) scale(1.25);
+  }
+  75% {
+    transform: rotate(700deg) scale(0.95);
+  }
+  100% {
+    transform: rotate(720deg) scale(1);
+    opacity: 1;
+  }
+}
+.dice-animate {
+  animation: dice-tumble 0.9s cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }
 
 ::-webkit-scrollbar {

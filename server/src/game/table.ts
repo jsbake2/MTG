@@ -4,6 +4,7 @@ import { randomUUID } from "node:crypto";
 import type { GameAction, TableState, TableSummary } from "@mtg/shared";
 import { getFormat } from "@mtg/shared";
 import { getCardsByIds } from "../cards/repo.js";
+import { getAvatarForUser } from "../auth/users.js";
 import { getDeckDetail } from "../decks/repo.js";
 import { applyAction, checkStateBased, type ApplyResult, type CardIndex } from "./engine.js";
 import { buildInitialState, log, type SeatDeck } from "./state.js";
@@ -13,6 +14,7 @@ export interface SeatAssignment {
   userId: string;
   name: string;
   deckId: string | null;
+  avatarCardId: string | null;
 }
 
 export class Table {
@@ -52,13 +54,13 @@ export class Table {
     for (const fn of this.listeners) fn();
   }
 
-  takeSeat(userId: string, name: string, seat: number, deckId: string | null): { ok: boolean; error?: string } {
+  takeSeat(userId: string, name: string, seat: number, deckId: string | null, avatarCardId: string | null): { ok: boolean; error?: string } {
     if (this.state && this.state.status !== "lobby") return { ok: false, error: "Game already started." };
     if (seat < 0 || seat >= this.maxPlayers) return { ok: false, error: "Invalid seat." };
     // Remove any existing seat for this user, then claim.
     this.seats = this.seats.filter((s) => s.userId !== userId);
     if (this.seats.some((s) => s.seat === seat)) return { ok: false, error: "Seat taken." };
-    this.seats.push({ seat, userId, name, deckId });
+    this.seats.push({ seat, userId, name, deckId, avatarCardId });
     this.seats.sort((a, b) => a.seat - b.seat);
     this.notify();
     return { ok: true };
@@ -94,7 +96,8 @@ export class Table {
           }
         }
       }
-      seatDecks.push({ seat: s.seat, userId: s.userId, name: s.name, library, commanders });
+      const avatarCardId = await getAvatarForUser(s.userId).catch(() => null);
+      seatDecks.push({ seat: s.seat, userId: s.userId, name: s.name, avatarCardId, library, commanders });
     }
 
     // Build the card index (types/keywords/PT) used by the engine.

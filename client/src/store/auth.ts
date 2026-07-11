@@ -9,6 +9,7 @@ interface AuthState {
   login: (username: string, password: string) => Promise<void>;
   register: (data: { username: string; displayName: string; password: string; inviteCode: string }) => Promise<void>;
   logout: () => Promise<void>;
+  setAvatar: (cardId: string | null) => Promise<void>;
 }
 
 export const useAuth = create<AuthState>((set) => ({
@@ -33,5 +34,9 @@ export const useAuth = create<AuthState>((set) => ({
   logout: async () => {
     await api.post("/api/auth/logout");
     set({ user: null });
+  },
+  setAvatar: async (cardId) => {
+    const res = await api.put<AuthResponse>("/api/auth/avatar", { cardId });
+    set({ user: res.user });
   },
 }));

@@ -16,6 +16,7 @@ export interface SeatDeck {
   seat: number;
   userId: string | null;
   name: string;
+  avatarCardId: string | null;
   // main-board cards expanded per copy: { cardId, oracleId, name }
   library: Array<{ cardId: string; oracleId: string; name: string }>;
   commanders: Array<{ cardId: string; oracleId: string; name: string }>;
@@ -86,6 +87,7 @@ export function buildInitialState(opts: {
       connected: true,
       handCount: 0,
       libraryCount: 0,
+      avatarCardId: seat.avatarCardId,
     });
 
     // Library
@@ -126,6 +128,7 @@ export function buildInitialState(opts: {
     revision: 0,
     winnerSeat: null,
     passStreak: 0,
+    lastRoll: null,
   };
   recountHiddenZones(state);
   return state;

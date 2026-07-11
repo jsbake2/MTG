@@ -1,6 +1,9 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Navigate, NavLink, Route, Routes, useLocation } from "react-router-dom";
 import { useAuth } from "@/store/auth";
+import { useTheme, THEMES } from "@/store/theme";
+import { Avatar } from "@/components/Avatar";
+import { AvatarPicker } from "@/components/AvatarPicker";
 import { Login } from "@/pages/Login";
 import { Browse } from "@/pages/Browse";
 import { Decks } from "@/pages/Decks";
@@ -11,6 +14,8 @@ import { Admin } from "@/pages/Admin";
 
 function NavBar() {
   const { user, logout } = useAuth();
+  const { theme, setTheme } = useTheme();
+  const [pickAvatar, setPickAvatar] = useState(false);
   const linkClass = ({ isActive }: { isActive: boolean }) =>
     `px-3 py-2 rounded-md text-sm font-semibold ${isActive ? "bg-table-accent text-black" : "text-table-ink hover:bg-table-panel2"}`;
   return (
@@ -33,14 +38,30 @@ function NavBar() {
         )}
       </nav>
       <div className="ml-auto flex items-center gap-2 text-sm">
-        <span className="text-table-muted">
-          {user?.displayName}
-          {user?.isAdmin ? " · admin" : ""}
-        </span>
+        <select
+          className="input !py-1 !px-2"
+          value={theme}
+          onChange={(e) => setTheme(e.target.value as (typeof THEMES)[number]["id"])}
+          title="Theme"
+        >
+          {THEMES.map((t) => (
+            <option key={t.id} value={t.id}>
+              {t.name}
+            </option>
+          ))}
+        </select>
+        <button className="flex items-center gap-2 rounded-full pl-1 pr-2 hover:bg-table-panel2" onClick={() => setPickAvatar(true)} title="Change avatar">
+          <Avatar cardId={user?.avatarCardId} name={user?.displayName ?? "?"} size={30} />
+          <span className="hidden text-table-muted sm:inline">
+            {user?.displayName}
+            {user?.isAdmin ? " · admin" : ""}
+          </span>
+        </button>
         <button className="btn-ghost" onClick={() => logout()}>
           Sign out
         </button>
       </div>
+      {pickAvatar && <AvatarPicker onClose={() => setPickAvatar(false)} />}
     </header>
   );
 }

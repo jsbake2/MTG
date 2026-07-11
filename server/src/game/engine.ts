@@ -16,6 +16,7 @@ import {
   effectivePT,
   libraryOrdered,
   log,
+  nextLogId,
   nextSeatInTurnOrder,
   objectsIn,
   recountHiddenZones,
@@ -545,6 +546,35 @@ function dispatch(state: TableState, ctx: CardIndex, seat: number, action: GameA
     case "set_enforcement": {
       state.enforcement = action.level;
       log(state, { seat, kind: "system", text: `Enforcement set to ${action.level}.` });
+      return null;
+    }
+    case "roll": {
+      const sides = Math.max(2, Math.floor(action.sides));
+      const count = Math.min(20, Math.max(1, Math.floor(action.count)));
+      const values: number[] = [];
+      for (let i = 0; i < count; i++) values.push(1 + Math.floor(Math.random() * sides));
+      const total = values.reduce((a, b) => a + b, 0);
+      const who = playerBySeat(state, seat)?.name ?? "Someone";
+      const label = action.label ?? (sides === 2 ? "coin" : `d${sides}`);
+      const text =
+        sides === 2
+          ? `${who} flips a coin: ${values.map((v) => (v === 1 ? "Heads" : "Tails")).join(", ")}`
+          : `${who} rolls ${count > 1 ? count + "× " : ""}${label}: ${values.join(", ")}${count > 1 ? ` (total ${total})` : ""}`;
+      state.lastRoll = { id: nextLogId(state), seat, label, sides, values, total, text, ts: Date.now() };
+      log(state, { seat, kind: "action", text });
+      return null;
+    }
+    case "roll_first": {
+      const rolls = state.players.map((p) => ({ seat: p.seat, name: p.name, v: 1 + Math.floor(Math.random() * 20) }));
+      const max = Math.max(...rolls.map((r) => r.v));
+      const winners = rolls.filter((r) => r.v === max);
+      const winner = winners[Math.floor(Math.random() * winners.length)]!.seat;
+      state.activeSeat = winner;
+      state.prioritySeat = winner;
+      state.startingPlayerSeat = winner;
+      const text = `Roll for first — ${rolls.map((r) => `${r.name}: ${r.v}`).join(", ")} → ${playerBySeat(state, winner)?.name} goes first!`;
+      state.lastRoll = { id: nextLogId(state), seat: null, label: "to go first", sides: 20, values: rolls.map((r) => r.v), total: max, text, ts: Date.now() };
+      log(state, { seat: null, kind: "system", text });
       return null;
     }
     default:

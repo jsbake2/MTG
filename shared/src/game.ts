@@ -105,6 +105,19 @@ export interface PlayerState {
   // revealing contents.
   handCount: number;
   libraryCount: number;
+  avatarCardId: string | null;
+}
+
+// The most recent dice/coin roll at the table, so every client can animate it.
+export interface RollResult {
+  id: number;
+  seat: number | null;
+  label: string; // e.g. "d20", "coin", "to go first"
+  sides: number; // 6, 20, 2 (coin), ...
+  values: number[];
+  total: number;
+  text: string;
+  ts: number;
 }
 
 export type EnforcementLevel = "relaxed" | "strict";
@@ -139,6 +152,8 @@ export interface TableState {
   winnerSeat: number | null;
   // How many players have passed priority in a row (priority loop bookkeeping).
   passStreak: number;
+  // Last dice/coin roll, for shared animation. Null until someone rolls.
+  lastRoll: RollResult | null;
 }
 
 // ---- Actions (client -> engine) ----------------------------------------
@@ -178,6 +193,8 @@ export type GameAction =
   | { type: "note"; objectId: string; note: string | null }
   | { type: "concede"; seat: number }
   | { type: "set_enforcement"; level: EnforcementLevel }
+  | { type: "roll"; seat: number; sides: number; count: number; label?: string } // dice/coin roll
+  | { type: "roll_first" } // roll for each seated player; highest becomes active
   | { type: "override"; description: string; inner: GameAction }; // bypass a framework check, logged
 
 // ---- WebSocket protocol -------------------------------------------------
@@ -204,6 +221,7 @@ export interface LobbySeat {
   name: string;
   userId: string;
   deckId: string | null;
+  avatarCardId: string | null;
 }
 
 export type ServerMessage =
