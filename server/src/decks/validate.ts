@@ -116,6 +116,13 @@ export function analyzeDeckTags(entries: DeckEntryWithCard[]): DeckTag[] {
   return [...tribeTags, ...themeTags];
 }
 
+// Deck construction rules, verified against docs/comprehensive-rules.txt:
+//   CR 100.2a — constructed: min 60 cards; any number of basic lands; no more
+//     than 4 of any card with a particular English name (other than basics).
+//   CR 100.2b — limited: min 40.  CR 903.5a-e — Commander: exactly 100, singleton,
+//     color identity, no sideboard.  Format legality/banned/restricted per Scryfall.
+//   NOTE: rarity does NOT restrict deck construction — there is no such rule in
+//   the CR. A common and a mythic have the same 4-copy limit.
 export function validateDeck(formatId: string, entries: DeckEntryWithCard[]): DeckValidation {
   const format = getFormat(formatId);
   const issues: DeckValidationIssue[] = [];
@@ -130,17 +137,17 @@ export function validateDeck(formatId: string, entries: DeckEntryWithCard[]): De
   const commanderCount = commanders.reduce((n, e) => n + e.quantity, 0);
   const totalForSize = mainCount + commanderCount;
 
-  // Deck size.
+  // Deck size (CR 100.2a/b, 903.5a).
   if (totalForSize < format.minDeckSize) {
     issues.push({
       severity: "error",
-      message: `Deck has ${totalForSize} cards; ${format.name} needs at least ${format.minDeckSize}.`,
+      message: `Deck has ${totalForSize} cards; ${format.name} needs at least ${format.minDeckSize} (CR 100.2).`,
     });
   }
   if (format.maxDeckSize !== null && totalForSize > format.maxDeckSize) {
     issues.push({
       severity: "error",
-      message: `Deck has ${totalForSize} cards; ${format.name} allows at most ${format.maxDeckSize}.`,
+      message: `Deck has ${totalForSize} cards; ${format.name} allows at most ${format.maxDeckSize} (CR 903.5a).`,
     });
   }
 
@@ -157,7 +164,7 @@ export function validateDeck(formatId: string, entries: DeckEntryWithCard[]): De
       issues.push({
         severity: "error",
         cardName: e.card.name,
-        message: `${e.card.name}: ${total} copies, but ${format.name} allows ${limit}.`,
+        message: `${e.card.name}: ${total} copies, but ${format.name} allows ${limit} (CR ${format.singleton ? "903.5b" : "100.2a"}).`,
       });
       byName.set(e.card.name, -1); // avoid duplicate messages
     }
@@ -191,10 +198,11 @@ export function validateDeck(formatId: string, entries: DeckEntryWithCard[]): De
         (t.includes("legendary") && t.includes("creature")) ||
         (e.card.oracleText ?? "").toLowerCase().includes("can be your commander");
       if (!canBeCommander) {
-        issues.push({ severity: "error", cardName: e.card.name, message: `${e.card.name} can't be a commander (needs to be a legendary creature).` });
+        issues.push({ severity: "error", cardName: e.card.name, message: `${e.card.name} can't be a commander — needs to be a legendary creature (CR 903.5).` });
       }
     }
-    // Color identity.
+    // Color identity (CR 903.5c; also covers off-color basic lands per 903.5d,
+    // since a basic land's color identity is the mana it produces).
     if (format.enforcesColorIdentity && commanders.length > 0) {
       const allowed = new Set<Color>();
       for (const c of commanders) c.card.colorIdentity.forEach((x) => allowed.add(x));
@@ -204,7 +212,7 @@ export function validateDeck(formatId: string, entries: DeckEntryWithCard[]): De
           issues.push({
             severity: "error",
             cardName: e.card.name,
-            message: `${e.card.name} has colors (${outside.join("")}) outside your commander's identity.`,
+            message: `${e.card.name} has colors (${outside.join("")}) outside your commander's identity (CR 903.5c).`,
           });
         }
       }

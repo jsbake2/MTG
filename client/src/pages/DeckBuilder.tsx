@@ -250,10 +250,16 @@ export function DeckBuilder() {
             </button>
           </div>
           <div className="mt-2 flex items-center gap-3 text-sm text-table-muted">
-            <span>
+            <span
+              title={
+                format
+                  ? `Enforced: ${format.minDeckSize}${format.maxDeckSize ? "–" + format.maxDeckSize : "+"} cards · max ${format.singleton ? 1 : format.maxCopiesPerCard} of any card (basics unlimited)${format.requiresCommander ? " · commander + color identity" : ""}${format.legalityKey ? " · " + format.name + " legality (banned/restricted)" : " · no restrictions"}. Rarity is NOT a deck rule.`
+                  : ""
+              }
+            >
               {mainCount} cards
               {format?.requiresCommander ? ` · ${commanderCount} commander` : ""}
-              {format ? ` · min ${format.minDeckSize}` : ""}
+              {format ? ` · min ${format.minDeckSize} · max ${format.singleton ? 1 : format.maxCopiesPerCard}-of` : ""}
             </span>
             {validation ? (
               <span
