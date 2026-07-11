@@ -44,6 +44,7 @@ export function newObject(partial: Partial<GameObject> & Pick<GameObject, "name"
     attacking: null,
     blocking: null,
     deathtouched: false,
+    targets: [],
     cardTypes: null,
     keywords: null,
     ...partial,

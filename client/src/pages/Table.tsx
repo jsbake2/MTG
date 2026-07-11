@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import type { Deck, GameObject, PlayerState, RollResult, TableState, ZoneId } from "@mtg/shared";
-import { TURN_STEPS } from "@mtg/shared";
+import type { CardDetailResponse, Deck, GameObject, PlayerState, RollResult, TableState, ZoneId } from "@mtg/shared";
+import { TURN_STEPS, compileEffects } from "@mtg/shared";
 import { api } from "@/api/client";
 import { useAuth } from "@/store/auth";
 import { useTable, type TableConn } from "@/game/useTable";
@@ -146,6 +146,40 @@ function GameBoard({ t, state }: { t: TableConn; state: TableState }) {
   const [sel, setSel] = useState<Selection | null>(null);
   const [chatText, setChatText] = useState("");
   const [tokenOpen, setTokenOpen] = useState(false);
+  const [targeting, setTargeting] = useState<{ objectId: string; name: string; specs: { kind: string; label: string }[]; collected: string[] } | null>(null);
+
+  async function beginCast(o: GameObject) {
+    if (!o.cardId) {
+      t.send({ type: "cast", objectId: o.id });
+      return;
+    }
+    try {
+      const detail = await api.get<CardDetailResponse>(`/api/cards/${o.cardId}`);
+      const comp = compileEffects(detail.card.oracleText, detail.card.name);
+      if (comp.targets.length === 0) {
+        t.send({ type: "cast", objectId: o.id, targets: [] });
+      } else {
+        setTargeting({ objectId: o.id, name: o.name, specs: comp.targets, collected: [] });
+      }
+    } catch {
+      t.send({ type: "cast", objectId: o.id });
+    }
+  }
+  function addTarget(id: string) {
+    setTargeting((cur) => {
+      if (!cur) return cur;
+      const collected = [...cur.collected, id];
+      if (collected.length >= cur.specs.length) {
+        t.send({ type: "cast", objectId: cur.objectId, targets: collected });
+        return null;
+      }
+      return { ...cur, collected };
+    });
+  }
+  function clickObject(o: GameObject, e: React.MouseEvent) {
+    if (targeting) addTarget(o.id);
+    else setSel({ objectId: o.id, x: e.clientX, y: e.clientY });
+  }
 
   const objectsByZone = useMemo(() => {
     const map: Record<string, GameObject[]> = {};
@@ -219,7 +253,17 @@ function GameBoard({ t, state }: { t: TableConn; state: TableState }) {
           {/* Opponents */}
           <div className="mb-2 grid gap-2" style={{ gridTemplateColumns: `repeat(${Math.max(1, opponents.length)}, minmax(0, 1fr))` }}>
             {opponents.map((p) => (
-              <PlayerStrip key={p.seat} p={p} state={state} you={you} t={t} objectsByZone={objectsByZone} onSelect={setSel} />
+              <PlayerStrip
+                key={p.seat}
+                p={p}
+                state={state}
+                you={you}
+                t={t}
+                objectsByZone={objectsByZone}
+                onSelect={(s) => (targeting ? addTarget(s.objectId) : setSel(s))}
+                targeting={!!targeting}
+                onTargetPlayer={() => addTarget(`seat:${p.seat}`)}
+              />
             ))}
           </div>
 
@@ -230,7 +274,7 @@ function GameBoard({ t, state }: { t: TableConn; state: TableState }) {
               <div className="flex gap-1 overflow-x-auto">
                 {state.stackOrder.map((oid) => {
                   const o = state.objects[oid];
-                  return o ? <MiniCard key={oid} o={o} onClick={() => setSel({ objectId: oid, x: 0, y: 0 })} /> : null;
+                  return o ? <MiniCard key={oid} o={o} onClick={() => (targeting ? addTarget(oid) : setSel({ objectId: oid, x: 0, y: 0 }))} /> : null;
                 })}
               </div>
             </div>
@@ -244,7 +288,7 @@ function GameBoard({ t, state }: { t: TableConn; state: TableState }) {
             <BattlefieldRow
               title="Your battlefield"
               objects={objectsByZone[`battlefield:${you}`] ?? []}
-              onSelect={(o, e) => setSel({ objectId: o.id, x: e.clientX, y: e.clientY })}
+              onSelect={clickObject}
               highlight
             />
           )}
@@ -315,8 +359,20 @@ function GameBoard({ t, state }: { t: TableConn; state: TableState }) {
           }}
         />
       )}
-      {sel && <CardMenu sel={sel} state={state} you={you} t={t} onClose={() => setSel(null)} />}
+      {sel && <CardMenu sel={sel} state={state} you={you} t={t} onCast={beginCast} onClose={() => setSel(null)} />}
       <RollOverlay roll={state.lastRoll} />
+      {targeting && (
+        <div className="fixed left-1/2 top-16 z-40 flex -translate-x-1/2 items-center gap-2 rounded-lg border border-red-500/60 bg-table-panel/95 px-4 py-2 text-sm shadow-panel">
+          <span className="text-table-accentSoft">🎯 {targeting.name}:</span>
+          <span>
+            {targeting.specs[targeting.collected.length]?.label ?? "Choose target"} ({targeting.collected.length}/{targeting.specs.length})
+          </span>
+          <span className="text-xs text-table-muted">— click a card{["player", "any"].includes(targeting.specs[targeting.collected.length]?.kind ?? "") ? " or a player" : ""}</span>
+          <button className="btn-ghost !py-1" onClick={() => setTargeting(null)}>
+            Cancel
+          </button>
+        </div>
+      )}
       {t.error && <div className="fixed bottom-4 left-1/2 -translate-x-1/2 rounded bg-red-900/90 px-4 py-2 text-sm text-red-100 shadow-panel">{t.error}</div>}
     </div>
   );
@@ -339,6 +395,8 @@ function PlayerStrip({
   t,
   objectsByZone,
   onSelect,
+  targeting,
+  onTargetPlayer,
 }: {
   p: PlayerState;
   state: TableState;
@@ -346,15 +404,19 @@ function PlayerStrip({
   t: TableConn;
   objectsByZone: Record<string, GameObject[]>;
   onSelect: (s: Selection) => void;
+  targeting?: boolean;
+  onTargetPlayer?: () => void;
 }) {
   const bf = objectsByZone[`battlefield:${p.seat}`] ?? [];
   const active = state.activeSeat === p.seat;
   return (
-    <div className={`rounded-lg border p-2 ${active ? "border-table-accent" : "border-table-border"} ${p.hasLost ? "opacity-40" : ""}`}>
+    <div className={`rounded-lg border p-2 ${targeting ? "cursor-crosshair ring-2 ring-red-500/60" : ""} ${active ? "border-table-accent" : "border-table-border"} ${p.hasLost ? "opacity-40" : ""}`}>
       <div className="mb-1 flex items-center gap-2 text-sm">
-        <Avatar cardId={p.avatarCardId} name={p.name} size={28} ring={active} />
-        <span className={`h-2 w-2 rounded-full ${p.connected ? "bg-green-400" : "bg-gray-500"}`} />
-        <span className="font-semibold">{p.name}</span>
+        <button disabled={!targeting} onClick={() => onTargetPlayer?.()} className="flex items-center gap-2">
+          <Avatar cardId={p.avatarCardId} name={p.name} size={28} ring={active} />
+          <span className={`h-2 w-2 rounded-full ${p.connected ? "bg-green-400" : "bg-gray-500"}`} />
+          <span className="font-semibold">{p.name}</span>
+        </button>
         <div className="flex items-center gap-1">
           <button className="btn-ghost h-6 w-6 !px-0" onClick={() => t.send({ type: "adjust_life", seat: p.seat, delta: -1 })} title="−1 life">
             −
@@ -710,7 +772,7 @@ function TokenPicker({ onClose, onPick }: { onClose: () => void; onPick: (t: Tok
 }
 
 // ---- card action menu ---------------------------------------------------
-function CardMenu({ sel, state, you, t, onClose }: { sel: Selection; state: TableState; you: number | null; t: TableConn; onClose: () => void }) {
+function CardMenu({ sel, state, you, t, onClose, onCast }: { sel: Selection; state: TableState; you: number | null; t: TableConn; onClose: () => void; onCast: (o: GameObject) => void }) {
   const o = state.objects[sel.objectId];
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -771,7 +833,7 @@ function CardMenu({ sel, state, you, t, onClose }: { sel: Selection; state: Tabl
       {(o.zone === "hand" || o.zone === "command") && (
         <>
           <Item label="Play to battlefield" onClick={() => move("battlefield")} />
-          <Item label="Cast (to stack)" onClick={() => t.send({ type: "cast", objectId: o.id })} />
+          <Item label="Cast (auto-resolve)" onClick={() => onCast(o)} />
           <Item label="→ Graveyard (discard)" onClick={() => move("graveyard")} />
         </>
       )}

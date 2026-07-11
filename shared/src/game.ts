@@ -51,6 +51,9 @@ export interface GameObject {
   blocking: string | null; // attacker instance id this creature is blocking
   // Marked as having taken damage from a deathtouch source this turn.
   deathtouched: boolean;
+  // Chosen targets for an auto-effect while on the stack. Object ids, or
+  // "seat:<n>" for a player target.
+  targets: string[];
   // Card type/keyword info surfaced to the client for public objects (populated
   // on send for battlefield/stack cards; used for combat UX + land/creature rows).
   cardTypes: string[] | null;

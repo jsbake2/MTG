@@ -11,7 +11,7 @@ import {
   type TableState,
   type ZoneId,
 } from "@mtg/shared";
-import { getFormat } from "@mtg/shared";
+import { getFormat, compileEffects, type EffectOp, type EffectWho } from "@mtg/shared";
 import { KEYWORD_ACTIONS } from "./rules.js";
 import {
   effectivePT,
@@ -254,12 +254,144 @@ function resolveTop(state: TableState, ctx: CardIndex): void {
   const o = state.objects[topId];
   if (!o) return;
   if (isPermanentSpell(ctx, o)) {
+    // Permanent spells enter the battlefield (any ETB effects are separate).
     moveObject(state, ctx, o, "battlefield", o.controllerSeat, {});
     log(state, { seat: o.controllerSeat, kind: "action", text: `${o.name} resolves and enters the battlefield.` });
   } else {
+    // Instant/sorcery: auto-execute compiled effects, then to the graveyard.
+    const applied = applyEffects(state, ctx, o);
     moveObject(state, ctx, o, "graveyard", o.ownerSeat, {});
-    log(state, { seat: o.controllerSeat, kind: "action", text: `${o.name} resolves (perform its effect), then to the graveyard.` });
+    log(state, {
+      seat: o.controllerSeat,
+      kind: "action",
+      text: applied ? `${o.name} resolves.` : `${o.name} resolves — perform its effect, then it goes to the graveyard.`,
+    });
   }
+}
+
+// ---- oracle-text effect execution --------------------------------------
+function whoOf(op: EffectOp): EffectWho | undefined {
+  return (op as { to?: EffectWho }).to ?? (op as { what?: EffectWho }).what ?? (op as { who?: EffectWho }).who;
+}
+function resolveWho(
+  state: TableState,
+  source: GameObject,
+  w: EffectWho | undefined,
+  nextTarget: () => string | undefined,
+): { seats: number[]; object: GameObject | null } {
+  if (!w) return { seats: [], object: null };
+  switch (w.scope) {
+    case "you":
+    case "controller":
+      return { seats: [source.controllerSeat], object: null };
+    case "each_opponent":
+      return { seats: state.players.filter((p) => p.seat !== source.controllerSeat && !p.hasLost).map((p) => p.seat), object: null };
+    case "each_player":
+      return { seats: state.players.filter((p) => !p.hasLost).map((p) => p.seat), object: null };
+    case "target": {
+      const id = nextTarget();
+      if (!id) return { seats: [], object: null };
+      if (id.startsWith("seat:")) return { seats: [Number(id.slice(5))], object: null };
+      return { seats: [], object: state.objects[id] ?? null };
+    }
+  }
+}
+
+// Route a permanent/spell to a zone using the rules table (destroy/exile/etc.).
+function routeZone(state: TableState, ctx: CardIndex, o: GameObject, action: keyof typeof KEYWORD_ACTIONS): void {
+  if (action === "destroy" && hasKeyword(ctx, o, "indestructible")) return;
+  const rule = KEYWORD_ACTIONS[action];
+  moveObject(state, ctx, o, rule.dest, rule.toOwner ? o.ownerSeat : o.controllerSeat, { toTop: rule.toTop });
+}
+
+function applyEffects(state: TableState, ctx: CardIndex, source: GameObject): boolean {
+  const ci = info(ctx, source);
+  const comp = compileEffects(ci?.oracleText ?? null, source.name);
+  if (!comp.matched) return false;
+  let ti = 0;
+  const nextTarget = () => source.targets[ti++];
+  for (const op of comp.ops) {
+    const tgt = resolveWho(state, source, whoOf(op), nextTarget);
+    switch (op.op) {
+      case "draw":
+        for (const s of tgt.seats) drawCards(state, s, op.count);
+        break;
+      case "damage":
+        for (const s of tgt.seats) {
+          const p = playerBySeat(state, s);
+          if (p) p.life -= op.amount;
+        }
+        if (tgt.object && isCreature(ctx, tgt.object)) tgt.object.damage += op.amount;
+        else if (tgt.object) {
+          const p = playerBySeat(state, tgt.object.controllerSeat);
+          void p;
+        }
+        log(state, { seat: source.controllerSeat, kind: "action", text: `${source.name} deals ${op.amount} damage.` });
+        break;
+      case "gain_life":
+        for (const s of tgt.seats) {
+          const p = playerBySeat(state, s);
+          if (p) p.life += op.amount;
+        }
+        break;
+      case "lose_life":
+        for (const s of tgt.seats) {
+          const p = playerBySeat(state, s);
+          if (p) p.life -= op.amount;
+        }
+        break;
+      case "destroy":
+        if (tgt.object) routeZone(state, ctx, tgt.object, "destroy");
+        break;
+      case "exile":
+        if (tgt.object) routeZone(state, ctx, tgt.object, "exile");
+        break;
+      case "bounce":
+        if (tgt.object) routeZone(state, ctx, tgt.object, "bounce");
+        break;
+      case "counter":
+        if (tgt.object) {
+          state.stackOrder = state.stackOrder.filter((id) => id !== tgt.object!.id);
+          routeZone(state, ctx, tgt.object, "counter");
+        }
+        break;
+      case "tap":
+        if (tgt.object) tgt.object.tapped = true;
+        break;
+      case "untap":
+        if (tgt.object) tgt.object.tapped = false;
+        break;
+      case "plus_counter":
+        if (tgt.object) {
+          const existing = tgt.object.counters.find((c) => c.type === "+1/+1");
+          if (existing) existing.count += op.count;
+          else tgt.object.counters.push({ type: "+1/+1", count: op.count });
+        }
+        break;
+      case "token":
+        for (const s of tgt.seats.length ? tgt.seats : [source.controllerSeat]) {
+          for (let i = 0; i < op.count; i++) {
+            const tok = newTokenObject(s, op.name);
+            tok.ptOverride = { power: op.power, toughness: op.toughness };
+            state.objects[tok.id] = tok;
+          }
+        }
+        log(state, { seat: source.controllerSeat, kind: "action", text: `${source.name} creates ${op.count} ${op.name}.` });
+        break;
+      case "mill":
+        for (const s of tgt.seats) {
+          const lib = libraryOrdered(state, s);
+          for (let i = 0; i < op.count && i < lib.length; i++) moveObject(state, ctx, lib[i]!, "graveyard", s, {});
+        }
+        break;
+      case "discard":
+      case "scry":
+        // Choice-heavy; leave for the player (logged).
+        log(state, { seat: source.controllerSeat, kind: "action", text: `${source.name}: ${op.op} — choose manually.` });
+        break;
+    }
+  }
+  return true;
 }
 
 // ---- main dispatcher ----------------------------------------------------
@@ -440,6 +572,7 @@ function dispatch(state: TableState, ctx: CardIndex, seat: number, action: GameA
       }
       o.zone = "stack";
       o.controllerSeat = seat;
+      o.targets = action.targets ?? [];
       state.stackOrder.push(o.id);
       state.passStreak = 0;
       recountHiddenZones(state);
@@ -650,6 +783,7 @@ function newTokenObject(seat: number, name: string): GameObject {
     attacking: null,
     blocking: null,
     deathtouched: false,
+    targets: [],
     cardTypes: null,
     keywords: null,
   };
