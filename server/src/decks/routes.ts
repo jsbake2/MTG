@@ -13,6 +13,7 @@ import {
   listPrecons,
   starDeck,
   updateDeck,
+  getDecksCards,
 } from "./repo.js";
 import { analyzeDeckTags, validateDeck, type DeckEntryWithCard } from "./validate.js";
 import { resolveDecklist } from "./import.js";
@@ -36,6 +37,30 @@ decksRouter.use(requireAuth);
 
 decksRouter.get("/", async (req, res) => {
   res.json({ decks: await listDecks(req.user!.id) });
+});
+
+decksRouter.get("/legality", async (req, res) => {
+  const formatId = String(req.query.formatId || "standard");
+  const includePrecon = req.query.precon === "true";
+  
+  const decks = await listDecks(req.user!.id);
+  const precons = includePrecon ? await listPrecons() : [];
+  
+  const allDecks = [...decks, ...precons];
+  const deckIds = allDecks.map((d) => d.id);
+  const deckCardsMap = await getDecksCards(deckIds);
+  
+  const results: Record<string, { valid: boolean; issuesCount: number }> = {};
+  for (const d of allDecks) {
+    const entries = deckCardsMap[d.id] ?? [];
+    const validation = validateDeck(formatId, entries);
+    results[d.id] = {
+      valid: validation.valid,
+      issuesCount: validation.issues.filter((i) => i.severity === "error").length,
+    };
+  }
+  
+  res.json({ results });
 });
 
 // Preconstructed decks — visible to everyone, copyable to your own account.

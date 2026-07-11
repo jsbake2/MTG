@@ -27,6 +27,21 @@ export function Decks() {
     setFormats(f.formats);
     setLoading(false);
   }
+  const [legalityFormat, setLegalityFormat] = useState("");
+  const [legalityMap, setLegalityMap] = useState<Record<string, { valid: boolean; issuesCount: number }>>({});
+
+  useEffect(() => {
+    if (!legalityFormat) {
+      setLegalityMap({});
+      return;
+    }
+    api.get<{ results: Record<string, { valid: boolean; issuesCount: number }> }>(
+      `/api/decks/legality?formatId=${legalityFormat}&precon=true`
+    ).then((r) => {
+      setLegalityMap(r.results);
+    });
+  }, [legalityFormat, decks, precons]);
+
   useEffect(() => {
     load();
   }, []);
@@ -72,6 +87,14 @@ export function Decks() {
           <option value="updated">Recently updated</option>
           <option value="name">Name (A–Z)</option>
         </select>
+        <select className="input !py-1 border-emerald-500/30 text-emerald-400 bg-emerald-500/5 focus:ring-emerald-500/55 font-semibold" value={legalityFormat} onChange={(e) => setLegalityFormat(e.target.value)} title="Check legality">
+          <option value="" className="text-table-ink font-normal">— Check Legality —</option>
+          {formats.map((f) => (
+            <option key={f.id} value={f.id} className="text-table-ink font-normal">
+              {f.name} Legality
+            </option>
+          ))}
+        </select>
         <Link to="/decks/new" className="btn-primary ml-auto">
           + New deck
         </Link>
@@ -106,8 +129,19 @@ export function Decks() {
                   ))}
                 </div>
               </div>
-              <div className="mt-1 text-sm text-table-muted">
-                {formatName(d.formatId)} · {d.cardCount} cards
+              <div className="flex items-center gap-1.5 text-xs mt-1">
+                  {legalityFormat && legalityMap[d.id] !== undefined && (
+                    <span className={`text-[10px] px-1.5 py-0.5 rounded font-semibold ${
+                      legalityMap[d.id].valid 
+                        ? "bg-green-950/70 border border-green-500/40 text-green-400" 
+                        : "bg-red-950/70 border border-red-500/40 text-red-400"
+                    }`}>
+                      {legalityMap[d.id].valid ? "✓ Legal" : `✕ Illegal`}
+                    </span>
+                  )}
+                  <span className="text-table-muted capitalize">{formatName(d.formatId)}</span>
+                  <span className="text-table-muted">·</span>
+                  <span className="text-table-muted">{d.cardCount} cards</span>
               </div>
               {d.tags.length > 0 && (
                 <div className="mt-1 flex flex-wrap gap-1">
@@ -174,8 +208,17 @@ export function Decks() {
                     ))}
                   </div>
                 </div>
-                <div className="mt-1 text-xs text-table-muted">
-                  {formatName(d.formatId)} · {d.cardCount} cards
+                 <div className="mt-1 flex items-center gap-1.5 text-xs">
+                  {legalityFormat && legalityMap[d.id] !== undefined && (
+                    <span className={`text-[10px] px-1.5 py-0.5 rounded font-semibold ${
+                      legalityMap[d.id].valid 
+                        ? "bg-green-950/70 border border-green-500/40 text-green-400" 
+                        : "bg-red-950/70 border border-red-500/40 text-red-400"
+                    }`}>
+                      {legalityMap[d.id].valid ? "✓ Legal" : `✕ Illegal`}
+                    </span>
+                  )}
+                  <span className="text-table-muted">{formatName(d.formatId)} · {d.cardCount} cards</span>
                 </div>
                 <div className="mt-auto flex gap-2 pt-3">
                   <Link to={`/decks/${d.id}`} className="btn-ghost">

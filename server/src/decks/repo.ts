@@ -1,6 +1,7 @@
 import type { Deck, DeckCardEntry, DeckDetail } from "@mtg/shared";
 import { query, withTx } from "../db/pool.js";
 import { getCardsByIds } from "../cards/repo.js";
+import type { DeckEntryWithCard } from "./validate.js";
 
 interface DeckRow {
   id: string;
@@ -184,4 +185,27 @@ export async function getDecksContainingCard(oracleId: string, userId: string | 
     quantity: r.quantity,
     board: r.board,
   }));
+}
+
+export async function getDecksCards(deckIds: string[]): Promise<Record<string, DeckEntryWithCard[]>> {
+  if (deckIds.length === 0) return {};
+  const entries = (
+    await query<{ deck_id: string; card_id: string; board: DeckCardEntry["board"]; quantity: number }>(
+      `SELECT deck_id, card_id, board, quantity FROM deck_cards WHERE deck_id = ANY($1)`,
+      [deckIds],
+    )
+  ).rows;
+  const cardIds = [...new Set(entries.map((e) => e.card_id))];
+  const cards = await getCardsByIds(cardIds);
+  
+  const results: Record<string, DeckEntryWithCard[]> = {};
+  for (const deckId of deckIds) results[deckId] = [];
+  
+  for (const e of entries) {
+    const card = cards.get(e.card_id);
+    if (card) {
+      results[e.deck_id]?.push({ board: e.board, quantity: e.quantity, card });
+    }
+  }
+  return results;
 }
