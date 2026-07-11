@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import type { CardDetailResponse, Deck, GameObject, PlayerState, RollResult, TableState, ZoneId } from "@mtg/shared";
+import type { CardDetailResponse, Deck, EffectMode, GameObject, PlayerState, RollResult, TableState, ZoneId } from "@mtg/shared";
 import { TURN_STEPS, compileEffects } from "@mtg/shared";
 import { api } from "@/api/client";
 import { useAuth } from "@/store/auth";
@@ -146,8 +146,14 @@ function GameBoard({ t, state }: { t: TableConn; state: TableState }) {
   const [sel, setSel] = useState<Selection | null>(null);
   const [chatText, setChatText] = useState("");
   const [tokenOpen, setTokenOpen] = useState(false);
-  const [targeting, setTargeting] = useState<{ objectId: string; name: string; specs: { kind: string; label: string }[]; collected: string[] } | null>(null);
+  const [targeting, setTargeting] = useState<{ objectId: string; name: string; specs: { kind: string; label: string }[]; collected: string[]; mode?: number; x?: number } | null>(null);
+  const [modePicker, setModePicker] = useState<{ objectId: string; name: string; modes: EffectMode[] } | null>(null);
 
+  // Begin targeting/casting for a given object + mode's target specs.
+  function startCast(objectId: string, name: string, specs: { kind: string; label: string }[], mode?: number, x?: number) {
+    if (specs.length === 0) t.send({ type: "cast", objectId, targets: [], mode, x });
+    else setTargeting({ objectId, name, specs, collected: [], mode, x });
+  }
   async function beginCast(o: GameObject) {
     if (!o.cardId) {
       t.send({ type: "cast", objectId: o.id });
@@ -156,11 +162,14 @@ function GameBoard({ t, state }: { t: TableConn; state: TableState }) {
     try {
       const detail = await api.get<CardDetailResponse>(`/api/cards/${o.cardId}`);
       const comp = compileEffects(detail.card.oracleText, detail.card.name);
-      if (comp.targets.length === 0) {
-        t.send({ type: "cast", objectId: o.id, targets: [] });
-      } else {
-        setTargeting({ objectId: o.id, name: o.name, specs: comp.targets, collected: [] });
+      if (comp.modes && comp.modes.length > 0) {
+        setModePicker({ objectId: o.id, name: o.name, modes: comp.modes });
+        return;
       }
+      let x: number | undefined;
+      const needsX = comp.ops.some((op) => (op as { xScaled?: boolean }).xScaled) || /\{X\}/.test(detail.card.manaCost ?? "");
+      if (needsX) x = Math.max(0, Math.floor(Number(prompt(`Choose X for ${o.name}:`, "0")) || 0));
+      startCast(o.id, o.name, comp.targets, undefined, x);
     } catch {
       t.send({ type: "cast", objectId: o.id });
     }
@@ -170,7 +179,7 @@ function GameBoard({ t, state }: { t: TableConn; state: TableState }) {
       if (!cur) return cur;
       const collected = [...cur.collected, id];
       if (collected.length >= cur.specs.length) {
-        t.send({ type: "cast", objectId: cur.objectId, targets: collected });
+        t.send({ type: "cast", objectId: cur.objectId, targets: collected, mode: cur.mode, x: cur.x });
         return null;
       }
       return { ...cur, collected };
@@ -361,6 +370,32 @@ function GameBoard({ t, state }: { t: TableConn; state: TableState }) {
       )}
       {sel && <CardMenu sel={sel} state={state} you={you} t={t} onCast={beginCast} onClose={() => setSel(null)} />}
       <RollOverlay roll={state.lastRoll} />
+      {modePicker && (
+        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/60 p-4" onClick={() => setModePicker(null)}>
+          <div className="panel w-full max-w-md p-4" onClick={(e) => e.stopPropagation()}>
+            <h3 className="mb-2 font-display text-lg text-table-accentSoft">{modePicker.name} — choose a mode</h3>
+            <div className="space-y-1">
+              {modePicker.modes.map((m, i) => (
+                <button
+                  key={i}
+                  className="block w-full rounded-md border border-table-border bg-table-panel2 px-3 py-2 text-left text-sm hover:border-table-accent"
+                  onClick={() => {
+                    const mode = modePicker.modes[i]!;
+                    const obj = modePicker;
+                    setModePicker(null);
+                    startCast(obj.objectId, obj.name, mode.targets, i);
+                  }}
+                >
+                  • {m.label}
+                </button>
+              ))}
+            </div>
+            <button className="btn-ghost mt-3" onClick={() => setModePicker(null)}>
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
       {targeting && (
         <div className="fixed left-1/2 top-16 z-40 flex -translate-x-1/2 items-center gap-2 rounded-lg border border-red-500/60 bg-table-panel/95 px-4 py-2 text-sm shadow-panel">
           <span className="text-table-accentSoft">🎯 {targeting.name}:</span>

@@ -36,10 +36,10 @@ export interface MassFilter {
 }
 
 export type EffectOp =
-  | { op: "draw"; who: EffectWho; count: number }
-  | { op: "damage"; to: EffectWho; amount: number }
-  | { op: "gain_life"; who: EffectWho; amount: number }
-  | { op: "lose_life"; who: EffectWho; amount: number }
+  | { op: "draw"; who: EffectWho; count: number; xScaled?: boolean }
+  | { op: "damage"; to: EffectWho; amount: number; xScaled?: boolean }
+  | { op: "gain_life"; who: EffectWho; amount: number; xScaled?: boolean }
+  | { op: "lose_life"; who: EffectWho; amount: number; xScaled?: boolean }
   | { op: "destroy"; what: EffectWho }
   | { op: "exile"; what: EffectWho }
   | { op: "bounce"; what: EffectWho }
@@ -54,7 +54,7 @@ export type EffectOp =
   | { op: "token"; who: EffectWho; count: number; power: number; toughness: number; name: string; colors: string[] }
   | { op: "mill"; who: EffectWho; count: number }
   // Mass (no single target) effects over a filtered set of permanents.
-  | { op: "mass_damage"; filter: MassFilter; amount: number }
+  | { op: "mass_damage"; filter: MassFilter; amount: number; xScaled?: boolean }
   | { op: "mass_destroy"; filter: MassFilter }
   | { op: "mass_exile"; filter: MassFilter }
   | { op: "mass_pump"; filter: MassFilter; power: number; toughness: number }
@@ -64,10 +64,17 @@ export type EffectOp =
   // Recognized but choice-heavy — engine prompts the player to finish.
   | { op: "manual"; hint: string };
 
+export interface EffectMode {
+  label: string;
+  ops: EffectOp[];
+  targets: { kind: TargetKind; label: string }[];
+}
 export interface CompiledEffect {
   ops: EffectOp[];
   targets: { kind: TargetKind; label: string }[];
   matched: boolean;
+  // Present for modal ("choose one —") spells; the caster picks a mode.
+  modes?: EffectMode[];
 }
 
 const NUM: Record<string, number> = { a: 1, an: 1, one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10, x: 1 };
@@ -75,6 +82,9 @@ function num(w: string | undefined): number {
   if (!w) return 1;
   if (/^[+-]?\d+$/.test(w)) return parseInt(w, 10);
   return NUM[w.toLowerCase()] ?? 1;
+}
+function isX(w: string | undefined): boolean {
+  return (w ?? "").toLowerCase() === "x";
 }
 
 const KEYWORDS = ["flying", "first strike", "double strike", "deathtouch", "lifelink", "trample", "vigilance", "haste", "menace", "reach", "hexproof", "indestructible", "flash", "defender", "shroud", "protection", "unblockable", "intimidate", "skulk"];
@@ -120,8 +130,8 @@ const PATTERNS: Pattern[] = [
   { re: /counter\s+target\s+(spell|creature spell|noncreature spell|activated ability|triggered ability|ability)/i, build: () => ({ op: "counter", what: { scope: "target", kind: "spell" } }) },
 
   // --- Mass damage / single damage ---
-  { re: /deals?\s+(\d+|x)\s+damage\s+to\s+each\s+(creature and player|creature and planeswalker|creature)/i, build: (m) => [{ op: "mass_damage", filter: { creaturesOnly: true, types: [], controller: "all" }, amount: num(m[1]) }, ...(/player/.test(m[2]!) ? [{ op: "damage" as const, to: { scope: "each_player" as const }, amount: num(m[1]) }] : [])] },
-  { re: /deals?\s+(\d+|a|one|two|three|four|five|six|seven|x)\s+damage\s+to\s+(any target|target creature or planeswalker or player|target creature or player|target creature|target planeswalker|target player|target opponent|each opponent|each player|you)/i, build: (m) => ({ op: "damage", amount: num(m[1]), to: who(m[2]!) }) },
+  { re: /deals?\s+(\d+|x)\s+damage\s+to\s+each\s+(creature and player|creature and planeswalker|creature)/i, build: (m) => [{ op: "mass_damage", filter: { creaturesOnly: true, types: [], controller: "all" }, amount: num(m[1]), xScaled: isX(m[1]) }, ...(/player/.test(m[2]!) ? [{ op: "damage" as const, to: { scope: "each_player" as const }, amount: num(m[1]), xScaled: isX(m[1]) }] : [])] },
+  { re: /deals?\s+(\d+|a|one|two|three|four|five|six|seven|x)\s+damage\s+to\s+(any target|target creature or planeswalker or player|target creature or player|target creature|target planeswalker|target player|target opponent|each opponent|each player|you)/i, build: (m) => ({ op: "damage", amount: num(m[1]), xScaled: isX(m[1]), to: who(m[2]!) }) },
 
   // --- Destroy / Exile (mass first, then single) ---
   { re: /destroy\s+all\s+([a-z ]*?(?:creatures|permanents|artifacts|enchantments|lands|planeswalkers))/i, build: (m) => ({ op: "mass_destroy", filter: massFilter(m[1]!) }) },
@@ -177,7 +187,7 @@ const PATTERNS: Pattern[] = [
   { re: /put\s+(\d+|a|one|two|three|four|five)\s+(\+1\/\+1|-1\/-1) counters?\s+on\s+each\s+(creature[a-z ]*)/i, build: (m) => ({ op: "mass_counter", count: num(m[1]), kind: m[2] as "+1/+1" | "-1/-1", filter: massFilter(m[3]!) }) },
 
   // --- Draw / Life / Mill ---
-  { re: /(you|target player|each player|target opponent)?\s*draws?\s+(\d+|a|one|two|three|four|five|six|seven)\s+cards?/i, build: (m) => ({ op: "draw", who: who(m[1] ?? "you"), count: num(m[2]) }) },
+  { re: /(you|target player|each player|target opponent)?\s*draws?\s+(\d+|a|one|two|three|four|five|six|seven|x)\s+cards?/i, build: (m) => ({ op: "draw", who: who(m[1] ?? "you"), count: num(m[2]), xScaled: isX(m[2]) }) },
   { re: /(you|target player)?\s*gains?\s+(\d+|one|two|three|four|five|six|seven|eight|ten)\s+life/i, build: (m) => ({ op: "gain_life", who: who(m[1] ?? "you"), amount: num(m[2]) }) },
   { re: /(you|target player|each opponent|each player)?\s*loses?\s+(\d+|one|two|three|four|five)\s+life/i, build: (m) => ({ op: "lose_life", who: who(m[1] ?? "you"), amount: num(m[2]) }) },
   { re: /(target player|each player|you)?\s*mills?\s+(\d+|one|two|three|four|five|ten)\s+cards?/i, build: (m) => ({ op: "mill", who: who(m[1] ?? "you"), count: num(m[2]) }) },
@@ -243,11 +253,33 @@ function opsFromClauses(clauses: string[], skipTriggers: boolean): EffectOp[] {
   return ops;
 }
 
+// Modal spells: "Choose one —" / "Choose two —" / "Choose one or both —"
+// followed by • bulleted modes. Returns the compiled modes, or null.
+function detectModes(oracleText: string, cardName: string): EffectMode[] | null {
+  const text = normalize(oracleText, cardName);
+  if (!/choose (one|two|one or both|up to)/i.test(text)) return null;
+  // Modes are • bullets (or • replaced). Grab everything after "choose … —".
+  const after = text.split(/choose [^—\-]*[—-]/i)[1];
+  if (!after) return null;
+  const parts = after.split(/[•●]/).map((p) => p.trim()).filter((p) => p.length > 3);
+  if (parts.length < 2) return null;
+  const modes: EffectMode[] = [];
+  for (const part of parts.slice(0, 6)) {
+    const clauses = part.split(/[.;\n]/).map((c) => c.trim()).filter(Boolean);
+    const eff = finalize(opsFromClauses(clauses, false));
+    modes.push({ label: part.replace(/\s+/g, " ").slice(0, 70), ops: eff.ops, targets: eff.targets });
+  }
+  // Only worthwhile if at least one mode compiled to something.
+  return modes.some((m) => m.ops.length > 0) ? modes : null;
+}
+
 export function compileEffects(oracleText: string | null, cardName: string): CompiledEffect {
   // A hand-authored per-card script always wins (100%-correct override).
   const scripted = scriptFor(cardName);
   if (scripted) return finalize(scripted);
   if (!oracleText) return { ops: [], targets: [], matched: false };
+  const modes = detectModes(oracleText, cardName);
+  if (modes) return { ops: [], targets: [], matched: true, modes };
   const clauses = normalize(oracleText, cardName).split(/[.;\n]/).map((c) => c.trim()).filter(Boolean);
   return finalize(opsFromClauses(clauses, true));
 }

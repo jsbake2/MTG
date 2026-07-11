@@ -47,6 +47,8 @@ export function newObject(partial: Partial<GameObject> & Pick<GameObject, "name"
     targets: [],
     tempBoost: { power: 0, toughness: 0 },
     grantedKeywords: [],
+    castMode: -1,
+    xValue: 0,
     cardTypes: null,
     keywords: null,
     ...partial,

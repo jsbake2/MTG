@@ -312,6 +312,12 @@ function routeZone(state: TableState, ctx: CardIndex, o: GameObject, action: key
 function applyEffects(state: TableState, ctx: CardIndex, source: GameObject): boolean {
   const ci = info(ctx, source);
   const comp = compileEffects(ci?.oracleText ?? null, source.name);
+  if (comp.modes && comp.modes.length > 0) {
+    const mode = comp.modes[source.castMode >= 0 ? source.castMode : 0] ?? comp.modes[0]!;
+    applyOps(state, ctx, source, mode.ops, source.targets);
+    log(state, { seat: source.controllerSeat, kind: "action", text: `${source.name} — mode: ${mode.label}` });
+    return true;
+  }
   if (!comp.matched) return false;
   applyOps(state, ctx, source, comp.ops, source.targets);
   return true;
@@ -341,34 +347,33 @@ function runEtb(state: TableState, ctx: CardIndex, source: GameObject): void {
 function applyOps(state: TableState, ctx: CardIndex, source: GameObject, ops: EffectOp[], targetIds: string[]): void {
   let ti = 0;
   const nextTarget = () => targetIds[ti++];
+  const amt = (base: number, x?: boolean) => (x ? source.xValue : base);
   for (const op of ops) {
     const tgt = resolveWho(state, source, whoOf(op), nextTarget);
     switch (op.op) {
       case "draw":
-        for (const s of tgt.seats) drawCards(state, s, op.count);
+        for (const s of tgt.seats) drawCards(state, s, amt(op.count, op.xScaled));
         break;
-      case "damage":
+      case "damage": {
+        const dmg = amt(op.amount, op.xScaled);
         for (const s of tgt.seats) {
           const p = playerBySeat(state, s);
-          if (p) p.life -= op.amount;
+          if (p) p.life -= dmg;
         }
-        if (tgt.object && isCreature(ctx, tgt.object)) tgt.object.damage += op.amount;
-        else if (tgt.object) {
-          const p = playerBySeat(state, tgt.object.controllerSeat);
-          void p;
-        }
-        log(state, { seat: source.controllerSeat, kind: "action", text: `${source.name} deals ${op.amount} damage.` });
+        if (tgt.object && isCreature(ctx, tgt.object)) tgt.object.damage += dmg;
+        log(state, { seat: source.controllerSeat, kind: "action", text: `${source.name} deals ${dmg} damage.` });
         break;
+      }
       case "gain_life":
         for (const s of tgt.seats) {
           const p = playerBySeat(state, s);
-          if (p) p.life += op.amount;
+          if (p) p.life += amt(op.amount, op.xScaled);
         }
         break;
       case "lose_life":
         for (const s of tgt.seats) {
           const p = playerBySeat(state, s);
-          if (p) p.life -= op.amount;
+          if (p) p.life -= amt(op.amount, op.xScaled);
         }
         break;
       case "destroy":
@@ -414,10 +419,12 @@ function applyOps(state: TableState, ctx: CardIndex, source: GameObject, ops: Ef
       case "tuck":
         if (tgt.object) moveObject(state, ctx, tgt.object, "library", tgt.object.ownerSeat, { toTop: op.top });
         break;
-      case "mass_damage":
-        for (const o of massObjects(state, ctx, source, op.filter)) o.damage += op.amount;
-        log(state, { seat: source.controllerSeat, kind: "action", text: `${source.name} deals ${op.amount} to each ${op.filter.controller === "all" ? "" : op.filter.controller + "'s "}creature.` });
+      case "mass_damage": {
+        const md = amt(op.amount, op.xScaled);
+        for (const o of massObjects(state, ctx, source, op.filter)) o.damage += md;
+        log(state, { seat: source.controllerSeat, kind: "action", text: `${source.name} deals ${md} to each creature.` });
         break;
+      }
       case "mass_destroy":
         for (const o of massObjects(state, ctx, source, op.filter)) routeZone(state, ctx, o, "destroy");
         log(state, { seat: source.controllerSeat, kind: "action", text: `${source.name} destroys permanents.` });
@@ -658,6 +665,8 @@ function dispatch(state: TableState, ctx: CardIndex, seat: number, action: GameA
       o.zone = "stack";
       o.controllerSeat = seat;
       o.targets = action.targets ?? [];
+      o.castMode = action.mode ?? -1;
+      o.xValue = action.x ?? 0;
       state.stackOrder.push(o.id);
       state.passStreak = 0;
       recountHiddenZones(state);
@@ -871,6 +880,8 @@ function newTokenObject(seat: number, name: string): GameObject {
     targets: [],
     tempBoost: { power: 0, toughness: 0 },
     grantedKeywords: [],
+    castMode: -1,
+    xValue: 0,
     cardTypes: null,
     keywords: null,
   };
