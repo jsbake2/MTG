@@ -1,0 +1,1576 @@
+{
+  "total": 38314,
+  "buckets": {
+    "covered": 8757,
+    "shared": 12879,
+    "custom": 14433
+  },
+  "coveredBy": {
+    "vanilla": 3273,
+    "keyword": 0,
+    "script": 22,
+    "compiled": 5462
+  },
+  "partial": 7201,
+  "distinctUnmodeledClauses": 29255,
+  "sharedThreshold": 8,
+  "scriptCount": 22,
+  "topUnmodeled": [
+    {
+      "key": "{M} add {M}",
+      "count": 856,
+      "example": "{T}: Add {B}.",
+      "cards": [
+        "Shizo, Death's Storehouse",
+        "Talisman of Progress",
+        "Saltcrusted Steppe",
+        "Tainted Isle",
+        "Moss Diamond",
+        "Blighted Woodland"
+      ]
+    },
+    {
+      "key": "enchant creature",
+      "count": 803,
+      "example": "Enchant creature",
+      "cards": [
+        "Sensory Deprivation",
+        "Waterknot",
+        "Strength of Unity",
+        "Demonic Vigor",
+        "Dragon Fangs",
+        "Plot Armor"
+      ]
+    },
+    {
+      "key": "equip {M}",
+      "count": 478,
+      "example": "Equip {3}",
+      "cards": [
+        "Behemoth Sledge",
+        "Sword of Light and Shadow",
+        "Zephyr Boots",
+        "Beamtown Beatstick",
+        "Rover Blades",
+        "Executioner's Hood"
+      ]
+    },
+    {
+      "key": "activate only as a sorcery",
+      "count": 444,
+      "example": "Activate only as a sorcery.",
+      "cards": [
+        "Blighted Nightmare",
+        "Sagu Pummeler",
+        "Memory Vessel",
+        "Cryptwailing",
+        "Sword-Swallowing Seraph",
+        "Ent-Draught Basin"
+      ]
+    },
+    {
+      "key": "this land enters tapped",
+      "count": 434,
+      "example": "This land enters tapped.",
+      "cards": [
+        "Savai Triome",
+        "Timber Gorge",
+        "Selesnya Sanctuary",
+        "Urborg Volcano",
+        "Airship Engine Room",
+        "Illegitimate Business"
+      ]
+    },
+    {
+      "key": "{M} add {M} or {M}",
+      "count": 339,
+      "example": "{T}: Add {R} or {G}.",
+      "cards": [
+        "Timber Gorge",
+        "Game Trail",
+        "Talisman of Progress",
+        "Maraleaf Pixie",
+        "Urborg Volcano",
+        "Airship Engine Room"
+      ]
+    },
+    {
+      "key": "choose one —",
+      "count": 315,
+      "example": "Choose one —",
+      "cards": [
+        "Road of Return",
+        "Consuming Sinkhole",
+        "Drill Too Deep",
+        "Ready to Rumble",
+        "Ulgrotha Charm",
+        "Rain of Rust"
+      ]
+    },
+    {
+      "key": "cycling {M}",
+      "count": 222,
+      "example": "Cycling {3}",
+      "cards": [
+        "Savai Triome",
+        "Curator of Mysteries",
+        "Lay Waste",
+        "Gallant Strike",
+        "Shefet Archfiend",
+        "Crystal Carapace"
+      ]
+    },
+    {
+      "key": "{M} add one mana of any color",
+      "count": 216,
+      "example": "{T}: Add one mana of any color.",
+      "cards": [
+        "Coalition Relic",
+        "Lantern of Revealing",
+        "Hadran, Naya Sunseeder",
+        "Flywheel Racer",
+        "A-Carnelian Orb of Dragonkind",
+        "A-Lantern of Revealing"
+      ]
+    },
+    {
+      "key": "crew N",
+      "count": 191,
+      "example": "Crew 1",
+      "cards": [
+        "Mindlink Mech",
+        "War Balloon",
+        "Rover Blades",
+        "Flywheel Racer",
+        "Mukotai Soulripper",
+        "Skybox Ferry"
+      ]
+    },
+    {
+      "key": "equipped creature gets +N/+N",
+      "count": 171,
+      "example": "Equipped creature gets +2/+1.",
+      "cards": [
+        "Bloodthorn Flail",
+        "Atomic Microsizer",
+        "Slayer's Plate",
+        "Deathrender",
+        "Torch Gauntlet",
+        "Sword"
+      ]
+    },
+    {
+      "key": "put the rest on the bottom of your library in a random order",
+      "count": 163,
+      "example": "Put the rest on the bottom of your library in a random order.",
+      "cards": [
+        "Harald, King of Skemfar",
+        "Director Nick Fury",
+        "Cosmic Cube",
+        "Three Tree Battalion",
+        "Owlbear Cub",
+        "Keldon Flamesage"
+      ]
+    },
+    {
+      "key": "{M} this creature gets +N/+N until end of turn",
+      "count": 162,
+      "example": "{B}: This creature gets +1/+1 until end of turn.",
+      "cards": [
+        "Whispering Shade",
+        "Darkling Stalker",
+        "Dirtwater Wraith",
+        "Stone Kavu",
+        "Spitfire Handler",
+        "Flailing Manticore"
+      ]
+    },
+    {
+      "key": "you may choose new targets for the copy",
+      "count": 137,
+      "example": "You may choose new targets for the copy.",
+      "cards": [
+        "Providence of Night",
+        "Verrak, Warped Sengir",
+        "A-Leyline of Resonance",
+        "Abstruse Archaic",
+        "League Guildmage",
+        "Psychic Rebuttal"
+      ]
+    },
+    {
+      "key": "enchanted creature gets +N/+N",
+      "count": 132,
+      "example": "Enchanted creature gets +1/+1.",
+      "cards": [
+        "Demonic Vigor",
+        "Surging Might",
+        "Colossification",
+        "Wicked // Cursed",
+        "Indomitable Might",
+        "Unholy Strength"
+      ]
+    },
+    {
+      "key": "this ability triggers only once each turn",
+      "count": 124,
+      "example": "This ability triggers only once each turn.",
+      "cards": [
+        "Hardened Bonds",
+        "Fang, Fearless l'Cie",
+        "Twilight Diviner",
+        "Nanoform Sentinel",
+        "Cloaked Cadet",
+        "G'raha Tia"
+      ]
+    },
+    {
+      "key": "{M}{M} this creature gets +N/+N until end of turn",
+      "count": 110,
+      "example": "{2}{G}: This creature gets +2/+2 until end of turn.",
+      "cards": [
+        "Mindful Biomancer",
+        "Ebony Treefolk",
+        "Stromgald Crusader",
+        "Frilled Oculus",
+        "Havoc Sower",
+        "Phoenix of Ash"
+      ]
+    },
+    {
+      "key": "activate only once each turn",
+      "count": 105,
+      "example": "Activate only once each turn.",
+      "cards": [
+        "Mindful Biomancer",
+        "Sepulcher Ghoul",
+        "Mobile Fort",
+        "Power Plant Worker",
+        "Stuffy Doll Avatar",
+        "Frilled Oculus"
+      ]
+    },
+    {
+      "key": "devoid",
+      "count": 102,
+      "example": "Devoid",
+      "cards": [
+        "Void Grafter",
+        "Consuming Sinkhole",
+        "Slaughter Drone",
+        "Mind Raker",
+        "Fathom Feeder",
+        "Havoc Sower"
+      ]
+    },
+    {
+      "key": "convoke",
+      "count": 101,
+      "example": "Convoke",
+      "cards": [
+        "Vault Guardsman",
+        "Pack's Favor",
+        "Kavu Primarch",
+        "Living Totem",
+        "March of the Multitudes",
+        "Order of Sacred Dusk"
+      ]
+    },
+    {
+      "key": "ward {M}",
+      "count": 101,
+      "example": "Ward {2}",
+      "cards": [
+        "Cactusfolk Sureshot",
+        "Dreadlight Monstrosity",
+        "Cosmic Cube",
+        "Sovereign Okinec Ahau",
+        "Patchwork Automaton",
+        "Harmonious Grovestrider"
+      ]
+    },
+    {
+      "key": "this creature can't block",
+      "count": 98,
+      "example": "This creature can't block.",
+      "cards": [
+        "Pirate",
+        "Fear of Infinity",
+        "Hulking Cyclops",
+        "Infesting Radroach",
+        "Postmortem Professor",
+        "Gravecrawler"
+      ]
+    },
+    {
+      "key": "kicker {M}{M}",
+      "count": 96,
+      "example": "Kicker {2}{G}",
+      "cards": [
+        "Oran-Rief Recluse",
+        "Roost of Drakes",
+        "Stall for Time",
+        "Kitesail Cleric",
+        "Urborg Repossession",
+        "Tourach, Dread Cantor"
+      ]
+    },
+    {
+      "key": "exile ~",
+      "count": 95,
+      "example": "Exile Flood of Recollection.",
+      "cards": [
+        "Flood of Recollection",
+        "Game Plan",
+        "Ecological Appreciation",
+        "Genesis Ultimatum",
+        "Woodland Guidance",
+        "Wildest Dreams"
+      ]
+    },
+    {
+      "key": "kicker {M}",
+      "count": 94,
+      "example": "Kicker {B}",
+      "cards": [
+        "Strength of Night",
+        "Phyrexian Warhorse",
+        "Colossal Growth",
+        "Overload",
+        "Kavu Primarch",
+        "Skizzik"
+      ]
+    },
+    {
+      "key": "flashback {M}{M}",
+      "count": 91,
+      "example": "Flashback {9}{R}",
+      "cards": [
+        "Scorching Missile",
+        "Alter Reality",
+        "Howling Gale",
+        "Gaze of Justice",
+        "Increasing Ambition",
+        "Daydream"
+      ]
+    },
+    {
+      "key": "its still a land",
+      "count": 91,
+      "example": "It's still a land.",
+      "cards": [
+        "Llanowar Loamspeaker",
+        "Hall of Storm Giants",
+        "Restless Vinestalk",
+        "Vastwood Animist",
+        "Faerie Conclave",
+        "Embodiment of Fury"
+      ]
+    },
+    {
+      "key": "scry N",
+      "count": 88,
+      "example": "Scry 1.",
+      "cards": [
+        "The Secret Lair",
+        "Point to the Scoreboard",
+        "Horses of the Bruinen",
+        "Artisan's Sorrow",
+        "Dialogue Tree",
+        "Cruel Finality"
+      ]
+    },
+    {
+      "key": "this spell can't be countered",
+      "count": 87,
+      "example": "This spell can't be countered.",
+      "cards": [
+        "Supreme Verdict",
+        "Rending Volley",
+        "Heated Debate",
+        "Thrun, the Last Troll",
+        "Glen Elendra's Answer",
+        "Skylasher"
+      ]
+    },
+    {
+      "key": "prowess",
+      "count": 85,
+      "example": "Prowess",
+      "cards": [
+        "Soul-Scar Mage",
+        "Bedlam Reveler",
+        "Monk",
+        "Lilah, Undefeated Slickshot",
+        "Ty Lee, Chi Blocker",
+        "Abbot of Keral Keep"
+      ]
+    },
+    {
+      "key": "it can't be regenerated",
+      "count": 85,
+      "example": "It can't be regenerated.",
+      "cards": [
+        "Polymorph",
+        "Pongify",
+        "Rapid Hybridization",
+        "Phage the Untouchable",
+        "Pillage",
+        "Dark Banishing"
+      ]
+    },
+    {
+      "key": "it gains haste until end of turn",
+      "count": 82,
+      "example": "It gains haste until end of turn.",
+      "cards": [
+        "Sauron, the Lidless Eye",
+        "Breaking // Entering",
+        "Goatnap",
+        "Slave of Bolas",
+        "City's Blessing // Elemental",
+        "Angrath, the Flame-Chained"
+      ]
+    },
+    {
+      "key": "{M} add {M}{M}",
+      "count": 80,
+      "example": "{T}: Add {C}{G}.",
+      "cards": [
+        "Nantuko Elder",
+        "Selesnya Sanctuary",
+        "Ulvenwald Captive // Ulvenwald Abomination",
+        "Simic Growth Chamber",
+        "Soldevi Machinist",
+        "Rakdos Carnarium"
+      ]
+    },
+    {
+      "key": "changeling",
+      "count": 71,
+      "example": "Changeling",
+      "cards": [
+        "Barkform Harvester",
+        "Guardian Gladewalker",
+        "Wings of Velis Vel",
+        "Firdoch Core",
+        "Mirror Entity",
+        "Graveshifter"
+      ]
+    },
+    {
+      "key": "that player discards that card",
+      "count": 69,
+      "example": "That player discards that card.",
+      "cards": [
+        "Acquisitions Expert",
+        "Grief",
+        "Drill Bit",
+        "Mardu Charm",
+        "Extract the Truth",
+        "Unmask"
+      ]
+    },
+    {
+      "key": "partner",
+      "count": 67,
+      "example": "Partner",
+      "cards": [
+        "Ghost of Ramirez DePietro",
+        "Silas Renn, Seeker Adept",
+        "Fluros of Myra's Marvels",
+        "Krark, the Thumbless",
+        "Vial Smasher the Fierce",
+        "Francisco, Fowl Marauder"
+      ]
+    },
+    {
+      "key": "flashback {M}{M}{M}",
+      "count": 65,
+      "example": "Flashback {6}{G}{G}",
+      "cards": [
+        "Elephant Ambush",
+        "Visions of Dread",
+        "Wurmquake",
+        "Visions of Dominance",
+        "Croaking Counterpart",
+        "Divine Reckoning"
+      ]
+    },
+    {
+      "key": "morph {M}{M}",
+      "count": 65,
+      "example": "Morph {1}{W}",
+      "cards": [
+        "Gravel Slinger",
+        "Willbender",
+        "Aven Liberator",
+        "Shaper Parasite",
+        "Jeering Instigator",
+        "Fledgling Mawcor"
+      ]
+    },
+    {
+      "key": "{M} regenerate this creature",
+      "count": 63,
+      "example": "{B}: Regenerate this creature.",
+      "cards": [
+        "Darkling Stalker",
+        "Matopi Golem",
+        "Ranger en-Vec",
+        "Marang River Skeleton",
+        "Tattered Drake",
+        "Twisted Abomination"
+      ]
+    },
+    {
+      "key": "untap that creature",
+      "count": 63,
+      "example": "Untap that creature.",
+      "cards": [
+        "Unwilling Recruit",
+        "Defiant Stand",
+        "Goatnap",
+        "Slave of Bolas",
+        "Your Will Is Not Your Own",
+        "Savage Surge"
+      ]
+    },
+    {
+      "key": "if you search your library this way shuffle",
+      "count": 59,
+      "example": "If you search your library this way, shuffle.",
+      "cards": [
+        "Vraska's Scorn",
+        "Ashiok's Forerunner",
+        "Niambi, Faithful Healer",
+        "Claim Jumper",
+        "Fang-Druid Summoner",
+        "Grand Master of Flowers"
+      ]
+    },
+    {
+      "key": "this creature attacks each combat if able",
+      "count": 56,
+      "example": "This creature attacks each combat if able.",
+      "cards": [
+        "Phyrexian Juggernaut",
+        "Ashen Monstrosity",
+        "Bloodrock Cyclops",
+        "Daring Fiendbonder",
+        "Akoum Firebird",
+        "Primordial Ooze"
+      ]
+    },
+    {
+      "key": "enchant creature you control",
+      "count": 55,
+      "example": "Enchant creature you control",
+      "cards": [
+        "One with the Kami",
+        "Endless Evil",
+        "Inferno Fist",
+        "Pitiless Fists",
+        "Secret Invasion",
+        "Dying Wish"
+      ]
+    },
+    {
+      "key": "as an additional cost to cast this spell sacrifice a creature",
+      "count": 55,
+      "example": "As an additional cost to cast this spell, sacrifice a creature.",
+      "cards": [
+        "Mind Extraction",
+        "Diabolic Intent",
+        "Scapegoat",
+        "Infernal Plunge",
+        "Bone Splinters",
+        "Eldritch Evolution"
+      ]
+    },
+    {
+      "key": "when this creature enters choose one —",
+      "count": 55,
+      "example": "When this creature enters, choose one —",
+      "cards": [
+        "Dawnbringer Cleric",
+        "Irreverent Revelers",
+        "Fangkeeper's Familiar",
+        "Trusty Retriever",
+        "Coliseum Behemoth",
+        "Inspired Inventor"
+      ]
+    },
+    {
+      "key": "N",
+      "count": 54,
+      "example": "1.",
+      "cards": [
+        "Totally Lost in Translation // Totally Lost in Translation (cont'd)",
+        "Strictly Better // Strictly Better (cont'd)"
+      ]
+    },
+    {
+      "key": "this creature can't be blocked",
+      "count": 53,
+      "example": "This creature can't be blocked.",
+      "cards": [
+        "Gilded Scuttler",
+        "Tidal Kraken",
+        "Talas Warrior",
+        "Aether Figment",
+        "Invisible Stalker",
+        "Vedalken Infiltrator"
+      ]
+    },
+    {
+      "key": "target opponent reveals their hand",
+      "count": 52,
+      "example": "Target opponent reveals their hand.",
+      "cards": [
+        "Intimidation Tactics",
+        "Agonizing Remorse",
+        "Reckoner Shakedown",
+        "Memory Theft",
+        "Memory Leak",
+        "Castigate"
+      ]
+    },
+    {
+      "key": "choose one or both —",
+      "count": 50,
+      "example": "Choose one or both —",
+      "cards": [
+        "Saheeli's Artistry",
+        "Decoy Ploy",
+        "Amazing Acrobatics",
+        "Subtle Strike",
+        "Branching Bolt",
+        "Fight as One"
+      ]
+    },
+    {
+      "key": "cycling {M}{M}",
+      "count": 50,
+      "example": "Cycling {3}{R}",
+      "cards": [
+        "Deem Worthy",
+        "Esper Sojourners",
+        "Shefet Monitor",
+        "Desert of the Glorified",
+        "Agonasaur Rex",
+        "Grixis Sojourners"
+      ]
+    },
+    {
+      "key": "this artifact enters tapped",
+      "count": 50,
+      "example": "This artifact enters tapped.",
+      "cards": [
+        "Moss Diamond",
+        "Spare Supplies",
+        "Eye of Ojer Taq // Apex Observatory",
+        "Charcoal Diamond",
+        "Mistvein Borderpost",
+        "Glistening Sphere"
+      ]
+    },
+    {
+      "key": "start your engines!",
+      "count": 50,
+      "example": "Start your engines!",
+      "cards": [
+        "Momentum Breaker",
+        "Need for Speed (Not the Odyssey One)",
+        "Point the Way",
+        "Lightwheel Enhancements",
+        "Burnout Bashtronaut",
+        "Goblin Surveyor"
+      ]
+    },
+    {
+      "key": "N/N",
+      "count": 50,
+      "example": "3/3",
+      "cards": [
+        "Zulaport Enforcer",
+        "Student of Warfare",
+        "Coralhelm Commander",
+        "Transcendent Master",
+        "Halimar Wavewatch",
+        "Ikiral Outrider"
+      ]
+    },
+    {
+      "key": "cumulative upkeep {M}",
+      "count": 49,
+      "example": "Cumulative upkeep {1}",
+      "cards": [
+        "Prismatic Circle",
+        "Illusionary Terrain",
+        "Revered Unicorn",
+        "Heart of Bogardan",
+        "Soldevi Simulacrum",
+        "Wave of Terror"
+      ]
+    },
+    {
+      "key": "{M} add {M} {M} or {M}",
+      "count": 48,
+      "example": "{T}: Add {R}, {G}, or {W}.",
+      "cards": [
+        "Obelisk of Naya",
+        "Urban Retreat",
+        "Darigaaz's Caldera",
+        "Visage of Bolas",
+        "Mardu Devotee",
+        "Omenpath to Naya"
+      ]
+    },
+    {
+      "key": "untap it",
+      "count": 47,
+      "example": "Untap it.",
+      "cards": [
+        "Sauron, the Lidless Eye",
+        "Arachnoid Adaptation",
+        "Angrath, the Flame-Chained",
+        "Riverguard's Reflexes",
+        "Acrobatic Leap",
+        "Vengeful Possession"
+      ]
+    },
+    {
+      "key": "{M}{M} level N",
+      "count": 47,
+      "example": "{3}{U}: Level 2",
+      "cards": [
+        "Stormchaser's Talent",
+        "Builder's Talent",
+        "Leader's Talent",
+        "Fortune Teller's Talent",
+        "Cool but Rude",
+        "Ninja Teen"
+      ]
+    },
+    {
+      "key": "enchant land",
+      "count": 47,
+      "example": "Enchant land",
+      "cards": [
+        "Verdant Haven",
+        "Cursed Land",
+        "Vastwood Zendikon",
+        "Erosion",
+        "Market Festival",
+        "Blight"
+      ]
+    },
+    {
+      "key": "{M}{M} regenerate this creature",
+      "count": 46,
+      "example": "{1}{G}: Regenerate this creature.",
+      "cards": [
+        "Albino Troll",
+        "Troll Ascetic",
+        "Odious Trow",
+        "Grim Roustabout",
+        "Hellkite Overlord",
+        "Servant of Tymaret"
+      ]
+    },
+    {
+      "key": "enchant player",
+      "count": 46,
+      "example": "Enchant player",
+      "cards": [
+        "Curse of the Restless Dead",
+        "Curse of Inertia",
+        "Curse of Hospitality",
+        "Overwhelming Splendor",
+        "Curse of Oblivion",
+        "Volrath's Motion Sensor"
+      ]
+    },
+    {
+      "key": "then that player shuffles",
+      "count": 46,
+      "example": "Then that player shuffles.",
+      "cards": [
+        "Life's Finale",
+        "Neverending Torment",
+        "Counterbore",
+        "Sowing Salt",
+        "Stain the Mind",
+        "Quash"
+      ]
+    },
+    {
+      "key": "this creature enters with x +N/+N counters on it",
+      "count": 45,
+      "example": "This creature enters with X +1/+1 counters on it.",
+      "cards": [
+        "Benevolent Hydra",
+        "Marketback Walker",
+        "Magma Pummeler",
+        "Apocalypse Hydra",
+        "Primordial Hydra",
+        "Cryptic Trilobite"
+      ]
+    },
+    {
+      "key": "fuse",
+      "count": 44,
+      "example": "Fuse",
+      "cards": [
+        "Breaking // Entering",
+        "Flesh // Blood",
+        "Chic // Ago",
+        "Takesies // Backsies",
+        "Fast // Furious",
+        "Protect // Serve"
+      ]
+    },
+    {
+      "key": "enchanted creature doesn't untap during its controllers untap step",
+      "count": 43,
+      "example": "Enchanted creature doesn't untap during its controller's untap step.",
+      "cards": [
+        "Waterknot",
+        "Locked in the Cemetery",
+        "Bonds of Quicksilver",
+        "Shackles",
+        "Apathy",
+        "Roots"
+      ]
+    },
+    {
+      "key": "{M}{M} — N/N",
+      "count": 43,
+      "example": "{TK}{TK} — 1/5",
+      "cards": [
+        "Playable Delusionary Hydra",
+        "Notorious Sliver War",
+        "Demonic Tourist Laser",
+        "Night Brushwagg Ringmaster",
+        "Sassy Gremlin Blood",
+        "Weird Angel Flame"
+      ]
+    },
+    {
+      "key": "you may look at the top card of your library any time",
+      "count": 41,
+      "example": "You may look at the top card of your library any time.",
+      "cards": [
+        "One with the Multiverse",
+        "The Lunar Whale",
+        "Cemetery Illuminator",
+        "Assemble the Players",
+        "Fortune Teller's Talent",
+        "Nalia de'Arnise"
+      ]
+    },
+    {
+      "key": "this creature enters tapped",
+      "count": 41,
+      "example": "This creature enters tapped.",
+      "cards": [
+        "Wight",
+        "Custodian of the Trove",
+        "Daring Thunder-Thief",
+        "Headless Skaab",
+        "Dungeon Crawler",
+        "Watcher for Tomorrow"
+      ]
+    },
+    {
+      "key": "when this equipment enters attach it to target creature you control",
+      "count": 40,
+      "example": "When this Equipment enters, attach it to target creature you control.",
+      "cards": [
+        "Maul of the Skyclaves",
+        "Squire's Lightblade",
+        "Barbed Bloodletter",
+        "Meltstrider's Gear",
+        "Bramble Armor",
+        "Scavenged Blade"
+      ]
+    },
+    {
+      "key": "morph {M}{M}{M}",
+      "count": 40,
+      "example": "Morph {5}{U}{U}",
+      "cards": [
+        "Brine Elemental",
+        "Riptide Survivor",
+        "Hystrodon",
+        "Root Elemental",
+        "Snapping Thragg",
+        "Raven Guild Master"
+      ]
+    },
+    {
+      "key": "storm",
+      "count": 40,
+      "example": "Storm",
+      "cards": [
+        "Volcanic Awakening",
+        "Weather the Storm",
+        "Empty the Warrens",
+        "Aeve, Progenitor Ooze",
+        "Brain Freeze",
+        "All of History, All at Once"
+      ]
+    },
+    {
+      "key": "sacrifice it at the beginning of the next end step",
+      "count": 39,
+      "example": "Sacrifice it at the beginning of the next end step.",
+      "cards": [
+        "Kavaron Consumed",
+        "Planebound Accomplice",
+        "Slave of Bolas",
+        "Balduvian Atrocity",
+        "Tempestra, Dame of Games",
+        "Lagomos, Hand of Hatred"
+      ]
+    },
+    {
+      "key": "{M} {M} add one mana of any color",
+      "count": 39,
+      "example": "{1}, {T}: Add one mana of any color.",
+      "cards": [
+        "The Mycosynth Gardens",
+        "H.E.R.B.I.E., Lovable Robot",
+        "Hall of Oracles",
+        "Prophetic Prism",
+        "Ceta Disciple",
+        "Planar Nexus"
+      ]
+    },
+    {
+      "key": "then shuffle",
+      "count": 39,
+      "example": "Then shuffle.",
+      "cards": [
+        "Thunderous Debut",
+        "Increasing Ambition",
+        "Grim Reminder",
+        "Phyrexian Incubator",
+        "Sanar, Innovative First-Year",
+        "Bob the Claymore"
+      ]
+    },
+    {
+      "key": "activate only during your turn",
+      "count": 39,
+      "example": "Activate only during your turn.",
+      "cards": [
+        "Ruthless Waterbender",
+        "Humble Defector",
+        "Yes Man, Personal Securitron",
+        "Hoofprints of the Stag",
+        "Katara, Water Tribe's Hope",
+        "Prehistoric Pet"
+      ]
+    },
+    {
+      "key": "swampwalk",
+      "count": 38,
+      "example": "Swampwalk",
+      "cards": [
+        "Whispering Shade",
+        "Dirtwater Wraith",
+        "Slithery Stalker",
+        "Lost Soul",
+        "Quag Vampires",
+        "Marsh Boa"
+      ]
+    },
+    {
+      "key": "you may play that card this turn",
+      "count": 38,
+      "example": "You may play that card this turn.",
+      "cards": [
+        "Party Thrasher",
+        "Professional Face-Breaker",
+        "Geistflame Reservoir",
+        "Dark-Dweller Oracle",
+        "Tablet of Discovery",
+        "Ark of Hunger"
+      ]
+    },
+    {
+      "key": "affinity for artifacts",
+      "count": 37,
+      "example": "Affinity for artifacts",
+      "cards": [
+        "Refurbished Familiar",
+        "Into Thin Air",
+        "Assert Authority",
+        "Valkyrie Aerial Unit",
+        "Furnace Dragon",
+        "Plated Onslaught"
+      ]
+    },
+    {
+      "key": "fear",
+      "count": 37,
+      "example": "Fear",
+      "cards": [
+        "Guiltfeeder",
+        "Commander Greven il-Vec",
+        "Dread",
+        "Lingering Tormentor",
+        "Undercity Shade",
+        "Squirming Mass"
+      ]
+    },
+    {
+      "key": "if you don't it enters tapped",
+      "count": 37,
+      "example": "If you don't, it enters tapped.",
+      "cards": [
+        "Witch Enchanter // Witch-Blessed Meadow",
+        "Fell the Profane // Fell Mire",
+        "Stomping Ground",
+        "Steam Vents",
+        "Multiversal Passage",
+        "Hallowed Fountain // Hallowed Fountain"
+      ]
+    },
+    {
+      "key": "daybound",
+      "count": 37,
+      "example": "Daybound",
+      "cards": [
+        "Graveyard Trespasser // Graveyard Glutton",
+        "Shady Traveler // Stalking Predator",
+        "Tovolar's Huntmaster // Tovolar's Packleader",
+        "Oakshade Stalker // Moonlit Ambusher",
+        "Brutal Cathar // Moonrage Brute",
+        "Volatile Arsonist // Dire-Strain Anarchist"
+      ]
+    },
+    {
+      "key": "enchanted creature gets -N/-N",
+      "count": 36,
+      "example": "Enchanted creature gets -3/-0.",
+      "cards": [
+        "Sensory Deprivation",
+        "Mire's Grasp",
+        "So Tiny",
+        "Mourning",
+        "Ancestral Vengeance",
+        "A-Precipitous Drop"
+      ]
+    },
+    {
+      "key": "madness {M}{M}",
+      "count": 36,
+      "example": "Madness {2}{B}",
+      "cards": [
+        "Muck Drubb",
+        "Gisa's Bidding",
+        "Psychotic Episode",
+        "Nightshade Assassin",
+        "Twins of Maurer Estate",
+        "Weirded Vampire"
+      ]
+    },
+    {
+      "key": "shadow",
+      "count": 36,
+      "example": "Shadow",
+      "cards": [
+        "Dauthi Horror",
+        "Dauthi Mercenary",
+        "Thalakos Seer",
+        "Augur il-Vec",
+        "Soltari Guerrillas",
+        "Soltari Crusader"
+      ]
+    },
+    {
+      "key": "toxic N",
+      "count": 36,
+      "example": "Toxic 3",
+      "cards": [
+        "Tyrranax Atrocity",
+        "Bloated Contaminator",
+        "Bloodroot Apothecary",
+        "Voidwing Hybrid",
+        "Jawbone Duelist",
+        "Pestilent Syphoner"
+      ]
+    },
+    {
+      "key": "nightbound",
+      "count": 36,
+      "example": "Nightbound",
+      "cards": [
+        "Graveyard Trespasser // Graveyard Glutton",
+        "Shady Traveler // Stalking Predator",
+        "Tovolar's Huntmaster // Tovolar's Packleader",
+        "Oakshade Stalker // Moonlit Ambusher",
+        "Brutal Cathar // Moonrage Brute",
+        "Volatile Arsonist // Dire-Strain Anarchist"
+      ]
+    },
+    {
+      "key": "if you do discard a card",
+      "count": 36,
+      "example": "If you do, discard a card.",
+      "cards": [
+        "Academy Wall",
+        "Stadium Tidalmage",
+        "Sanctum of Calm Waters",
+        "Katara, Waterbending Master",
+        "Skeleton Key",
+        "Abomination of Gudul"
+      ]
+    },
+    {
+      "key": "they can't be regenerated",
+      "count": 36,
+      "example": "They can't be regenerated.",
+      "cards": [
+        "Plague Wind",
+        "Wave of Terror",
+        "Wrath of Leknif",
+        "Obliterate",
+        "Tsabo's Decree",
+        "Kirtar's Wrath"
+      ]
+    },
+    {
+      "key": "put the rest on the bottom of your library in any order",
+      "count": 35,
+      "example": "Put the rest on the bottom of your library in any order.",
+      "cards": [
+        "Courageous Outrider",
+        "Foul Emissary",
+        "Collected Company",
+        "Glint-Nest Crane",
+        "Beastrider Vanguard",
+        "Durnan of the Yawning Portal"
+      ]
+    },
+    {
+      "key": "islandwalk",
+      "count": 35,
+      "example": "Islandwalk",
+      "cards": [
+        "Goblin Flotilla",
+        "Merrow Harbinger",
+        "Pale Bears",
+        "Stonybrook Banneret",
+        "Stormtide Leviathan",
+        "Merfolk Raiders"
+      ]
+    },
+    {
+      "key": "exalted",
+      "count": 35,
+      "example": "Exalted",
+      "cards": [
+        "Aven Squire",
+        "Finest Hour",
+        "Nefarox, Overlord of Grixis",
+        "Order of Sacred Dusk",
+        "Qasali Pridemage",
+        "Knight of Glory"
+      ]
+    },
+    {
+      "key": "cascade",
+      "count": 35,
+      "example": "Cascade",
+      "cards": [
+        "Etherium-Horn Sorcerer",
+        "Maelstrom Colossus",
+        "Noise Marine",
+        "Garbage Elemental",
+        "Forceful Denial",
+        "Stormcaller's Boon"
+      ]
+    },
+    {
+      "key": "rebound",
+      "count": 35,
+      "example": "Rebound",
+      "cards": [
+        "World at War",
+        "Faithless Salvaging",
+        "Staggershock",
+        "Profound Journey",
+        "Ephemerate",
+        "Terramorph"
+      ]
+    },
+    {
+      "key": "as this land enters you may pay N life",
+      "count": 35,
+      "example": "As this land enters, you may pay 3 life.",
+      "cards": [
+        "Witch Enchanter // Witch-Blessed Meadow",
+        "Fell the Profane // Fell Mire",
+        "Stomping Ground",
+        "Steam Vents",
+        "Hallowed Fountain // Hallowed Fountain",
+        "Breeding Pool"
+      ]
+    },
+    {
+      "key": "{M} this creature gets +N/-N until end of turn",
+      "count": 35,
+      "example": "{B}: This creature gets +1/-1 until end of turn.",
+      "cards": [
+        "Unliving Psychopath",
+        "Merfolk Coralsmith",
+        "Yavimaya Ancients",
+        "Maw of Kozilek",
+        "Flowstone Wyvern",
+        "Breathstealer"
+      ]
+    },
+    {
+      "key": "when this creature enters scry N",
+      "count": 34,
+      "example": "When this creature enters, scry 1.",
+      "cards": [
+        "Inquisitive Puppet",
+        "Haunt of the Dead Marshes",
+        "Chrome Cat",
+        "Benevolent River Spirit",
+        "Grey Havens Navigator",
+        "Faithful Pikemaster"
+      ]
+    },
+    {
+      "key": "bushido N",
+      "count": 34,
+      "example": "Bushido 2",
+      "cards": [
+        "Numai Outcast",
+        "Nezumi Ronin",
+        "Toshiro Umezawa",
+        "Isao, Enlightened Bushi",
+        "Jade Avenger",
+        "Cursed Ronin"
+      ]
+    },
+    {
+      "key": "station",
+      "count": 34,
+      "example": "Station",
+      "cards": [
+        "Wedgelight Rammer",
+        "Rescue Skiff",
+        "The Eternity Elevator",
+        "Fell Gravship",
+        "Candela, Aegis of Adagia",
+        "Wurmwall Sweeper"
+      ]
+    },
+    {
+      "key": "activate only during your upkeep",
+      "count": 34,
+      "example": "Activate only during your upkeep.",
+      "cards": [
+        "Eternal Dragon",
+        "Grim Reminder",
+        "Clockwork Steed",
+        "Cyclopean Tomb",
+        "Life Chisel",
+        "Mtenda Griffin"
+      ]
+    },
+    {
+      "key": "choose two —",
+      "count": 34,
+      "example": "Choose two —",
+      "cards": [
+        "Austere Command",
+        "Lorehold Command",
+        "Atarka's Command",
+        "Mishra's Command",
+        "Primal Command",
+        "Dromoka's Command"
+      ]
+    },
+    {
+      "key": "it gains haste",
+      "count": 33,
+      "example": "It gains haste.",
+      "cards": [
+        "Puppeteer Clique",
+        "Greasefang, Okiba Boss",
+        "Push Your Luck",
+        "Balduvian Atrocity",
+        "Tempestra, Dame of Games",
+        "Orthion, Hero of Lavabrink"
+      ]
+    },
+    {
+      "key": "this creature can block only creatures with flying",
+      "count": 33,
+      "example": "This creature can block only creatures with flying.",
+      "cards": [
+        "Welkin Tern",
+        "Devoted Grafkeeper // Departed Soulkeeper",
+        "Cloud Elemental",
+        "Vaporkin",
+        "Cloud Sprite",
+        "Battlefield Percher"
+      ]
+    },
+    {
+      "key": "exile it at the beginning of the next end step",
+      "count": 33,
+      "example": "Exile it at the beginning of the next end step.",
+      "cards": [
+        "Cogwork Assembler",
+        "Gallery of Legends",
+        "Nemesis Trap",
+        "Inalla, Archmage Ritualist",
+        "Molten Echoes",
+        "Dawn of the Dead"
+      ]
+    },
+    {
+      "key": "any player may activate this ability",
+      "count": 33,
+      "example": "Any player may activate this ability.",
+      "cards": [
+        "Flailing Manticore",
+        "Vintara Elephant",
+        "Xantcha, Sleeper Agent",
+        "Casey Jones, Asphalt Hooligan",
+        "Deadly Designs",
+        "Flailing Soldier"
+      ]
+    },
+    {
+      "key": "return target creature card from your graveyard to the battlefield",
+      "count": 33,
+      "example": "Return target creature card from your graveyard to the battlefield.",
+      "cards": [
+        "Pulsemage Advocate",
+        "A-Return Upon the Tide",
+        "Diregraf Rebirth",
+        "Coiling Rebirth",
+        "Edgar's Awakening",
+        "Breath of Life"
+      ]
+    },
+    {
+      "key": "enchanted creature gets +N/+N and has flying",
+      "count": 33,
+      "example": "Enchanted creature gets +1/+2 and has flying.",
+      "cards": [
+        "Nimbus Wings",
+        "Spirit Away",
+        "Nimbus Naiad",
+        "Aerial Modification",
+        "Drake Umbra",
+        "Rousing Read"
+      ]
+    },
+    {
+      "key": "bestow {M}{M}",
+      "count": 32,
+      "example": "Bestow {3}{G}",
+      "cards": [
+        "Leafcrown Dryad",
+        "Baleful Eidolon",
+        "Observant Alseid",
+        "Sightless Brawler",
+        "Hopeful Eidolon",
+        "Heliod's Emissary"
+      ]
+    },
+    {
+      "key": "surveil N",
+      "count": 31,
+      "example": "Surveil 2.",
+      "cards": [
+        "Deadly Visit",
+        "Inkling Mascot",
+        "Vanish from Sight",
+        "Unexplained Disappearance",
+        "Uncharted Voyage",
+        "Ephara's Dispersal"
+      ]
+    },
+    {
+      "key": "suspend N—{M}{M}",
+      "count": 31,
+      "example": "Suspend 2—{1}{W}",
+      "cards": [
+        "Resurgent Belief",
+        "Glimpse of Tomorrow",
+        "Wheel of Fate",
+        "Inspiring Refrain",
+        "Reality Strobe",
+        "Venture Forth"
+      ]
+    },
+    {
+      "key": "at the beginning of each upkeep if no spells were cast last turn transform this creature",
+      "count": 31,
+      "example": "At the beginning of each upkeep, if no spells were cast last turn, transform this creature.",
+      "cards": [
+        "Lambholt Elder // Silverpelt Werewolf",
+        "Instigator Gang // Wildblood Pack",
+        "Daybreak Ranger // Nightfall Predator",
+        "Hinterland Logger // Timber Shredder",
+        "Ulvenwald Mystics // Ulvenwald Primordials",
+        "Breakneck Rider // Neck Breaker"
+      ]
+    },
+    {
+      "key": "at the beginning of each upkeep if a player cast two or more spells last turn transform this creature",
+      "count": 31,
+      "example": "At the beginning of each upkeep, if a player cast two or more spells last turn, transform this creature.",
+      "cards": [
+        "Lambholt Elder // Silverpelt Werewolf",
+        "Instigator Gang // Wildblood Pack",
+        "Daybreak Ranger // Nightfall Predator",
+        "Hinterland Logger // Timber Shredder",
+        "Ulvenwald Mystics // Ulvenwald Primordials",
+        "Breakneck Rider // Neck Breaker"
+      ]
+    },
+    {
+      "key": "saddle N",
+      "count": 31,
+      "example": "Saddle 3",
+      "cards": [
+        "Caustic Bronco",
+        "Brightfield Mustang",
+        "Stubborn Burrowfiend",
+        "Gloryheath Lynx",
+        "Drover Grizzly",
+        "Giant Beaver"
+      ]
+    },
+    {
+      "key": "unearth {M}{M}",
+      "count": 30,
+      "example": "Unearth {3}{B}",
+      "cards": [
+        "Royal Warden",
+        "Scrapwork Cohort",
+        "Tocasia's Onulet",
+        "Vithian Stinger",
+        "Rotting Rats",
+        "Extractor Demon"
+      ]
+    },
+    {
+      "key": "ninjutsu {M}{M}",
+      "count": 30,
+      "example": "Ninjutsu {2}{U}",
+      "cards": [
+        "Moonblade Shinobi",
+        "Mist-Syndicate Naga",
+        "Spring-Leaf Avenger",
+        "Dokuchi Shadow-Walker",
+        "Ninja of the Deep Hours",
+        "Kappa Tech-Wrecker"
+      ]
+    },
+    {
+      "key": "ascend",
+      "count": 30,
+      "example": "Ascend",
+      "cards": [
+        "Radiant Destiny",
+        "Skymarcher Aspirant",
+        "Detective of the Month",
+        "Wayward Swordtooth",
+        "Arch of Orazca",
+        "The Golden City of Orazca"
+      ]
+    },
+    {
+      "key": "choose one",
+      "count": 30,
+      "example": "Choose one.",
+      "cards": [
+        "Go Nuts!",
+        "Jeska's Will",
+        "See Double",
+        "Inscription of Insight",
+        "Will of the Abzan",
+        "Soul Transfer"
+      ]
+    },
+    {
+      "key": "do this only once each turn",
+      "count": 30,
+      "example": "Do this only once each turn.",
+      "cards": [
+        "Lucy MacLean, Positively Armed",
+        "Calix, Guided by Fate",
+        "Donal, Herald of Wings",
+        "Cosmic Crucible",
+        "Nykthos Paragon",
+        "The Reaper, King No More"
+      ]
+    },
+    {
+      "key": "plot {M}{M}",
+      "count": 29,
+      "example": "Plot {2}{B}",
+      "cards": [
+        "Unscrupulous Contractor",
+        "Pyretic Charge",
+        "Freestrider Commando",
+        "Loan Shark",
+        "Beastbond Outcaster",
+        "Outcaster Trailblazer"
+      ]
+    },
+    {
+      "key": "choose a background",
+      "count": 29,
+      "example": "Choose a Background",
+      "cards": [
+        "Halsin, Emerald Archdruid",
+        "Karlach, Fury of Avernus",
+        "Shadowheart, Dark Justiciar",
+        "Erinis, Gloom Stalker",
+        "Durnan of the Yawning Portal",
+        "Viconia, Drow Apostate"
+      ]
+    },
+    {
+      "key": "protection from black",
+      "count": 29,
+      "example": "Protection from black",
+      "cards": [
+        "Valeron Outlander",
+        "Apostle of Purifying Light",
+        "Knight of Glory",
+        "Whirling Dervish",
+        "Cemetery Gate",
+        "Death Speakers"
+      ]
+    },
+    {
+      "key": "when this creature enters surveil N",
+      "count": 29,
+      "example": "When this creature enters, surveil 2.",
+      "cards": [
+        "Twilight Diviner",
+        "Starbreach Whale",
+        "A.I.M. Synthoids",
+        "Foraging Wickermaw",
+        "Valkyrie Aerial Unit",
+        "Rubblebelt Maverick"
+      ]
+    }
+  ]
+}
