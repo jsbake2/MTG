@@ -41,6 +41,54 @@
   --c-accent-soft: 230 199 102;
   --c-page: 10 19 12;
 }
+[data-theme="plains"] {
+  color-scheme: dark;
+  --c-bg: 26 24 18;
+  --c-panel: 36 33 24;
+  --c-panel2: 48 44 32;
+  --c-border: 72 66 48;
+  --c-ink: 244 240 225;
+  --c-muted: 186 178 156;
+  --c-accent: 227 200 110;
+  --c-accent-soft: 244 224 150;
+  --c-page: 18 16 12;
+}
+[data-theme="island"] {
+  color-scheme: dark;
+  --c-bg: 14 22 34;
+  --c-panel: 20 31 48;
+  --c-panel2: 28 42 64;
+  --c-border: 44 64 92;
+  --c-ink: 226 236 247;
+  --c-muted: 150 172 196;
+  --c-accent: 56 140 224;
+  --c-accent-soft: 120 186 250;
+  --c-page: 9 15 24;
+}
+[data-theme="swamp"] {
+  color-scheme: dark;
+  --c-bg: 20 18 22;
+  --c-panel: 28 25 31;
+  --c-panel2: 38 34 42;
+  --c-border: 58 52 64;
+  --c-ink: 230 226 234;
+  --c-muted: 166 158 172;
+  --c-accent: 150 130 170;
+  --c-accent-soft: 190 172 208;
+  --c-page: 13 12 15;
+}
+[data-theme="mountain"] {
+  color-scheme: dark;
+  --c-bg: 30 16 15;
+  --c-panel: 42 22 20;
+  --c-panel2: 56 30 26;
+  --c-border: 82 44 38;
+  --c-ink: 246 228 224;
+  --c-muted: 198 160 152;
+  --c-accent: 216 70 52;
+  --c-accent-soft: 246 120 100;
+  --c-page: 20 11 10;
+}
 [data-theme="parchment"] {
   color-scheme: light;
   --c-bg: 236 227 207;
@@ -121,6 +169,54 @@ body {
 }
 .dice-animate {
   animation: dice-tumble 0.9s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+/* ---- MTG 2015-style table ---- */
+.mtg-table {
+  background:
+    radial-gradient(120% 80% at 50% 40%, rgba(60, 66, 78, 0.35), transparent 60%),
+    repeating-linear-gradient(115deg, rgba(255, 255, 255, 0.015) 0 2px, transparent 2px 26px),
+    linear-gradient(180deg, #0b0e13, #14181f 55%, #0b0e13);
+}
+/* The red battle-line between your side and the opponents. */
+.battle-line {
+  height: 22px;
+  background: linear-gradient(90deg, transparent, #6f1414 8%, #b81f1f 50%, #6f1414 92%, transparent);
+  box-shadow: 0 0 18px rgba(184, 31, 31, 0.55);
+  clip-path: polygon(0 45%, 6% 45%, 8% 0, 12% 45%, 100% 45%, 100% 55%, 12% 55%, 8% 100%, 6% 55%, 0 55%);
+}
+/* Life shown in a red diamond, MTG-2015 style. */
+.life-diamond {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  transform: rotate(45deg);
+  background: linear-gradient(160deg, #b01a1a, #7c1010);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+}
+.life-diamond > span {
+  transform: rotate(-45deg);
+}
+/* Fanned hand: cards overlap and tilt slightly. */
+.hand-fan {
+  display: flex;
+  justify-content: center;
+  padding-top: 10px;
+}
+.hand-fan > .hand-card {
+  margin-left: -22px;
+  transition: transform 0.15s ease, margin 0.15s ease;
+  transform-origin: bottom center;
+}
+.hand-fan > .hand-card:first-child {
+  margin-left: 0;
+}
+.hand-fan > .hand-card:hover {
+  transform: translateY(-16px) scale(1.06);
+  z-index: 20;
 }
 
 ::-webkit-scrollbar {

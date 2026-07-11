@@ -35,7 +35,11 @@ async function pickCreatures(color: string, limit: number): Promise<string[]> {
       `SELECT DISTINCT ON (oracle_id) id FROM cards
        WHERE 'Creature' = ANY(card_types)
          AND colors = ARRAY[$1]::text[]
+         AND color_identity = ARRAY[$1]::text[]   -- strictly mono-color identity
+         AND layout = 'normal'
          AND cmc <= 5 AND digital = false
+         AND coalesce(set_type,'') NOT IN ('funny','memorabilia')
+         AND coalesce(border_color,'') <> 'silver'
          AND coalesce(power,'') ~ '^[0-9]'
        ORDER BY oracle_id, released_at DESC NULLS LAST
        LIMIT $2`,
@@ -47,15 +51,20 @@ async function pickCreatures(color: string, limit: number): Promise<string[]> {
 
 export async function seedStarterDecks(): Promise<void> {
   try {
-    const deckCount = Number((await query<{ n: string }>("SELECT count(*)::text AS n FROM decks")).rows[0]?.n ?? 0);
-    if (deckCount > 0) return;
     const cardCount = Number((await query<{ n: string }>("SELECT count(*)::text AS n FROM cards")).rows[0]?.n ?? 0);
     if (cardCount === 0) return;
     const admin = (await query<{ id: string }>("SELECT id FROM users WHERE is_admin = true ORDER BY created_at ASC LIMIT 1")).rows[0];
     if (!admin) return;
 
+    // Only create starter decks that don't already exist (by name), so it can
+    // backfill missing ones without duplicating.
+    const existing = new Set(
+      (await query<{ name: string }>("SELECT name FROM decks WHERE name = ANY($1)", [PLANS.map((p) => p.name)])).rows.map((r) => r.name),
+    );
+
     let made = 0;
     for (const plan of PLANS) {
+      if (existing.has(plan.name)) continue;
       const land = await pickBasicLand(plan.basicLandName);
       const creatures = await pickCreatures(plan.color, 24);
       if (!land || creatures.length < 8) continue;

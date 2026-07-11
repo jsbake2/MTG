@@ -9,6 +9,7 @@ import { CardImage } from "@/components/CardTile";
 import { Avatar } from "@/components/Avatar";
 import { useSettings } from "@/store/settings";
 import { playRoll, playTurnChime, playWarning, unlockAudio } from "@/lib/sound";
+import { MANA_HEX } from "@/lib/mana";
 
 const STEP_LABELS: Record<string, string> = {
   untap: "Untap",
@@ -214,7 +215,7 @@ function GameBoard({ t, state }: { t: TableConn; state: TableState }) {
 
       <div className="flex min-h-0 flex-1">
         {/* Main play area */}
-        <div className="flex min-h-0 flex-1 flex-col overflow-y-auto p-2">
+        <div className="mtg-table flex min-h-0 flex-1 flex-col overflow-y-auto p-2">
           {/* Opponents */}
           <div className="mb-2 grid gap-2" style={{ gridTemplateColumns: `repeat(${Math.max(1, opponents.length)}, minmax(0, 1fr))` }}>
             {opponents.map((p) => (
@@ -234,6 +235,9 @@ function GameBoard({ t, state }: { t: TableConn; state: TableState }) {
               </div>
             </div>
           )}
+
+          {/* The red battle-line between opponents and you (MTG 2015 style). */}
+          <div className="battle-line my-2 shrink-0" />
 
           {/* My battlefield */}
           {you !== null && (
@@ -284,9 +288,9 @@ function GameBoard({ t, state }: { t: TableConn; state: TableState }) {
               <ZoneButtons you={you} t={t} objectsByZone={objectsByZone} />
             </div>
           </div>
-          <div className="flex gap-1 overflow-x-auto px-3 pb-2 pt-1">
+          <div className="hand-fan px-3 pb-3">
             {myHand.map((o) => (
-              <div key={o.id} className="w-[84px] shrink-0">
+              <div key={o.id} className="hand-card w-[92px] shrink-0">
                 <button className="block w-full" onClick={(e) => setSel({ objectId: o.id, x: e.clientX, y: e.clientY })}>
                   <CardImage id={o.cardId} name={o.name} />
                 </button>
@@ -351,11 +355,13 @@ function PlayerStrip({
         <Avatar cardId={p.avatarCardId} name={p.name} size={28} ring={active} />
         <span className={`h-2 w-2 rounded-full ${p.connected ? "bg-green-400" : "bg-gray-500"}`} />
         <span className="font-semibold">{p.name}</span>
-        <div className="flex items-center gap-0.5">
+        <div className="flex items-center gap-1">
           <button className="btn-ghost h-6 w-6 !px-0" onClick={() => t.send({ type: "adjust_life", seat: p.seat, delta: -1 })} title="−1 life">
             −
           </button>
-          <span className="w-9 text-center font-display text-base text-table-accentSoft">♥{p.life}</span>
+          <span className="life-diamond text-sm font-bold text-white">
+            <span>{p.life}</span>
+          </span>
           <button className="btn-ghost h-6 w-6 !px-0" onClick={() => t.send({ type: "adjust_life", seat: p.seat, delta: 1 })} title="+1 life">
             +
           </button>
@@ -486,7 +492,9 @@ function LifeControl({ p, t }: { p: PlayerState; t: TableConn }) {
       <button className="btn-ghost h-8 w-8 !px-0 text-lg" onClick={() => t.send({ type: "adjust_life", seat: p.seat, delta: -1 })} title="−1 life">
         −
       </button>
-      <span className="w-11 text-center font-display text-2xl leading-none text-table-accentSoft">{p.life}</span>
+      <span className="life-diamond font-display text-lg font-bold text-white" style={{ width: 42, height: 42 }}>
+        <span>{p.life}</span>
+      </span>
       <button className="btn-ghost h-8 w-8 !px-0 text-lg" onClick={() => t.send({ type: "adjust_life", seat: p.seat, delta: 1 })} title="+1 life">
         +
       </button>
@@ -507,7 +515,7 @@ function LifeControl({ p, t }: { p: PlayerState; t: TableConn }) {
 
 function ManaControl({ p, t }: { p: PlayerState; t: TableConn }) {
   const colors: Array<"W" | "U" | "B" | "R" | "G" | "C"> = ["W", "U", "B", "R", "G", "C"];
-  const bg: Record<string, string> = { W: "#f8f6d8", U: "#3b7dd8", B: "#4b4b52", R: "#d3452b", G: "#2f9e58", C: "#c9c6be" };
+  const bg = MANA_HEX;
   return (
     <div className="flex items-center gap-0.5">
       {colors.map((c) => (

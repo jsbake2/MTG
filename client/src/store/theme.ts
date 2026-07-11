@@ -2,8 +2,12 @@ import { create } from "zustand";
 
 export const THEMES = [
   { id: "midnight", name: "Midnight" },
+  { id: "plains", name: "Plains (White)" },
+  { id: "island", name: "Island (Blue)" },
+  { id: "swamp", name: "Swamp (Black)" },
+  { id: "mountain", name: "Mountain (Red)" },
+  { id: "forest", name: "Forest (Green)" },
   { id: "ravnica", name: "Ravnica Night" },
-  { id: "forest", name: "Forest" },
   { id: "parchment", name: "Parchment" },
 ] as const;
 

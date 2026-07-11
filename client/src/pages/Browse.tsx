@@ -4,17 +4,12 @@ import { api } from "@/api/client";
 import { CardTile } from "@/components/CardTile";
 import { CardDetailModal } from "@/components/CardDetailModal";
 import { SetFilter } from "@/components/SetFilter";
+import { MANA_FG, MANA_HEX, WUBRG } from "@/lib/mana";
 import { useCardSearch } from "@/hooks/useCardSearch";
 
 const EXAMPLES = ["vampire", "t:instant o:vampire", "t:creature pow>=5", "f:commander t:dragon", 'o:"draw a card"', "is:banned f:modern"];
 
-const COLOR_BTN: Array<{ c: string; label: string; bg: string; fg: string }> = [
-  { c: "W", label: "W", bg: "#f8f6d8", fg: "#3a3a1a" },
-  { c: "U", label: "U", bg: "#3b7dd8", fg: "#fff" },
-  { c: "B", label: "B", bg: "#4b4b52", fg: "#fff" },
-  { c: "R", label: "R", bg: "#d3452b", fg: "#fff" },
-  { c: "G", label: "G", bg: "#2f9e58", fg: "#fff" },
-];
+const COLOR_BTN = WUBRG.map((c) => ({ c, label: c, bg: MANA_HEX[c]!, fg: MANA_FG[c]! }));
 const RARITIES = ["", "common", "uncommon", "rare", "mythic"];
 
 function ImportBanner() {
@@ -40,6 +35,8 @@ export function Browse() {
   const [rarity, setRarity] = useState("");
   const [legal, setLegal] = useState("");
   const [sets, setSets] = useState<Set<string>>(new Set());
+  const [cmcMin, setCmcMin] = useState("");
+  const [cmcMax, setCmcMax] = useState("");
   const [detailId, setDetailId] = useState<string | null>(null);
 
   // Compose the text box + filter controls into one query string.
@@ -52,8 +49,10 @@ export function Browse() {
     if (rarity) parts.push("r:" + rarity);
     if (legal) parts.push("f:" + legal);
     if (sets.size > 0) parts.push("set:" + [...sets].join(","));
+    if (cmcMin !== "") parts.push("cmc>=" + cmcMin);
+    if (cmcMax !== "") parts.push("cmc<=" + cmcMax);
     return parts.join(" ");
-  }, [text, colors, colorMode, multi, colorless, rarity, legal, sets]);
+  }, [text, colors, colorMode, multi, colorless, rarity, legal, sets, cmcMin, cmcMax]);
 
   useEffect(() => {
     setQ(effective);
@@ -115,9 +114,9 @@ export function Browse() {
             <button
               className={`chip ml-1 ${colorMode === "exact" ? "border-table-accent text-table-accentSoft" : ""}`}
               onClick={() => setColorMode(colorMode === "exact" ? "include" : "exact")}
-              title="Toggle: includes these colors vs. exactly these colors"
+              title="Has all of: card must contain every selected color (plus maybe others). Exactly: card is precisely those colors."
             >
-              {colorMode === "exact" ? "= exactly" : "⊇ includes"}
+              {colorMode === "exact" ? "exactly these" : "has all of"}
             </button>
           </div>
 
@@ -148,11 +147,31 @@ export function Browse() {
 
           <SetFilter selected={sets} onChange={setSets} />
 
+          <div className="flex items-center gap-1 text-xs text-table-muted" title="Mana value (cost to cast)">
+            <span>Cost</span>
+            <select className="input !py-1 !px-1" value={cmcMin} onChange={(e) => setCmcMin(e.target.value)}>
+              <option value="">min</option>
+              {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => (
+                <option key={n} value={n}>
+                  ≥{n}
+                </option>
+              ))}
+            </select>
+            <select className="input !py-1 !px-1" value={cmcMax} onChange={(e) => setCmcMax(e.target.value)}>
+              <option value="">max</option>
+              {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => (
+                <option key={n} value={n}>
+                  ≤{n}
+                </option>
+              ))}
+            </select>
+          </div>
+
           <label className="chip ml-auto cursor-pointer">
             <input type="checkbox" checked={opts.group} onChange={(e) => setOpts({ ...opts, group: e.target.checked })} />
             Group ARE / references
           </label>
-          {(colors.size > 0 || multi || colorless || rarity || legal || sets.size > 0 || text) && (
+          {(colors.size > 0 || multi || colorless || rarity || legal || sets.size > 0 || cmcMin || cmcMax || text) && (
             <button
               className="chip hover:border-red-400"
               onClick={() => {
@@ -163,6 +182,8 @@ export function Browse() {
                 setRarity("");
                 setLegal("");
                 setSets(new Set());
+                setCmcMin("");
+                setCmcMax("");
               }}
             >
               Clear ✕

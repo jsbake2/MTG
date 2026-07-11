@@ -2,13 +2,15 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import type { Deck, FormatDef } from "@mtg/shared";
 import { api } from "@/api/client";
-
-const MANA_DOT: Record<string, string> = { W: "#f8f6d8", U: "#3b7dd8", B: "#4b4b52", R: "#d3452b", G: "#2f9e58" };
+import { MANA_HEX as MANA_DOT } from "@/lib/mana";
 
 export function Decks() {
   const [decks, setDecks] = useState<Deck[]>([]);
   const [precons, setPrecons] = useState<Deck[]>([]);
   const [preconQuery, setPreconQuery] = useState("");
+  const [ownFormat, setOwnFormat] = useState("");
+  const [preconFormat, setPreconFormat] = useState("");
+  const [sort, setSort] = useState<"updated" | "name">("updated");
   const [formats, setFormats] = useState<FormatDef[]>([]);
   const [loading, setLoading] = useState(true);
   const nav = useNavigate();
@@ -35,7 +37,15 @@ export function Decks() {
     const r = await api.post<{ id: string }>(`/api/decks/${id}/duplicate`);
     nav(`/decks/${r.id}`);
   }
-  const filteredPrecons = precons.filter((p) => p.name.toLowerCase().includes(preconQuery.toLowerCase()));
+  const byName = (a: Deck, b: Deck) => a.name.localeCompare(b.name);
+  const byUpdated = (a: Deck, b: Deck) => (a.updatedAt < b.updatedAt ? 1 : -1);
+  const sorter = sort === "name" ? byName : byUpdated;
+  const filteredDecks = decks.filter((d) => !ownFormat || d.formatId === ownFormat).sort(sorter);
+  const usedFormats = [...new Set([...decks, ...precons].map((d) => d.formatId))];
+  const filteredPrecons = precons
+    .filter((p) => p.name.toLowerCase().includes(preconQuery.toLowerCase()))
+    .filter((p) => !preconFormat || p.formatId === preconFormat)
+    .sort(byName);
   async function remove(id: string) {
     if (!confirm("Delete this deck?")) return;
     await api.del(`/api/decks/${id}`);
@@ -44,9 +54,21 @@ export function Decks() {
 
   return (
     <div className="mx-auto max-w-5xl p-4">
-      <div className="mb-4 flex items-center justify-between">
+      <div className="mb-4 flex flex-wrap items-center gap-2">
         <h1 className="font-display text-2xl text-table-accentSoft">Your Decks</h1>
-        <Link to="/decks/new" className="btn-primary">
+        <select className="input !py-1" value={ownFormat} onChange={(e) => setOwnFormat(e.target.value)} title="Filter by format">
+          <option value="">All formats</option>
+          {usedFormats.map((f) => (
+            <option key={f} value={f}>
+              {formatName(f)}
+            </option>
+          ))}
+        </select>
+        <select className="input !py-1" value={sort} onChange={(e) => setSort(e.target.value as "updated" | "name")} title="Sort">
+          <option value="updated">Recently updated</option>
+          <option value="name">Name (A–Z)</option>
+        </select>
+        <Link to="/decks/new" className="btn-primary ml-auto">
           + New deck
         </Link>
       </div>
@@ -59,7 +81,7 @@ export function Decks() {
         </div>
       ) : (
         <div className="grid gap-3 sm:grid-cols-2">
-          {decks.map((d) => (
+          {filteredDecks.map((d) => (
             <div key={d.id} className="panel flex flex-col p-4">
               <div className="flex items-start justify-between gap-2">
                 <Link to={`/decks/${d.id}`} className="font-display text-lg text-table-ink hover:text-table-accentSoft">
@@ -67,7 +89,7 @@ export function Decks() {
                 </Link>
                 <div className="flex gap-0.5">
                   {d.colors.map((c) => (
-                    <span key={c} className="h-3.5 w-3.5 rounded-full border border-black/30" style={{ background: MANA_DOT[c] ?? "#c9c6be" }} />
+                    <span key={c} className="h-3.5 w-3.5 rounded-full border border-white/25" style={{ background: MANA_DOT[c] ?? "#c9c6be" }} />
                   ))}
                 </div>
               </div>
@@ -104,9 +126,17 @@ export function Decks() {
       <div className="mt-10">
         <div className="mb-3 flex flex-wrap items-center gap-2">
           <h2 className="font-display text-xl text-table-accentSoft">Preconstructed Decks</h2>
-          <span className="text-sm text-table-muted">{precons.length} ready-to-play decks — copy one to tweak it, or play it as-is.</span>
+          <span className="text-sm text-table-muted">{filteredPrecons.length} of {precons.length} decks</span>
+          <select className="input ml-auto !py-1" value={preconFormat} onChange={(e) => setPreconFormat(e.target.value)} title="Filter by format">
+            <option value="">All formats</option>
+            {[...new Set(precons.map((p) => p.formatId))].map((f) => (
+              <option key={f} value={f}>
+                {formatName(f)}
+              </option>
+            ))}
+          </select>
           <input
-            className="input ml-auto w-56"
+            className="input w-56"
             placeholder="Search precons…"
             value={preconQuery}
             onChange={(e) => setPreconQuery(e.target.value)}
@@ -127,7 +157,7 @@ export function Decks() {
                   </Link>
                   <div className="flex gap-0.5">
                     {d.colors.map((c) => (
-                      <span key={c} className="h-3 w-3 rounded-full border border-black/30" style={{ background: MANA_DOT[c] ?? "#c9c6be" }} />
+                      <span key={c} className="h-3 w-3 rounded-full border border-white/25" style={{ background: MANA_DOT[c] ?? "#c9c6be" }} />
                     ))}
                   </div>
                 </div>

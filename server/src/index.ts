@@ -53,8 +53,18 @@ async function main() {
   // Serve the built client (SPA) with history fallback.
   const clientDist = pickClientDist();
   if (existsSync(clientDist)) {
-    app.use(express.static(clientDist));
+    // Hashed JS/CSS can cache forever; index.html must NOT cache so browsers
+    // always pick up the newest bundle (no more "I don't see the update").
+    app.use(
+      express.static(clientDist, {
+        setHeaders: (res, filePath) => {
+          if (filePath.endsWith(".html")) res.setHeader("Cache-Control", "no-cache, must-revalidate");
+          else if (/\.[0-9a-f]{8,}\./.test(filePath)) res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
+        },
+      }),
+    );
     app.get(/^(?!\/api).*/, (_req, res) => {
+      res.setHeader("Cache-Control", "no-cache, must-revalidate");
       res.sendFile(resolve(clientDist, "index.html"));
     });
     console.log("[server] serving client from", clientDist);

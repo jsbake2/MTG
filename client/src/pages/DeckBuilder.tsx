@@ -5,6 +5,7 @@ import { api } from "@/api/client";
 import { CardImage } from "@/components/CardTile";
 import { CardDetailModal } from "@/components/CardDetailModal";
 import { ManaCost } from "@/components/ManaCost";
+import { MANA_HEX } from "@/lib/mana";
 import { useCardSearch } from "@/hooks/useCardSearch";
 
 type Board = "main" | "sideboard" | "commander";
@@ -532,7 +533,7 @@ function StatsPanel({ validation }: { validation: DeckValidation | null }) {
   if (!stats) return null;
   const maxCurve = Math.max(1, ...Object.values(stats.manaCurve));
   const colorOrder = ["W", "U", "B", "R", "G", "C"];
-  const colorBg: Record<string, string> = { W: "#f8f6d8", U: "#3b7dd8", B: "#4b4b52", R: "#d3452b", G: "#2f9e58", C: "#c9c6be" };
+  const colorBg = MANA_HEX;
   return (
     <div className="panel p-3">
       <div className="mb-2 flex items-stretch gap-2">

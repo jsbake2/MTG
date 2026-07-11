@@ -59,14 +59,18 @@ function collect(board: MtgjsonCard[] | undefined, boardName: DeckCardEntry["boa
 }
 
 export async function importPrecons(opts: { limit?: number } = {}): Promise<{ made: number; skipped: number }> {
-  const limit = opts.limit ?? 500;
+  const limit = opts.limit ?? 650;
   const admin = (await query<{ id: string }>(`SELECT id FROM users WHERE is_admin = true ORDER BY created_at ASC LIMIT 1`)).rows[0];
   if (!admin) throw new Error("No admin user to own the precons.");
 
-  const list = (await getJson<{ data: DeckListEntry[] }>(DECKLIST_URL)).data.filter((d) => WANTED.test(d.type));
-  // Most recent first, working backwards — import the newest `limit` precons.
-  list.sort((a, b) => b.releaseDate.localeCompare(a.releaseDate));
-  const wanted = list.slice(0, limit);
+  const all = (await getJson<{ data: DeckListEntry[] }>(DECKLIST_URL)).data.filter((d) => WANTED.test(d.type));
+  const byNewest = (a: DeckListEntry, b: DeckListEntry) => b.releaseDate.localeCompare(a.releaseDate);
+  // All Commander decks first (newest first), then fill with the newest of
+  // everything else — lots of "cool" Commander decks plus recent variety.
+  const commander = all.filter((d) => /commander/i.test(d.type)).sort(byNewest);
+  const others = all.filter((d) => !/commander/i.test(d.type)).sort(byNewest);
+  const wanted = [...commander, ...others].slice(0, limit);
+  console.log(`[precons] ${commander.length} commander decks available; importing up to ${limit}`);
 
   const existingNames = new Set(
     (await query<{ name: string }>(`SELECT name FROM decks WHERE is_precon = true`)).rows.map((r) => r.name),
