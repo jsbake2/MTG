@@ -101,7 +101,18 @@ export async function importPrecons(opts: { limit?: number } = {}): Promise<{ ma
           skipped++;
           continue;
         }
-        const formatId = /commander/i.test(deck.type) ? "commander" : "house";
+        let formatId = "house";
+        if (/commander/i.test(deck.type)) {
+          formatId = "commander";
+        } else if (/challenger|planeswalker|starter|intro|theme|event|clash/i.test(deck.type)) {
+          if (/pioneer/i.test(deck.type)) {
+            formatId = "pioneer";
+          } else if (/modern/i.test(deck.type)) {
+            formatId = "modern";
+          } else {
+            formatId = "standard";
+          }
+        }
         await createDeck(
           admin!.id,
           { name: deck.name, formatId, description: `${deck.type} · ${deck.code} · ${deck.releaseDate}`, cards },

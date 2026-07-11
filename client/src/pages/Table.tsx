@@ -54,14 +54,12 @@ function Lobby({ t }: { t: TableConn }) {
       
       const allowed = lobby.formatId;
       const validMine = mine.decks.filter(d => allowed === "house" || d.formatId === allowed);
-      const hasStarred = validMine.some(d => d.isStarred);
-      if (hasStarred) {
-        setOnlyStarred(true);
-        const firstStarred = validMine.find(d => d.isStarred);
-        if (firstStarred) setDeckId(firstStarred.id);
-      } else {
-        setOnlyStarred(false);
-        if (validMine[0]) setDeckId(validMine[0].id);
+      const firstStarred = validMine.find(d => d.isStarred);
+      setOnlyStarred(false);
+      if (firstStarred) {
+        setDeckId(firstStarred.id);
+      } else if (validMine[0]) {
+        setDeckId(validMine[0].id);
       }
     });
   }, [lobby?.formatId]);
@@ -72,11 +70,10 @@ function Lobby({ t }: { t: TableConn }) {
 
   const allowedFormat = lobby.formatId;
   const filteredDecks = decks
-    .filter((d) => allowedFormat === "house" || d.formatId === allowedFormat)
+    .filter((d) => allowedFormat === "house" || d.formatId === allowedFormat || d.formatId === "house")
     .filter((d) => !onlyStarred || d.isStarred);
   const filteredPrecons = precons
-    .filter((d) => allowedFormat === "house" || d.formatId === allowedFormat)
-    .filter((d) => !onlyStarred || d.isStarred);
+    .filter((d) => allowedFormat === "house" || d.formatId === allowedFormat || d.formatId === "house");
 
   return (
     <div className="mx-auto max-w-2xl p-4">
