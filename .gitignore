@@ -15,3 +15,7 @@ image-cache/
 scryfall-*.json
 scryfall-*.jsonl
 *.jsonl.gz
+test-results/
+playwright-report/
+blob-report/
+.playwright/

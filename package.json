@@ -19,11 +19,14 @@
     "dev:client": "npm --workspace client run dev",
     "start": "node server/dist/index.js",
     "typecheck": "npm run build:shared && npm --workspace server run typecheck && npm --workspace client run typecheck",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
     "db:migrate": "node server/dist/db/migrate.js",
     "import:cards": "node server/dist/import/cli.js",
     "import:precons": "node server/dist/import/precons.js"
   },
   "devDependencies": {
+    "@playwright/test": "^1.61.1",
     "concurrently": "^9.1.0"
   },
   "engines": {
