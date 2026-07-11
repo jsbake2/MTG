@@ -3,6 +3,7 @@ import type { CardSummary } from "@mtg/shared";
 import { api } from "@/api/client";
 import { CardTile } from "@/components/CardTile";
 import { CardDetailModal } from "@/components/CardDetailModal";
+import { SetFilter } from "@/components/SetFilter";
 import { useCardSearch } from "@/hooks/useCardSearch";
 
 const EXAMPLES = ["vampire", "t:instant o:vampire", "t:creature pow>=5", "f:commander t:dragon", 'o:"draw a card"', "is:banned f:modern"];
@@ -38,6 +39,7 @@ export function Browse() {
   const [colorless, setColorless] = useState(false);
   const [rarity, setRarity] = useState("");
   const [legal, setLegal] = useState("");
+  const [sets, setSets] = useState<Set<string>>(new Set());
   const [detailId, setDetailId] = useState<string | null>(null);
 
   // Compose the text box + filter controls into one query string.
@@ -49,8 +51,9 @@ export function Browse() {
     if (colorless) parts.push("is:colorless");
     if (rarity) parts.push("r:" + rarity);
     if (legal) parts.push("f:" + legal);
+    if (sets.size > 0) parts.push("set:" + [...sets].join(","));
     return parts.join(" ");
-  }, [text, colors, colorMode, multi, colorless, rarity, legal]);
+  }, [text, colors, colorMode, multi, colorless, rarity, legal, sets]);
 
   useEffect(() => {
     setQ(effective);
@@ -143,11 +146,13 @@ export function Browse() {
             ))}
           </select>
 
+          <SetFilter selected={sets} onChange={setSets} />
+
           <label className="chip ml-auto cursor-pointer">
             <input type="checkbox" checked={opts.group} onChange={(e) => setOpts({ ...opts, group: e.target.checked })} />
             Group ARE / references
           </label>
-          {(colors.size > 0 || multi || colorless || rarity || legal || text) && (
+          {(colors.size > 0 || multi || colorless || rarity || legal || sets.size > 0 || text) && (
             <button
               className="chip hover:border-red-400"
               onClick={() => {
@@ -157,6 +162,7 @@ export function Browse() {
                 setColorless(false);
                 setRarity("");
                 setLegal("");
+                setSets(new Set());
               }}
             >
               Clear ✕

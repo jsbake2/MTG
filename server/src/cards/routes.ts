@@ -1,12 +1,16 @@
 import { Router } from "express";
 import type { CardDetailResponse, SearchRequest } from "@mtg/shared";
-import { getCardById, getImportMeta, getPrintings, searchCards, searchTokens } from "./repo.js";
+import { getCardById, getImportMeta, getPrintings, listSets, searchCards, searchTokens } from "./repo.js";
 import { getCardArt, getCardImage } from "./images.js";
 
 export const cardsRouter = Router();
 
 cardsRouter.get("/tokens", async (req, res) => {
   res.json({ tokens: await searchTokens(String(req.query.q ?? "")) });
+});
+
+cardsRouter.get("/sets", async (_req, res) => {
+  res.json({ sets: await listSets() });
 });
 
 cardsRouter.get("/search", async (req, res) => {

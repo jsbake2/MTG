@@ -350,6 +350,25 @@ export async function searchTokens(q: string): Promise<TokenCard[]> {
   }));
 }
 
+export async function listSets(): Promise<import("@mtg/shared").SetInfo[]> {
+  const rows = (
+    await query<{ code: string; name: string; set_type: string; released: string | null; count: string }>(
+      `SELECT set_code AS code, min(set_name) AS name, coalesce(min(set_type),'') AS set_type,
+              max(released_at) AS released, count(*)::text AS count
+       FROM cards WHERE ${EXCLUDE_NONCARD}
+       GROUP BY set_code
+       ORDER BY max(released_at) DESC NULLS LAST`,
+    )
+  ).rows;
+  return rows.map((r) => ({
+    code: r.code,
+    name: r.name,
+    setType: r.set_type,
+    released: r.released,
+    count: Number(r.count),
+  }));
+}
+
 export async function getImportMeta(): Promise<{ importedAt: string | null; cardCount: number; source: string | null }> {
   const r = (
     await query<{ imported_at: string | null; card_count: number; source: string | null }>(

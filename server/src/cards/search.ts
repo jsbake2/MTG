@@ -78,8 +78,14 @@ function conditionSql(c: Condition, p: Params): string | null {
       return `${numExpr("loyalty")} ${sqlComparator(c.op)} ${p.add(Number(v))}`;
     case "rarity":
       return `rarity = lower(${p.add(v)})`;
-    case "set":
+    case "set": {
+      // Comma-separated set codes = OR (used by the set-filter checkboxes).
+      if (v.includes(",")) {
+        const codes = v.split(",").map((s) => s.trim().toLowerCase()).filter(Boolean);
+        return `set_code = ANY(${p.add(codes)}::text[])`;
+      }
       return `(set_code = lower(${p.add(v)}) OR set_name ILIKE '%' || ${p.add(v)} || '%')`;
+    }
     case "format":
       // format-legal (legal or restricted)
       return `(legalities->>lower(${p.add(v)})) IN ('legal', 'restricted')`;

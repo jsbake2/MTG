@@ -57,6 +57,14 @@ export interface SearchResponse {
   error?: string;
 }
 
+export interface SetInfo {
+  code: string;
+  name: string;
+  setType: string; // expansion, core, commander, masters, … (the "subset" category)
+  released: string | null;
+  count: number;
+}
+
 export interface CardDetailResponse {
   card: Card;
   // Other printings of the same oracle card (for alternate-art selection).
