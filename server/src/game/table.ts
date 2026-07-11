@@ -1,0 +1,211 @@
+// In-memory table manager: lobby, seating, starting games, applying actions with
+// undo history, and producing per-seat redacted state views (hidden zones).
+import { randomUUID } from "node:crypto";
+import type { GameAction, TableState, TableSummary } from "@mtg/shared";
+import { getFormat } from "@mtg/shared";
+import { getCardsByIds } from "../cards/repo.js";
+import { getDeckDetail } from "../decks/repo.js";
+import { applyAction, checkStateBased, type ApplyResult, type CardIndex } from "./engine.js";
+import { buildInitialState, log, type SeatDeck } from "./state.js";
+
+export interface SeatAssignment {
+  seat: number;
+  userId: string;
+  name: string;
+  deckId: string | null;
+}
+
+export class Table {
+  id = randomUUID();
+  name: string;
+  formatId: string;
+  maxPlayers: number;
+  enforcement: "relaxed" | "strict";
+  hostUserId: string;
+  seats: SeatAssignment[] = [];
+  state: TableState | null = null;
+  cardIndex: CardIndex = {};
+  history: TableState[] = [];
+  listeners = new Set<() => void>();
+
+  constructor(opts: { name: string; formatId: string; maxPlayers: number; enforcement: "relaxed" | "strict"; hostUserId: string }) {
+    this.name = opts.name;
+    this.formatId = opts.formatId;
+    this.maxPlayers = opts.maxPlayers;
+    this.enforcement = opts.enforcement;
+    this.hostUserId = opts.hostUserId;
+  }
+
+  summary(): TableSummary {
+    return {
+      id: this.id,
+      name: this.name,
+      formatId: this.formatId,
+      status: this.state?.status ?? "lobby",
+      playerCount: this.seats.length,
+      maxPlayers: this.maxPlayers,
+      seats: this.seats.map((s) => ({ seat: s.seat, name: s.name, userId: s.userId })),
+    };
+  }
+
+  notify(): void {
+    for (const fn of this.listeners) fn();
+  }
+
+  takeSeat(userId: string, name: string, seat: number, deckId: string | null): { ok: boolean; error?: string } {
+    if (this.state && this.state.status !== "lobby") return { ok: false, error: "Game already started." };
+    if (seat < 0 || seat >= this.maxPlayers) return { ok: false, error: "Invalid seat." };
+    // Remove any existing seat for this user, then claim.
+    this.seats = this.seats.filter((s) => s.userId !== userId);
+    if (this.seats.some((s) => s.seat === seat)) return { ok: false, error: "Seat taken." };
+    this.seats.push({ seat, userId, name, deckId });
+    this.seats.sort((a, b) => a.seat - b.seat);
+    this.notify();
+    return { ok: true };
+  }
+
+  leaveSeat(userId: string): void {
+    this.seats = this.seats.filter((s) => s.userId !== userId);
+    this.notify();
+  }
+
+  seatForUser(userId: string): number | null {
+    return this.seats.find((s) => s.userId === userId)?.seat ?? null;
+  }
+
+  async start(): Promise<{ ok: boolean; error?: string }> {
+    if (this.seats.length < 1) return { ok: false, error: "Need at least one seated player." };
+    const format = getFormat(this.formatId);
+    const seatDecks: SeatDeck[] = [];
+    const allCardIds = new Set<string>();
+    for (const s of this.seats) {
+      const library: SeatDeck["library"] = [];
+      const commanders: SeatDeck["commanders"] = [];
+      if (s.deckId) {
+        const deck = await getDeckDetail(s.deckId);
+        if (deck) {
+          for (const entry of deck.cards) {
+            const target = entry.board === "commander" ? commanders : entry.board === "main" ? library : null;
+            if (!target) continue;
+            for (let i = 0; i < entry.quantity; i++) {
+              target.push({ cardId: entry.cardId, oracleId: entry.card.oracleId, name: entry.card.name });
+              allCardIds.add(entry.cardId);
+            }
+          }
+        }
+      }
+      seatDecks.push({ seat: s.seat, userId: s.userId, name: s.name, library, commanders });
+    }
+
+    // Build the card index (types/keywords/PT) used by the engine.
+    const cards = await getCardsByIds([...allCardIds]);
+    this.cardIndex = {};
+    for (const [id, c] of cards) {
+      this.cardIndex[id] = {
+        typeLine: c.typeLine,
+        cardTypes: c.cardTypes,
+        power: c.power,
+        toughness: c.toughness,
+        keywords: c.keywords,
+        oracleText: c.oracleText,
+      };
+    }
+
+    this.state = buildInitialState({
+      id: this.id,
+      name: this.name,
+      formatId: this.formatId,
+      enforcement: this.enforcement,
+      seats: seatDecks,
+    });
+    // Opening hands.
+    for (const s of seatDecks) {
+      this.dealOpeningHand(s.seat);
+    }
+    this.state.status = "playing";
+    log(this.state, { seat: null, kind: "system", text: `Game started — ${format?.name ?? this.formatId}. Good luck!` });
+    this.history = [];
+    this.notify();
+    return { ok: true };
+  }
+
+  private dealOpeningHand(seat: number): void {
+    if (!this.state) return;
+    const lib = Object.values(this.state.objects)
+      .filter((o) => o.zone === "library" && o.ownerSeat === seat)
+      .sort((a, b) => a.y - b.y);
+    for (let i = 0; i < 7 && i < lib.length; i++) lib[i]!.zone = "hand";
+  }
+
+  apply(seat: number, action: GameAction): ApplyResult {
+    if (!this.state) return { ok: false, error: "Game not started." };
+    // Snapshot for undo (cap history).
+    this.history.push(structuredClone(this.state));
+    if (this.history.length > 50) this.history.shift();
+    const res = applyAction(this.state, this.cardIndex, seat, action);
+    if (!res.ok) {
+      // roll back the snapshot we just took
+      this.history.pop();
+    } else {
+      this.notify();
+    }
+    return res;
+  }
+
+  undo(): boolean {
+    if (!this.state || this.history.length === 0) return false;
+    this.state = this.history.pop()!;
+    checkStateBased(this.state, this.cardIndex);
+    this.state.revision += 1;
+    this.notify();
+    return true;
+  }
+
+  // Redacted state for a viewer: opponents' hands and everyone's libraries are
+  // hidden (card identity stripped). The viewer's own hand is fully visible.
+  viewFor(viewerSeat: number | null): { state: TableState; hands: Record<number, string[]> } {
+    if (!this.state) throw new Error("no state");
+    const clone: TableState = structuredClone(this.state);
+    const hands: Record<number, string[]> = {};
+    for (const o of Object.values(clone.objects)) {
+      const ownHand = o.zone === "hand" && o.ownerSeat === viewerSeat;
+      if (o.zone === "library" || (o.zone === "hand" && o.ownerSeat !== viewerSeat)) {
+        o.cardId = null;
+        o.oracleId = null;
+        o.name = "Card";
+        o.faceDown = true;
+      }
+      if (ownHand) (hands[viewerSeat!] ??= []).push(o.id);
+    }
+    return { state: clone, hands };
+  }
+}
+
+// ---- global store -------------------------------------------------------
+class TableManager {
+  private tables = new Map<string, Table>();
+
+  create(opts: { name: string; formatId: string; maxPlayers: number; enforcement: "relaxed" | "strict"; hostUserId: string }): Table {
+    const t = new Table(opts);
+    this.tables.set(t.id, t);
+    return t;
+  }
+  get(id: string): Table | undefined {
+    return this.tables.get(id);
+  }
+  list(): TableSummary[] {
+    return [...this.tables.values()].map((t) => t.summary());
+  }
+  remove(id: string): void {
+    this.tables.delete(id);
+  }
+  // Reap finished/empty tables occasionally.
+  reap(): void {
+    for (const [id, t] of this.tables) {
+      const noOne = t.listeners.size === 0 && t.seats.length === 0;
+      if (noOne) this.tables.delete(id);
+    }
+  }
+}
+
+export const tables = new TableManager();

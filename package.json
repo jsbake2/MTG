@@ -1,0 +1,31 @@
+{
+  "name": "mtg-pvp",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Self-hosted Magic: The Gathering game — card database, deck builder, and hybrid-enforcement multiplayer table for playing at home with the kids.",
+  "type": "module",
+  "workspaces": [
+    "shared",
+    "server",
+    "client"
+  ],
+  "scripts": {
+    "build:shared": "npm --workspace shared run build",
+    "build:client": "npm --workspace client run build",
+    "build:server": "npm --workspace server run build",
+    "build": "npm run build:shared && npm run build:client && npm run build:server",
+    "dev": "npm run build:shared && concurrently -k -n server,client -c blue,magenta \"npm:dev:server\" \"npm:dev:client\"",
+    "dev:server": "npm --workspace server run dev",
+    "dev:client": "npm --workspace client run dev",
+    "start": "node server/dist/index.js",
+    "typecheck": "npm run build:shared && npm --workspace server run typecheck && npm --workspace client run typecheck",
+    "db:migrate": "node server/dist/db/migrate.js",
+    "import:cards": "node server/dist/import/cli.js"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.0"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

@@ -1,0 +1,79 @@
+# MTG-PvP — self-hosted Magic: The Gathering home table.
+#
+# Services:
+#   postgres     - card catalog + users/decks (named volume)
+#   app          - the TS/React app (API + WebSocket + static client), on :8477
+#   cloudflared  - optional sidecar publishing the app at https://mtg.jsb-emr.us
+#
+# The app binds on the LAN at http://10.0.0.16:8477 (adjust the ports mapping to
+# restrict strictly to the LAN interface). Public access is via Cloudflare Tunnel
+# only — the app never listens on a public port directly.
+#
+# First run:
+#   cp .env.example .env   # then edit secrets
+#   docker compose up -d --build
+#   docker compose run --rm app npm run import:cards   # download the card catalog
+#
+# It appears in the services-panel automatically (docker container "mtg-app").
+
+services:
+  postgres:
+    image: postgres:16
+    container_name: mtg-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:?set POSTGRES_USER in .env}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: ${POSTGRES_DB:-mtg}
+    volumes:
+      - mtg_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build: .
+    image: mtg-pvp:latest
+    container_name: mtg-app
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      PORT: "8477"
+      HOST: "0.0.0.0"
+      DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-mtg}
+      SESSION_SECRET: ${SESSION_SECRET:?set SESSION_SECRET in .env}
+      ADMIN_USERNAME: ${ADMIN_USERNAME:-jason}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?set ADMIN_PASSWORD in .env}
+      INVITE_CODE: ${INVITE_CODE:-}
+      IMAGE_CACHE_DIR: /data/image-cache
+    volumes:
+      - mtg_data:/data
+    ports:
+      # LAN access at http://10.0.0.16:8477. To bind only the LAN interface,
+      # change to "10.0.0.16:8477:8477".
+      - "8477:8477"
+
+  # Optional: publish at https://mtg.jsb-emr.us via Cloudflare Tunnel.
+  # Remove this service (and TUNNEL_TOKEN) to run LAN-only.
+  cloudflared:
+    image: cloudflare/cloudflared:2026.3.0
+    container_name: mtg-cloudflared
+    restart: unless-stopped
+    depends_on:
+      - app
+    command:
+      - tunnel
+      - --no-autoupdate
+      - run
+      - --token
+      - ${TUNNEL_TOKEN:?set TUNNEL_TOKEN in .env or remove the cloudflared service}
+
+volumes:
+  mtg_pgdata:
+    name: mtg_pgdata
+  mtg_data:
+    name: mtg_data
