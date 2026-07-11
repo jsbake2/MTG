@@ -609,7 +609,7 @@ function PlayerStrip({
   const hasPriority = state.prioritySeat === p.seat;
 
   return (
-    <div className={`rounded-lg border p-2 ${targeting ? "cursor-crosshair ring-2 ring-red-500/60" : ""} ${active ? "border-table-accent shadow-accent/5 shadow-md" : "border-table-border"} ${p.hasLost ? "opacity-40" : ""}`}>
+    <div className={`panel p-3 border-2 ${targeting ? "cursor-crosshair ring-2 ring-red-500/60" : ""} ${active ? "border-table-accent shadow-lg shadow-table-accent/5" : "border-table-border/60"} ${p.hasLost ? "opacity-40" : ""}`}>
       <div className="mb-1 flex items-center gap-2 text-sm">
         <button disabled={!targeting} onClick={() => onTargetPlayer?.()} className="flex items-center gap-2">
           <Avatar cardId={p.avatarCardId} name={p.name} size={28} ring={active} />
@@ -735,7 +735,7 @@ function GameCard({
       onMouseEnter={(e) => o.cardId && onHover?.({ id: o.cardId, name: o.name }, e)}
       onMouseMove={(e) => o.cardId && onHover?.({ id: o.cardId, name: o.name }, e)}
       onMouseLeave={() => onHover?.(null, null as any)}
-      className="relative shrink-0 transition-transform hover:scale-105 hover:z-10"
+      className={`game-card-wrapper relative shrink-0 transition-transform hover:scale-105 hover:z-10 ${o.tapped ? "opacity-85" : ""}`}
       style={{ width: o.tapped ? size : w, height: o.tapped ? w : size }}
       title={o.name}
     >
@@ -743,7 +743,17 @@ function GameCard({
         className="absolute left-0 top-0 origin-top-left transition-transform"
         style={{ width: w, height: size, transform: o.tapped ? `rotate(90deg) translateY(-${w}px)` : "none" }}
       >
-        <CardImage id={o.cardId} name={o.name} className={o.attacking !== null ? "ring-2 ring-red-500" : o.blocking ? "ring-2 ring-blue-400" : ""} />
+        <CardImage
+          id={o.cardId}
+          name={o.name}
+          className={`rounded-md shadow-card ${
+            o.attacking !== null 
+              ? "ring-2 ring-red-500 card-attacking" 
+              : o.blocking 
+                ? "ring-2 ring-sky-400 card-blocking" 
+                : ""
+          }`}
+        />
         {o.counters.length > 0 && (
           <div className="absolute bottom-0 left-0 flex gap-0.5 p-0.5">
             {o.counters.map((c) => (
@@ -794,7 +804,7 @@ function PhaseControls({ state, t, isActive, hasPriority, you }: { state: TableS
     <div className="flex flex-wrap items-center gap-1">
       <div className="hidden items-center gap-0.5 lg:flex">
         {TURN_STEPS.map((s, i) => (
-          <span key={s.step} className={`rounded px-1.5 py-0.5 text-[10px] ${i === idx ? "bg-table-accent text-black" : "text-table-muted"}`}>
+          <span key={s.step} className={`rounded px-1.5 py-0.5 text-[10px] transition-all duration-150 ${i === idx ? "bg-table-accent text-black font-bold shadow-md shadow-table-accent/20" : "text-table-muted bg-table-panel2/50"}`}>
             {STEP_LABELS[s.step]}
           </span>
         ))}
