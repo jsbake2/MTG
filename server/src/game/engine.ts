@@ -148,6 +148,9 @@ function moveObject(
   opts: { x?: number; y?: number; toTop?: boolean },
 ): void {
   const fromZone = o.zone;
+  // Anything leaving the stack (resolved or countered) leaves the stack order,
+  // so countering a counterspell (and cancels-on-cancels) works cleanly.
+  if (fromZone === "stack") state.stackOrder = state.stackOrder.filter((id) => id !== o.id);
   // Leaving the battlefield/stack resets transient permanent state.
   if (fromZone === "battlefield" && toZone !== "battlefield") {
     o.tapped = false;
@@ -954,9 +957,20 @@ function pow(state: TableState, ctx: CardIndex, o: GameObject): number {
 function tou(state: TableState, ctx: CardIndex, o: GameObject): number {
   return effectivePT(state, o, info(ctx, o) ?? undefined).toughness;
 }
+function toxicAmount(ctx: CardIndex, o: GameObject): number {
+  const m = (info(ctx, o)?.oracleText ?? "").match(/toxic (\d+)/i);
+  return m ? parseInt(m[1]!, 10) : 0;
+}
 function dealToCreature(state: TableState, ctx: CardIndex, source: GameObject, target: GameObject, amount: number): void {
   if (amount <= 0) return;
-  target.damage += amount;
+  // Infect deals its combat damage to creatures as -1/-1 counters.
+  if (hasKeyword(ctx, source, "infect")) {
+    const c = target.counters.find((x) => x.type === "-1/-1");
+    if (c) c.count += amount;
+    else target.counters.push({ type: "-1/-1", count: amount });
+  } else {
+    target.damage += amount;
+  }
   if (hasKeyword(ctx, source, "deathtouch")) target.deathtouched = true;
   if (hasKeyword(ctx, source, "lifelink")) {
     const c = playerBySeat(state, source.controllerSeat);
@@ -967,8 +981,16 @@ function dealToPlayer(state: TableState, ctx: CardIndex, source: GameObject, sea
   if (amount <= 0) return;
   const p = playerBySeat(state, seat);
   if (p) {
-    p.life -= amount;
-    if (source.isCommander) p.commanderDamage[source.controllerSeat] = (p.commanderDamage[source.controllerSeat] ?? 0) + amount;
+    // Infect deals damage to players as poison counters instead of life loss.
+    if (hasKeyword(ctx, source, "infect")) {
+      p.poison += amount;
+    } else {
+      p.life -= amount;
+      if (source.isCommander) p.commanderDamage[source.controllerSeat] = (p.commanderDamage[source.controllerSeat] ?? 0) + amount;
+      // Toxic N adds N poison counters when a creature deals combat damage to a player.
+      const tox = toxicAmount(ctx, source);
+      if (tox > 0) p.poison += tox;
+    }
   }
   if (hasKeyword(ctx, source, "lifelink")) {
     const c = playerBySeat(state, source.controllerSeat);
@@ -981,6 +1003,15 @@ function dealToPlayer(state: TableState, ctx: CardIndex, source: GameObject, sea
 function resolveCombat(state: TableState, ctx: CardIndex): void {
   const attackers = objectsIn(state, "battlefield").filter((o) => o.attacking !== null);
   if (attackers.length === 0) return;
+  // Menace: a creature with menace can't be blocked by exactly one creature.
+  for (const atk of attackers) {
+    if (!hasKeyword(ctx, atk, "menace")) continue;
+    const bs = objectsIn(state, "battlefield").filter((o) => o.blocking === atk.id);
+    if (bs.length === 1) {
+      bs[0]!.blocking = null;
+      log(state, { seat: atk.controllerSeat, kind: "combat", text: `${atk.name} has menace — a lone blocker can't block it.` });
+    }
+  }
   const blockedIds = new Set(
     objectsIn(state, "battlefield").filter((o) => o.blocking !== null).map((o) => o.blocking as string),
   );
