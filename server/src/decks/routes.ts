@@ -10,6 +10,7 @@ import {
   getDeckDetail,
   getDeckRow,
   listDecks,
+  listPrecons,
   updateDeck,
 } from "./repo.js";
 import { validateDeck, type DeckEntryWithCard } from "./validate.js";
@@ -32,6 +33,11 @@ decksRouter.use(requireAuth);
 
 decksRouter.get("/", async (req, res) => {
   res.json({ decks: await listDecks(req.user!.id) });
+});
+
+// Preconstructed decks — visible to everyone, copyable to your own account.
+decksRouter.get("/public", async (_req, res) => {
+  res.json({ decks: await listPrecons() });
 });
 
 decksRouter.post("/", async (req, res) => {
@@ -65,7 +71,7 @@ decksRouter.get("/:id", async (req, res) => {
     res.status(404).json({ error: "Deck not found" });
     return;
   }
-  if (detail.ownerId !== req.user!.id && !req.user!.isAdmin) {
+  if (detail.ownerId !== req.user!.id && !req.user!.isAdmin && !detail.isPrecon) {
     res.status(403).json({ error: "Not your deck" });
     return;
   }

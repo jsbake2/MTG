@@ -20,7 +20,8 @@
     "start": "node server/dist/index.js",
     "typecheck": "npm run build:shared && npm --workspace server run typecheck && npm --workspace client run typecheck",
     "db:migrate": "node server/dist/db/migrate.js",
-    "import:cards": "node server/dist/import/cli.js"
+    "import:cards": "node server/dist/import/cli.js",
+    "import:precons": "node server/dist/import/precons.js"
   },
   "devDependencies": {
     "concurrently": "^9.1.0"

@@ -34,12 +34,17 @@ export function TablePage() {
 function Lobby({ t }: { t: TableConn }) {
   const { user } = useAuth();
   const [decks, setDecks] = useState<Deck[]>([]);
+  const [precons, setPrecons] = useState<Deck[]>([]);
   const [deckId, setDeckId] = useState<string | null>(null);
 
   useEffect(() => {
-    api.get<{ decks: Deck[] }>("/api/decks").then((r) => {
-      setDecks(r.decks);
-      if (r.decks[0]) setDeckId(r.decks[0].id);
+    Promise.all([
+      api.get<{ decks: Deck[] }>("/api/decks"),
+      api.get<{ decks: Deck[] }>("/api/decks/public"),
+    ]).then(([mine, pub]) => {
+      setDecks(mine.decks);
+      setPrecons(pub.decks);
+      if (mine.decks[0]) setDeckId(mine.decks[0].id);
     });
   }, []);
 
@@ -65,11 +70,24 @@ function Lobby({ t }: { t: TableConn }) {
           Your deck
           <select className="input mt-1 w-full" value={deckId ?? ""} onChange={(e) => setDeckId(e.target.value || null)}>
             <option value="">— none (spectate / empty) —</option>
-            {decks.map((d) => (
-              <option key={d.id} value={d.id}>
-                {d.name} ({d.formatId}, {d.cardCount})
-              </option>
-            ))}
+            {decks.length > 0 && (
+              <optgroup label="My decks">
+                {decks.map((d) => (
+                  <option key={d.id} value={d.id}>
+                    {d.name} ({d.formatId}, {d.cardCount})
+                  </option>
+                ))}
+              </optgroup>
+            )}
+            {precons.length > 0 && (
+              <optgroup label="Preconstructed decks">
+                {precons.map((d) => (
+                  <option key={d.id} value={d.id}>
+                    {d.name} ({d.formatId}, {d.cardCount})
+                  </option>
+                ))}
+              </optgroup>
+            )}
           </select>
         </label>
         <div className="grid grid-cols-2 gap-2">

@@ -9,6 +9,7 @@ interface DeckRow {
   name: string;
   format_id: string;
   description: string;
+  is_precon: boolean;
   created_at: string;
   updated_at: string;
   card_count: string;
@@ -37,6 +38,7 @@ function toDeck(r: DeckRow, colors: string[]): Deck {
     description: r.description,
     colors,
     cardCount: Number(r.card_count),
+    isPrecon: r.is_precon,
     createdAt: r.created_at,
     updatedAt: r.updated_at,
   };
@@ -78,17 +80,29 @@ export async function getDeckDetail(id: string): Promise<DeckDetail | null> {
 export async function createDeck(
   ownerId: string,
   data: { name: string; formatId: string; description?: string; cards: DeckCardEntry[] },
+  isPrecon = false,
 ): Promise<string> {
   return withTx(async (client) => {
     const deckId = (
       await client.query<{ id: string }>(
-        `INSERT INTO decks (owner_id, name, format_id, description) VALUES ($1,$2,$3,$4) RETURNING id`,
-        [ownerId, data.name, data.formatId, data.description ?? ""],
+        `INSERT INTO decks (owner_id, name, format_id, description, is_precon) VALUES ($1,$2,$3,$4,$5) RETURNING id`,
+        [ownerId, data.name, data.formatId, data.description ?? "", isPrecon],
       )
     ).rows[0]!.id;
     await insertCards(client, deckId, data.cards);
     return deckId;
   });
+}
+
+export async function listPrecons(): Promise<Deck[]> {
+  const rows = (await query<DeckRow>(`${DECK_SELECT} WHERE d.is_precon = true ORDER BY d.name ASC`)).rows;
+  const decks: Deck[] = [];
+  for (const r of rows) decks.push(toDeck(r, await deckColors(r.id)));
+  return decks;
+}
+
+export async function preconCount(): Promise<number> {
+  return Number((await query<{ n: string }>(`SELECT count(*)::text AS n FROM decks WHERE is_precon = true`)).rows[0]?.n ?? 0);
 }
 
 export async function updateDeck(

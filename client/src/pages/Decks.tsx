@@ -7,17 +7,21 @@ const MANA_DOT: Record<string, string> = { W: "#f8f6d8", U: "#3b7dd8", B: "#4b4b
 
 export function Decks() {
   const [decks, setDecks] = useState<Deck[]>([]);
+  const [precons, setPrecons] = useState<Deck[]>([]);
+  const [preconQuery, setPreconQuery] = useState("");
   const [formats, setFormats] = useState<FormatDef[]>([]);
   const [loading, setLoading] = useState(true);
   const nav = useNavigate();
 
   async function load() {
     setLoading(true);
-    const [d, f] = await Promise.all([
+    const [d, p, f] = await Promise.all([
       api.get<{ decks: Deck[] }>("/api/decks"),
+      api.get<{ decks: Deck[] }>("/api/decks/public"),
       api.get<{ formats: FormatDef[] }>("/api/formats"),
     ]);
     setDecks(d.decks);
+    setPrecons(p.decks);
     setFormats(f.formats);
     setLoading(false);
   }
@@ -31,6 +35,7 @@ export function Decks() {
     const r = await api.post<{ id: string }>(`/api/decks/${id}/duplicate`);
     nav(`/decks/${r.id}`);
   }
+  const filteredPrecons = precons.filter((p) => p.name.toLowerCase().includes(preconQuery.toLowerCase()));
   async function remove(id: string) {
     if (!confirm("Delete this deck?")) return;
     await api.del(`/api/decks/${id}`);
@@ -85,6 +90,54 @@ export function Decks() {
           ))}
         </div>
       )}
+
+      {/* Preconstructed decks */}
+      <div className="mt-10">
+        <div className="mb-3 flex flex-wrap items-center gap-2">
+          <h2 className="font-display text-xl text-table-accentSoft">Preconstructed Decks</h2>
+          <span className="text-sm text-table-muted">{precons.length} ready-to-play decks — copy one to tweak it, or play it as-is.</span>
+          <input
+            className="input ml-auto w-56"
+            placeholder="Search precons…"
+            value={preconQuery}
+            onChange={(e) => setPreconQuery(e.target.value)}
+          />
+        </div>
+        {precons.length === 0 ? (
+          <div className="panel p-6 text-center text-sm text-table-muted">
+            No precons imported yet. On the server run{" "}
+            <code className="rounded bg-black/40 px-1">docker compose run --rm app npm run import:precons</code>.
+          </div>
+        ) : (
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {filteredPrecons.slice(0, 120).map((d) => (
+              <div key={d.id} className="panel flex flex-col p-4">
+                <div className="flex items-start justify-between gap-2">
+                  <Link to={`/decks/${d.id}`} className="font-display text-base text-table-ink hover:text-table-accentSoft">
+                    {d.name}
+                  </Link>
+                  <div className="flex gap-0.5">
+                    {d.colors.map((c) => (
+                      <span key={c} className="h-3 w-3 rounded-full border border-black/30" style={{ background: MANA_DOT[c] ?? "#c9c6be" }} />
+                    ))}
+                  </div>
+                </div>
+                <div className="mt-1 text-xs text-table-muted">
+                  {formatName(d.formatId)} · {d.cardCount} cards
+                </div>
+                <div className="mt-auto flex gap-2 pt-3">
+                  <Link to={`/decks/${d.id}`} className="btn-ghost">
+                    View
+                  </Link>
+                  <button className="btn-primary ml-auto" onClick={() => duplicate(d.id)}>
+                    Copy to my decks
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

@@ -59,6 +59,8 @@ interface ScryfallCard {
   reserved?: boolean;
   digital?: boolean;
   layout?: string;
+  set_type?: string;
+  border_color?: string;
   legalities?: Record<string, string>;
   image_uris?: ScryfallImageUris;
   card_faces?: ScryfallFace[];
@@ -97,6 +99,8 @@ export interface CardRow {
   image_art_crop: string | null;
   layout: string | null;
   digital: boolean;
+  set_type: string | null;
+  border_color: string | null;
 }
 
 function pickImages(c: ScryfallCard): { normal: string | null; small: string | null; artCrop: string | null } {
@@ -164,6 +168,8 @@ export function mapCard(c: ScryfallCard): CardRow {
     image_art_crop: img.artCrop,
     layout: c.layout ?? null,
     digital: c.digital ?? false,
+    set_type: c.set_type ?? null,
+    border_color: c.border_color ?? null,
   };
 }
 
@@ -230,7 +236,7 @@ const COLUMNS = [
   "keywords", "supertypes", "card_types", "subtypes", "set_code", "set_name",
   "collector_number", "rarity", "released_at", "year", "artist", "reserved",
   "legalities", "faces", "image_normal", "image_small", "image_art_crop",
-  "layout", "digital",
+  "layout", "digital", "set_type", "border_color",
 ] as const;
 
 function rowValues(r: CardRow): unknown[] {
@@ -240,7 +246,7 @@ function rowValues(r: CardRow): unknown[] {
     r.keywords, r.supertypes, r.card_types, r.subtypes, r.set_code, r.set_name,
     r.collector_number, r.rarity, r.released_at, r.year, r.artist, r.reserved,
     JSON.stringify(r.legalities), JSON.stringify(r.faces), r.image_normal,
-    r.image_small, r.image_art_crop, r.layout, r.digital,
+    r.image_small, r.image_art_crop, r.layout, r.digital, r.set_type, r.border_color,
   ];
 }
 

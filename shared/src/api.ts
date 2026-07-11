@@ -81,6 +81,7 @@ export interface Deck {
   description: string;
   colors: string[];
   cardCount: number;
+  isPrecon: boolean;
   updatedAt: string;
   createdAt: string;
 }

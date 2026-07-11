@@ -37,6 +37,7 @@ export function Browse() {
   const [multi, setMulti] = useState(false);
   const [colorless, setColorless] = useState(false);
   const [rarity, setRarity] = useState("");
+  const [legal, setLegal] = useState("");
   const [detailId, setDetailId] = useState<string | null>(null);
 
   // Compose the text box + filter controls into one query string.
@@ -47,8 +48,9 @@ export function Browse() {
     if (multi) parts.push("is:multicolor");
     if (colorless) parts.push("is:colorless");
     if (rarity) parts.push("r:" + rarity);
+    if (legal) parts.push("f:" + legal);
     return parts.join(" ");
-  }, [text, colors, colorMode, multi, colorless, rarity]);
+  }, [text, colors, colorMode, multi, colorless, rarity, legal]);
 
   useEffect(() => {
     setQ(effective);
@@ -133,11 +135,19 @@ export function Browse() {
             ))}
           </select>
 
+          <select className="input !py-1" value={legal} onChange={(e) => setLegal(e.target.value)} title="Only show cards legal in a format">
+            {["", "standard", "pioneer", "modern", "pauper", "legacy", "vintage", "commander"].map((f) => (
+              <option key={f} value={f}>
+                {f ? `Legal: ${f}` : "Any legality"}
+              </option>
+            ))}
+          </select>
+
           <label className="chip ml-auto cursor-pointer">
             <input type="checkbox" checked={opts.group} onChange={(e) => setOpts({ ...opts, group: e.target.checked })} />
             Group ARE / references
           </label>
-          {(colors.size > 0 || multi || colorless || rarity || text) && (
+          {(colors.size > 0 || multi || colorless || rarity || legal || text) && (
             <button
               className="chip hover:border-red-400"
               onClick={() => {
@@ -146,6 +156,7 @@ export function Browse() {
                 setMulti(false);
                 setColorless(false);
                 setRarity("");
+                setLegal("");
               }}
             >
               Clear ✕

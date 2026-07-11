@@ -111,9 +111,13 @@ function rowToSummary(r: CardDbRow): CardSummary {
   };
 }
 
-// Layouts that aren't real playable cards — kept out of browse/deck results.
+// Keep browse/deck results to real, playable cards: no tokens/emblems/etc, and
+// no joke cards (un-sets = set_type 'funny'), test/playtest cards, or
+// gold-bordered collector reprints (set_type 'memorabilia' / silver borders).
 const EXCLUDE_NONCARD =
-  "coalesce(layout,'') NOT IN ('art_series','double_faced_token','token','emblem','scheme','planar','vanguard','sticker','augment','host')";
+  "coalesce(layout,'') NOT IN ('art_series','double_faced_token','token','emblem','scheme','planar','vanguard','sticker','augment','host') " +
+  "AND coalesce(set_type,'') NOT IN ('funny','memorabilia') " +
+  "AND coalesce(border_color,'') NOT IN ('silver')";
 
 const SUMMARY_COLS =
   "id, oracle_id, name, mana_cost, cmc, type_line, colors, card_types, rarity, set_code, year, image_normal, image_small";
@@ -328,6 +332,7 @@ export async function searchTokens(q: string): Promise<TokenCard[]> {
     await query<CardDbRow>(
       `SELECT DISTINCT ON (coalesce(oracle_id, id)) ${FULL_COLS} FROM cards
        WHERE layout IN ('token','double_faced_token','emblem')
+         AND coalesce(set_type,'') <> 'funny'
          AND ($1 = '%%' OR name ILIKE $1 OR type_line ILIKE $1)
        ORDER BY coalesce(oracle_id, id), released_at DESC NULLS LAST
        LIMIT 60`,

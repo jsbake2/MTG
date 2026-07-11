@@ -223,10 +223,18 @@ export function DeckBuilder() {
               {format?.requiresCommander ? ` · ${commanderCount} commander` : ""}
               {format ? ` · min ${format.minDeckSize}` : ""}
             </span>
-            {validation && (
-              <span className={validation.valid ? "text-green-300" : "text-amber-300"}>
-                {validation.valid ? "✓ Legal" : `${validation.issues.filter((i) => i.severity === "error").length} issue(s)`}
+            {validation ? (
+              <span
+                className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+                  validation.valid ? "bg-green-900/50 text-green-200" : "bg-red-900/50 text-red-200"
+                }`}
+              >
+                {validation.valid
+                  ? `✓ Legal in ${format?.name ?? formatId}`
+                  : `✕ Not legal · ${validation.issues.filter((i) => i.severity === "error").length} problem(s)`}
               </span>
+            ) : (
+              <span className="text-table-muted">Empty deck</span>
             )}
           </div>
         </div>
