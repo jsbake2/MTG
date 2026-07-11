@@ -408,6 +408,8 @@ function dispatch(state: TableState, ctx: CardIndex, seat: number, action: GameA
     case "create_token": {
       const o = {
         ...newTokenObject(action.seat, action.name),
+        cardId: action.cardId ?? null,
+        oracleId: action.oracleId ?? null,
         ptOverride: action.power !== undefined && action.toughness !== undefined ? { power: action.power, toughness: action.toughness } : null,
       };
       state.objects[o.id] = o;

@@ -162,7 +162,7 @@ export type GameAction =
   | { type: "set_damage"; objectId: string; damage: number }
   | { type: "flip"; objectId: string; faceIndex?: number; faceDown?: boolean }
   | { type: "attach"; objectId: string; toObjectId: string | null }
-  | { type: "create_token"; seat: number; name: string; power?: number; toughness?: number; typeLine?: string; colors?: string[] }
+  | { type: "create_token"; seat: number; name: string; power?: number; toughness?: number; typeLine?: string; colors?: string[]; cardId?: string | null; oracleId?: string | null }
   | { type: "cast"; objectId: string; targets?: string[] } // move to stack (framework: timing/mana enforced)
   | { type: "resolve_top" } // resolve top of stack (player then performs the effect manually)
   | { type: "counter_top" } // remove top of stack to graveyard

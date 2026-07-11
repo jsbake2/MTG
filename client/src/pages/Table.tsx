@@ -120,6 +120,7 @@ function GameBoard({ t, state }: { t: TableConn; state: TableState }) {
   const opponents = state.players.filter((p) => p.seat !== you);
   const [sel, setSel] = useState<Selection | null>(null);
   const [chatText, setChatText] = useState("");
+  const [tokenOpen, setTokenOpen] = useState(false);
 
   const objectsByZone = useMemo(() => {
     const map: Record<string, GameObject[]> = {};
@@ -231,6 +232,9 @@ function GameBoard({ t, state }: { t: TableConn; state: TableState }) {
             <div className="ml-auto flex items-center gap-2">
               <LifeControl p={me} t={t} />
               <ManaControl p={me} t={t} />
+              <button className="chip hover:border-table-accent" onClick={() => setTokenOpen(true)}>
+                ＋ Token
+              </button>
               <ZoneButtons you={you} t={t} objectsByZone={objectsByZone} />
             </div>
           </div>
@@ -247,6 +251,20 @@ function GameBoard({ t, state }: { t: TableConn; state: TableState }) {
         </div>
       )}
 
+      {tokenOpen && you !== null && (
+        <TokenPicker
+          onClose={() => setTokenOpen(false)}
+          onPick={(tk) => {
+            const num = (v: string | null) => {
+              if (!v) return undefined;
+              const n = parseInt(v.replace(/[^0-9-]/g, ""), 10);
+              return Number.isFinite(n) ? n : undefined;
+            };
+            t.send({ type: "create_token", seat: you, name: tk.name, cardId: tk.id, oracleId: null, power: num(tk.power), toughness: num(tk.toughness) });
+            setTokenOpen(false);
+          }}
+        />
+      )}
       {sel && <CardMenu sel={sel} state={state} you={you} t={t} onClose={() => setSel(null)} />}
       {t.error && <div className="fixed bottom-4 left-1/2 -translate-x-1/2 rounded bg-red-900/90 px-4 py-2 text-sm text-red-100 shadow-panel">{t.error}</div>}
     </div>
@@ -453,6 +471,71 @@ function ZoneButtons({ you, t, objectsByZone }: { you: number; t: TableConn; obj
       </button>
       <span className="chip">GY {gy.length}</span>
       <span className="chip">Exile {ex.length}</span>
+    </div>
+  );
+}
+
+// ---- token picker -------------------------------------------------------
+interface TokenCard {
+  id: string;
+  name: string;
+  typeLine: string;
+  power: string | null;
+  toughness: string | null;
+  colors: string[];
+  imageUrl: string | null;
+}
+
+function TokenPicker({ onClose, onPick }: { onClose: () => void; onPick: (t: TokenCard) => void }) {
+  const [q, setQ] = useState("");
+  const [tokens, setTokens] = useState<TokenCard[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    const id = setTimeout(() => {
+      setLoading(true);
+      api
+        .get<{ tokens: TokenCard[] }>(`/api/cards/tokens?q=${encodeURIComponent(q)}`)
+        .then((r) => !cancelled && setTokens(r.tokens))
+        .finally(() => !cancelled && setLoading(false));
+    }, 200);
+    return () => {
+      cancelled = true;
+      clearTimeout(id);
+    };
+  }, [q]);
+
+  return (
+    <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/70 p-4" onClick={onClose}>
+      <div className="panel flex max-h-[85vh] w-full max-w-3xl flex-col overflow-hidden" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center gap-2 border-b border-table-border p-3">
+          <h3 className="font-display text-lg text-table-accentSoft">Create a token</h3>
+          <input className="input ml-auto w-64" autoFocus placeholder="Search tokens — soldier, treasure, 1/1 zombie…" value={q} onChange={(e) => setQ(e.target.value)} />
+          <button className="btn-ghost" onClick={onClose}>
+            Close
+          </button>
+        </div>
+        <div className="min-h-0 flex-1 overflow-y-auto p-3">
+          {loading && tokens.length === 0 ? (
+            <div className="p-6 text-center text-table-muted">Searching…</div>
+          ) : tokens.length === 0 ? (
+            <div className="p-6 text-center text-table-muted">No tokens found. Try "soldier", "treasure", "clue", "zombie"…</div>
+          ) : (
+            <div className="grid grid-cols-3 gap-2 sm:grid-cols-5 md:grid-cols-6">
+              {tokens.map((tk) => (
+                <button key={tk.id} className="text-left transition hover:-translate-y-0.5 hover:brightness-110" onClick={() => onPick(tk)} title={`${tk.name} — ${tk.typeLine}`}>
+                  <CardImage id={tk.id} name={tk.name} />
+                  <div className="mt-0.5 truncate text-[10px] text-table-muted">
+                    {tk.power ? `${tk.power}/${tk.toughness} ` : ""}
+                    {tk.name}
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

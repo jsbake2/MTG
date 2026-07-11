@@ -106,6 +106,15 @@ function isFilter(value: string, p: Params): string | null {
       return `'Creature' = ANY(card_types)`;
     case "land":
       return `'Land' = ANY(card_types)`;
+    case "multicolor":
+    case "multicolored":
+    case "gold":
+      return `coalesce(array_length(colors, 1), 0) > 1`;
+    case "monocolor":
+    case "monocolored":
+      return `coalesce(array_length(colors, 1), 0) = 1`;
+    case "colorless":
+      return `coalesce(array_length(colors, 1), 0) = 0`;
     case "token":
       return `layout ILIKE '%token%'`;
     case "reserved":

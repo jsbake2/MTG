@@ -288,11 +288,18 @@ async function openSource(opts: ImportOptions): Promise<{ stream: Readable; sour
 export async function importCards(opts: ImportOptions = {}): Promise<{ count: number; source: string }> {
   const { stream, source } = await openSource(opts);
   const BATCH = 400;
+  // Only skip pure-artwork cards (art-series booster inserts like
+  // "Marchesa... // Marchesa..." with no rules text). Tokens and emblems ARE
+  // kept — they're needed so cards that create tokens can put the real token on
+  // the battlefield (see the token picker). They're excluded from normal card
+  // browsing via EXCLUDE_NONCARD, not from the database.
+  const SKIP_LAYOUTS = new Set(["art_series", "sticker"]);
   let batch: CardRow[] = [];
   let count = 0;
   for await (const obj of streamJsonArray(stream)) {
     const c = obj as ScryfallCard;
     if (!c || !c.id || !c.name) continue;
+    if (c.layout && SKIP_LAYOUTS.has(c.layout)) continue;
     batch.push(mapCard(c));
     if (batch.length >= BATCH) {
       await upsertBatch(batch);

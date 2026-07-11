@@ -111,6 +111,10 @@ function rowToSummary(r: CardDbRow): CardSummary {
   };
 }
 
+// Layouts that aren't real playable cards — kept out of browse/deck results.
+const EXCLUDE_NONCARD =
+  "coalesce(layout,'') NOT IN ('art_series','double_faced_token','token','emblem','scheme','planar','vanguard','sticker','augment','host')";
+
 const SUMMARY_COLS =
   "id, oracle_id, name, mana_cost, cmc, type_line, colors, card_types, rarity, set_code, year, image_normal, image_small";
 const FULL_COLS = "*";
@@ -188,8 +192,10 @@ export async function searchCards(req: SearchRequest): Promise<SearchResponse> {
   try {
     const p = new Params();
     const built = buildQuery(parsed, p);
-    // Always exclude pure art-series/placeholder layouts from browsing.
-    const base = [...built.baseClauses];
+    // Always exclude non-gameplay layouts (art cards, tokens, emblems, etc.) —
+    // e.g. art-series cards like "Marchesa, Dealer of Death // Marchesa..." that
+    // are just artwork with no rules text.
+    const base = [...built.baseClauses, EXCLUDE_NONCARD];
     const baseWhere = base.length ? base.join(" AND ") : "TRUE";
 
     // Grouped discovery mode (the "vampire" case): split ARE vs REFERENCES.
@@ -210,6 +216,7 @@ export async function searchCards(req: SearchRequest): Promise<SearchResponse> {
       }
       const notAre = built2.positiveTerms.map((t) => termAreExpr(t, p2)).join(" AND ");
       if (notAre) refParts.push(`NOT (${notAre})`);
+      refParts.push(EXCLUDE_NONCARD);
       const refWhere = refParts.join(" AND ");
       const refs = await runGroup(
         "Cards that REFERENCE this",
@@ -297,6 +304,40 @@ export async function getFaceImageUrl(id: string, face: number): Promise<string 
   if (face > 0 && r.faces && r.faces[face]?.imageUrl) return r.faces[face]!.imageUrl;
   if (r.faces && r.faces[face]?.imageUrl) return r.faces[face]!.imageUrl;
   return r.image_normal;
+}
+
+export interface TokenCard {
+  id: string;
+  name: string;
+  typeLine: string;
+  power: string | null;
+  toughness: string | null;
+  colors: string[];
+  imageUrl: string | null;
+}
+
+// Search only token/emblem cards, for the in-game token picker.
+export async function searchTokens(q: string): Promise<TokenCard[]> {
+  const term = `%${q.trim()}%`;
+  const rows = (
+    await query<CardDbRow>(
+      `SELECT DISTINCT ON (coalesce(oracle_id, id)) ${FULL_COLS} FROM cards
+       WHERE layout IN ('token','double_faced_token','emblem')
+         AND ($1 = '%%' OR name ILIKE $1 OR type_line ILIKE $1)
+       ORDER BY coalesce(oracle_id, id), released_at DESC NULLS LAST
+       LIMIT 60`,
+      [term],
+    )
+  ).rows;
+  return rows.map((r) => ({
+    id: r.id,
+    name: r.name,
+    typeLine: r.type_line,
+    power: r.power,
+    toughness: r.toughness,
+    colors: r.colors,
+    imageUrl: imgPath(r.id, !!r.image_normal),
+  }));
 }
 
 export async function getImportMeta(): Promise<{ importedAt: string | null; cardCount: number; source: string | null }> {
