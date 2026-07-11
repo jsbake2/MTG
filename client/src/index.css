@@ -118,27 +118,27 @@ body {
 
 @layer components {
   .btn {
-    @apply inline-flex items-center justify-center gap-2 rounded-md px-3 py-2 text-sm font-semibold transition
+    @apply inline-flex items-center justify-center gap-2 rounded-md px-3 py-2 text-sm font-semibold transition-all duration-200
       disabled:opacity-40 disabled:cursor-not-allowed select-none;
   }
   .btn-primary {
-    @apply btn bg-table-accent text-black hover:bg-table-accentSoft;
+    @apply btn bg-table-accent text-black hover:bg-table-accentSoft active:scale-95 shadow-md shadow-table-accent/5 hover:shadow-table-accent/15;
   }
   .btn-ghost {
-    @apply btn bg-table-panel2 text-table-ink hover:bg-table-border border border-table-border;
+    @apply btn bg-table-panel2/80 text-table-ink hover:bg-table-border/90 border border-table-border/60 hover:border-table-accent/30 active:scale-95;
   }
   .btn-danger {
-    @apply btn bg-red-700/80 text-white hover:bg-red-600;
+    @apply btn bg-red-700/85 text-white hover:bg-red-600 active:scale-95 shadow-sm;
   }
   .panel {
-    @apply bg-table-panel border border-table-border rounded-lg shadow-panel;
+    @apply bg-table-panel/85 border border-table-border/55 rounded-lg shadow-panel backdrop-blur-md transition-all duration-300;
   }
   .input {
-    @apply bg-table-bg border border-table-border rounded-md px-3 py-2 text-sm text-table-ink
-      placeholder:text-table-muted focus:outline-none focus:ring-2 focus:ring-table-accent/60;
+    @apply bg-table-bg/85 border border-table-border/70 rounded-md px-3 py-2 text-sm text-table-ink
+      placeholder:text-table-muted focus:outline-none focus:ring-2 focus:ring-table-accent/60 transition-all duration-200;
   }
   .chip {
-    @apply inline-flex items-center gap-1 rounded-full border border-table-border bg-table-panel2 px-2 py-0.5 text-xs;
+    @apply inline-flex items-center gap-1 rounded-full border border-table-border/75 bg-table-panel2/90 px-2.5 py-0.5 text-xs transition-colors duration-200;
   }
 }
 
@@ -215,8 +215,9 @@ body {
   margin-left: 0;
 }
 .hand-fan > .hand-card:hover {
-  transform: translateY(-16px) scale(1.06);
+  transform: translateY(-24px) scale(1.1) rotate(1.5deg);
   z-index: 20;
+  filter: drop-shadow(0 10px 15px rgba(0, 0, 0, 0.5));
 }
 
 ::-webkit-scrollbar {

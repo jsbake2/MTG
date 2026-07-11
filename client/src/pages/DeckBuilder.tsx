@@ -6,6 +6,7 @@ import { CardImage } from "@/components/CardTile";
 import { CardDetailModal } from "@/components/CardDetailModal";
 import { ArtPicker } from "@/components/ArtPicker";
 import { ManaCost } from "@/components/ManaCost";
+import { CardFilterBar } from "@/components/CardFilterBar";
 import { MANA_HEX } from "@/lib/mana";
 import { useCardSearch } from "@/hooks/useCardSearch";
 
@@ -192,12 +193,14 @@ export function DeckBuilder() {
     <div className="flex h-full min-h-0 flex-col lg:flex-row">
       {/* Search panel */}
       <div className="flex min-h-0 flex-col border-b border-table-border lg:w-[42%] lg:border-b-0 lg:border-r">
-        <div className="p-3">
-          <input
-            className="input w-full"
-            placeholder='Add cards — "vampire", t:creature c:b, f:commander…'
-            value={search.q}
-            onChange={(e) => search.setQ(e.target.value)}
+        <div className="border-b border-table-border p-3">
+          <CardFilterBar
+            onQuery={search.setQ}
+            opts={search.opts}
+            setOpts={search.setOpts}
+            interpreted={search.q ? search.resp?.interpreted : undefined}
+            queryError={search.resp?.error}
+            compact
           />
         </div>
         <div className="min-h-0 flex-1 overflow-y-auto px-3 pb-3">

@@ -560,6 +560,8 @@ function dispatch(state: TableState, ctx: CardIndex, seat: number, action: GameA
       // Land drop enforcement: playing a land from hand to the battlefield.
       if (action.toZone === "battlefield" && o.zone === "hand" && isLand(ctx, o)) {
         const p = playerBySeat(state, seat);
+        const prio = enforce(state, seat === state.prioritySeat, "You do not have priority.");
+        if (prio) return prio;
         const timing = enforce(state, seat === state.activeSeat && isMainPhase(state) && state.stackOrder.length === 0, "You can only play lands on your own main phase with an empty stack.");
         if (timing) return timing;
         const limit = enforce(state, (p?.landsPlayedThisTurn ?? 0) < 1, "You've already played a land this turn.");
@@ -698,6 +700,8 @@ function dispatch(state: TableState, ctx: CardIndex, seat: number, action: GameA
       if (o.zone !== "hand" && o.zone !== "command") {
         return { ok: false, error: "You can only cast from your hand or command zone." };
       }
+      const prio = enforce(state, seat === state.prioritySeat, "You do not have priority.");
+      if (prio) return prio;
       const instant = isInstantSpeed(ctx, o);
       if (!instant) {
         const timing = enforce(state, seat === state.activeSeat && isMainPhase(state) && state.stackOrder.length === 0, `${o.name} can only be cast on your main phase with an empty stack (it isn't an instant).`);
@@ -721,6 +725,8 @@ function dispatch(state: TableState, ctx: CardIndex, seat: number, action: GameA
       const abilities = parseAbilities(ci?.oracleText ?? null, o.name);
       const ability = abilities[action.abilityIndex];
       if (!ability) return { ok: false, error: "No such ability" };
+      const prio = enforce(state, seat === state.prioritySeat, "You do not have priority.");
+      if (prio) return prio;
       // Pay the tap cost (framework-enforced); mana/other costs are on the honor
       // system for now (tracked pool). Summoning sickness blocks {T} abilities.
       if (ability.needsTap) {
@@ -788,7 +794,7 @@ function dispatch(state: TableState, ctx: CardIndex, seat: number, action: GameA
       return null;
     }
     case "advance_step": {
-      const timing = enforce(state, seat === state.activeSeat, "Only the active player can advance the turn.");
+      const timing = enforce(state, false, "In strict mode, steps advance automatically when all players pass priority on an empty stack.");
       if (timing) return timing;
       advanceStep(state, ctx);
       return null;

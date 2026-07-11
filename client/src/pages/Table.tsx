@@ -9,7 +9,7 @@ import { CardImage } from "@/components/CardTile";
 import { Avatar } from "@/components/Avatar";
 import { useSettings } from "@/store/settings";
 import { playRoll, playTurnChime, playWarning, unlockAudio } from "@/lib/sound";
-import { MANA_HEX } from "@/lib/mana";
+import { MANA_HEX, MANA_FG } from "@/lib/mana";
 
 const STEP_LABELS: Record<string, string> = {
   untap: "Untap",
@@ -227,7 +227,7 @@ function GameBoard({ t, state }: { t: TableConn; state: TableState }) {
   return (
     <div className="flex h-full min-h-0 flex-col bg-table-bg">
       {/* Top bar */}
-      <div className="flex items-center gap-2 border-b border-table-border bg-table-panel px-3 py-1.5 text-sm">
+      <div className="flex shrink-0 items-center gap-2 border-b border-table-border bg-table-panel px-3 py-1.5 text-sm">
         <Link to="/play" className="text-table-muted hover:text-table-ink">
           ← Leave
         </Link>
@@ -238,6 +238,10 @@ function GameBoard({ t, state }: { t: TableConn; state: TableState }) {
         </span>
         <TurnTimer startedAt={state.turnStartedAt} limit={turnLimitSeconds} isMine={isActive} sound={sound} />
         <span className="text-xs text-table-muted">{state.players.find((p) => p.seat === state.activeSeat)?.name}'s turn</span>
+        <span className="rounded bg-table-panel2 border border-table-border/60 px-2 py-0.5 text-xs text-table-muted flex items-center gap-1.5 ml-2">
+          <span className="h-1.5 w-1.5 rounded-full bg-table-accent animate-pulse" />
+          Priority: <span className="font-semibold text-table-accentSoft">{state.players.find((p) => p.seat === state.prioritySeat)?.name}</span>
+        </span>
         {state.status === "finished" && (
           <span className="rounded bg-table-accent px-2 py-0.5 text-black">
             {state.players.find((p) => p.seat === state.winnerSeat)?.name} wins!
@@ -305,17 +309,22 @@ function GameBoard({ t, state }: { t: TableConn; state: TableState }) {
 
           {/* My battlefield */}
           {you !== null && (
-            <BattlefieldRow
-              title="Your battlefield"
-              objects={objectsByZone[`battlefield:${you}`] ?? []}
-              onSelect={clickObject}
-              highlight
-            />
+            <div className="relative">
+              {state.prioritySeat === you && (
+                <div className="absolute right-2 top-2 z-10 animate-pulse rounded bg-table-accent/20 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-table-accentSoft border border-table-accent/40 backdrop-blur-sm">Your Priority</div>
+              )}
+              <BattlefieldRow
+                title="Your battlefield"
+                objects={objectsByZone[`battlefield:${you}`] ?? []}
+                onSelect={clickObject}
+                highlight
+              />
+            </div>
           )}
         </div>
 
         {/* Log / chat sidebar */}
-        <div className="hidden w-64 flex-col border-l border-table-border bg-table-panel md:flex">
+        <div className="hidden w-64 shrink-0 flex-col border-l border-table-border bg-table-panel md:flex">
           <div className="min-h-0 flex-1 overflow-y-auto p-2 text-xs">
             {state.log.map((l) => (
               <div key={l.id} className={logClass(l.kind)}>
@@ -339,7 +348,7 @@ function GameBoard({ t, state }: { t: TableConn; state: TableState }) {
 
       {/* Bottom: my hand + controls */}
       {you !== null && me && (
-        <div className="border-t border-table-border bg-table-panel">
+        <div className="border-t border-table-border bg-table-panel shrink-0">
           <div className="flex flex-wrap items-center gap-2 px-3 py-1.5 text-sm">
             <PhaseControls state={state} t={t} isActive={isActive} hasPriority={hasPriority} you={you} />
             <div className="ml-auto flex items-center gap-2">
@@ -352,15 +361,17 @@ function GameBoard({ t, state }: { t: TableConn; state: TableState }) {
               <ZoneButtons you={you} t={t} objectsByZone={objectsByZone} />
             </div>
           </div>
-          <div className="hand-fan px-3 pb-3">
-            {myHand.map((o) => (
-              <div key={o.id} className="hand-card w-[92px] shrink-0">
-                <button className="block w-full" onClick={(e) => setSel({ objectId: o.id, x: e.clientX, y: e.clientY })}>
-                  <CardImage id={o.cardId} name={o.name} />
-                </button>
-              </div>
-            ))}
-            {myHand.length === 0 && <div className="py-6 text-sm text-table-muted">Your hand is empty.</div>}
+          <div className="overflow-x-auto px-3 pb-3 pt-2 scrollbar-thin">
+            <div className="hand-fan flex justify-center min-w-max px-4">
+              {myHand.map((o) => (
+                <div key={o.id} className="hand-card w-[92px] shrink-0">
+                  <button className="block w-full" onClick={(e) => setSel({ objectId: o.id, x: e.clientX, y: e.clientY })}>
+                    <CardImage id={o.cardId} name={o.name} />
+                  </button>
+                </div>
+              ))}
+              {myHand.length === 0 && <div className="py-6 text-sm text-table-muted">Your hand is empty.</div>}
+            </div>
           </div>
         </div>
       )}
@@ -455,14 +466,21 @@ function PlayerStrip({
 }) {
   const bf = objectsByZone[`battlefield:${p.seat}`] ?? [];
   const active = state.activeSeat === p.seat;
+  const hasPriority = state.prioritySeat === p.seat;
   return (
-    <div className={`rounded-lg border p-2 ${targeting ? "cursor-crosshair ring-2 ring-red-500/60" : ""} ${active ? "border-table-accent" : "border-table-border"} ${p.hasLost ? "opacity-40" : ""}`}>
+    <div className={`rounded-lg border p-2 ${targeting ? "cursor-crosshair ring-2 ring-red-500/60" : ""} ${active ? "border-table-accent shadow-accent/5 shadow-md" : "border-table-border"} ${p.hasLost ? "opacity-40" : ""}`}>
       <div className="mb-1 flex items-center gap-2 text-sm">
         <button disabled={!targeting} onClick={() => onTargetPlayer?.()} className="flex items-center gap-2">
           <Avatar cardId={p.avatarCardId} name={p.name} size={28} ring={active} />
           <span className={`h-2 w-2 rounded-full ${p.connected ? "bg-green-400" : "bg-gray-500"}`} />
           <span className="font-semibold">{p.name}</span>
         </button>
+        {active && (
+          <span className="rounded bg-amber-500/20 px-1 py-0.5 text-[9px] font-bold uppercase tracking-wider text-amber-200 border border-amber-500/40">Active</span>
+        )}
+        {hasPriority && (
+          <span className="animate-pulse rounded bg-table-accent/20 px-1 py-0.5 text-[9px] font-bold uppercase tracking-wider text-table-accentSoft border border-table-accent/40">Priority</span>
+        )}
         <div className="flex items-center gap-1">
           <button className="btn-ghost h-6 w-6 !px-0" onClick={() => t.send({ type: "adjust_life", seat: p.seat, delta: -1 })} title="−1 life">
             −
@@ -511,7 +529,7 @@ function BattlefieldRow({
   const isLand = (o: GameObject) => o.cardTypes?.includes("Land") ?? false;
   const lands = objects.filter(isLand);
   const nonlands = objects.filter((o) => !isLand(o));
-  const size = compact ? 60 : 84;
+  const size = compact ? 72 : 96;
   return (
     <div className={`rounded-lg ${highlight ? "border border-table-accent/30 bg-table-panel2/40 p-2" : ""}`}>
       {title && <div className="mb-1 text-xs uppercase tracking-wide text-table-muted">{title}</div>}
@@ -641,8 +659,8 @@ function ManaControl({ p, t }: { p: PlayerState; t: TableConn }) {
       {colors.map((c) => (
         <button
           key={c}
-          className="flex h-7 w-7 flex-col items-center justify-center rounded-full border border-black/40 text-[10px] font-bold text-black"
-          style={{ background: bg[c] }}
+          className="flex h-7 w-7 flex-col items-center justify-center rounded-full border border-black/40 text-[10px] font-bold"
+          style={{ background: bg[c], color: MANA_FG[c] ?? "#000000" }}
           onClick={() => t.send({ type: "add_mana", seat: p.seat, color: c, count: 1 })}
           onContextMenu={(e) => {
             e.preventDefault();
@@ -665,8 +683,11 @@ function ZoneButtons({ you, t, objectsByZone }: { you: number; t: TableConn; obj
   const ex = objectsByZone[`exile:${you}`] ?? [];
   return (
     <div className="flex items-center gap-1 text-xs">
-      <button className="chip" onClick={() => t.send({ type: "shuffle", seat: you })}>
+      <button className="chip hover:border-table-accent hover:text-table-accentSoft" onClick={() => t.send({ type: "shuffle", seat: you })}>
         Shuffle
+      </button>
+      <button className="chip hover:border-table-accent hover:text-table-accentSoft text-amber-200" onClick={() => { if (confirm("Mulligan your hand (shuffles hand back and draws 7 new cards)?")) t.send({ type: "mulligan", seat: you }); }}>
+        Mulligan
       </button>
       <span className="chip">GY {gy.length}</span>
       <span className="chip">Exile {ex.length}</span>
