@@ -1,5 +1,17 @@
 # MTG-PvP — Self-hosted Magic: The Gathering Home Table
 
+![Status](https://img.shields.io/badge/status-personal%20project-6f42c1)
+![License](https://img.shields.io/badge/license-All%20Rights%20Reserved-red)
+![Private](https://img.shields.io/badge/use-private%20%2F%20family%20only-lightgrey)
+![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white)
+![React](https://img.shields.io/badge/React-18-61DAFB?logo=react&logoColor=black)
+![Node](https://img.shields.io/badge/Node-%E2%89%A520-339933?logo=nodedotjs&logoColor=white)
+![Postgres](https://img.shields.io/badge/Postgres-16-4169E1?logo=postgresql&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white)
+![Unofficial](https://img.shields.io/badge/unofficial-fan%20project-999)
+
+> ⚠️ **Private / personal use only.** This is a home project for one family — not open source and not for public use. See [LICENSE](LICENSE).
+
 A private, self-hosted Magic: The Gathering game for playing at home with the kids (up to 4 players). It has three parts:
 
 1. **A fully-tagged card catalog** — every card from every era, imported from [Scryfall](https://scryfall.com/docs/api/bulk-data), searchable by set / year / type / color / legality and more.
@@ -82,3 +94,9 @@ Formats are data-driven ([`shared/src/formats.ts`](shared/src/formats.ts)): Stan
 ## Search language
 
 See [`docs/search.md`](docs/search.md) for the full operator list.
+
+## License
+
+**All rights reserved — private / personal use only.** This project is not open source; it exists for one family's home use. The source is on GitHub for backup and convenience, which does not grant any license to use it. See [LICENSE](LICENSE).
+
+Magic: The Gathering and all related card names, text, symbols, and artwork are © Wizards of the Coast LLC. This is unofficial fan content under the [WotC Fan Content Policy](https://company.wizards.com/en/legal/fancontentpolicy) and is not affiliated with or endorsed by Wizards of the Coast. Card data/images are from [Scryfall](https://scryfall.com); preconstructed decklists are from [MTGJSON](https://mtgjson.com).
