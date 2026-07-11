@@ -182,6 +182,7 @@ function advanceStep(state: TableState, ctx: CardIndex): void {
     state.activeSeat = nextActive;
     state.phase = "beginning";
     state.step = "untap";
+    state.turnStartedAt = Date.now();
     onEnterStep(state, ctx);
     return;
   }

@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { Navigate, NavLink, Route, Routes, useLocation } from "react-router-dom";
 import { useAuth } from "@/store/auth";
 import { useTheme, THEMES } from "@/store/theme";
+import { useSettings } from "@/store/settings";
+import { unlockAudio } from "@/lib/sound";
 import { Avatar } from "@/components/Avatar";
 import { AvatarPicker } from "@/components/AvatarPicker";
 import { Login } from "@/pages/Login";
@@ -10,11 +12,13 @@ import { Decks } from "@/pages/Decks";
 import { DeckBuilder } from "@/pages/DeckBuilder";
 import { Play } from "@/pages/Play";
 import { TablePage } from "@/pages/Table";
+import { Leaderboard } from "@/pages/Leaderboard";
 import { Admin } from "@/pages/Admin";
 
 function NavBar() {
   const { user, logout } = useAuth();
   const { theme, setTheme } = useTheme();
+  const { sound, setSound } = useSettings();
   const [pickAvatar, setPickAvatar] = useState(false);
   const linkClass = ({ isActive }: { isActive: boolean }) =>
     `px-3 py-2 rounded-md text-sm font-semibold ${isActive ? "bg-table-accent text-black" : "text-table-ink hover:bg-table-panel2"}`;
@@ -31,6 +35,9 @@ function NavBar() {
         <NavLink to="/play" className={linkClass}>
           Play
         </NavLink>
+        <NavLink to="/leaderboard" className={linkClass}>
+          Leaderboard
+        </NavLink>
         {user?.isAdmin && (
           <NavLink to="/admin" className={linkClass}>
             Admin
@@ -38,6 +45,16 @@ function NavBar() {
         )}
       </nav>
       <div className="ml-auto flex items-center gap-2 text-sm">
+        <button
+          className="rounded-md px-2 py-1 hover:bg-table-panel2"
+          title={sound ? "Sound on" : "Sound off"}
+          onClick={() => {
+            unlockAudio();
+            setSound(!sound);
+          }}
+        >
+          {sound ? "🔊" : "🔇"}
+        </button>
         <select
           className="input !py-1 !px-2"
           value={theme}
@@ -95,6 +112,7 @@ export function App() {
           <Route path="/decks/:id" element={<DeckBuilder />} />
           <Route path="/decks/new" element={<DeckBuilder />} />
           <Route path="/play" element={<Play />} />
+          <Route path="/leaderboard" element={<Leaderboard />} />
           <Route path="/table/:id" element={<TablePage />} />
           {user.isAdmin && <Route path="/admin" element={<Admin />} />}
           <Route path="*" element={<Navigate to="/browse" replace />} />

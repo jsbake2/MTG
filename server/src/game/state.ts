@@ -129,6 +129,7 @@ export function buildInitialState(opts: {
     winnerSeat: null,
     passStreak: 0,
     lastRoll: null,
+    turnStartedAt: Date.now(),
   };
   recountHiddenZones(state);
   return state;

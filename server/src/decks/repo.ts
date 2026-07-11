@@ -10,6 +10,7 @@ interface DeckRow {
   format_id: string;
   description: string;
   is_precon: boolean;
+  tags: string[];
   created_at: string;
   updated_at: string;
   card_count: string;
@@ -39,6 +40,7 @@ function toDeck(r: DeckRow, colors: string[]): Deck {
     colors,
     cardCount: Number(r.card_count),
     isPrecon: r.is_precon,
+    tags: r.tags ?? [],
     createdAt: r.created_at,
     updatedAt: r.updated_at,
   };
@@ -79,14 +81,14 @@ export async function getDeckDetail(id: string): Promise<DeckDetail | null> {
 
 export async function createDeck(
   ownerId: string,
-  data: { name: string; formatId: string; description?: string; cards: DeckCardEntry[] },
+  data: { name: string; formatId: string; description?: string; cards: DeckCardEntry[]; tags?: string[] },
   isPrecon = false,
 ): Promise<string> {
   return withTx(async (client) => {
     const deckId = (
       await client.query<{ id: string }>(
-        `INSERT INTO decks (owner_id, name, format_id, description, is_precon) VALUES ($1,$2,$3,$4,$5) RETURNING id`,
-        [ownerId, data.name, data.formatId, data.description ?? "", isPrecon],
+        `INSERT INTO decks (owner_id, name, format_id, description, is_precon, tags) VALUES ($1,$2,$3,$4,$5,$6) RETURNING id`,
+        [ownerId, data.name, data.formatId, data.description ?? "", isPrecon, data.tags ?? []],
       )
     ).rows[0]!.id;
     await insertCards(client, deckId, data.cards);
@@ -107,13 +109,14 @@ export async function preconCount(): Promise<number> {
 
 export async function updateDeck(
   deckId: string,
-  data: { name: string; formatId: string; description?: string; cards: DeckCardEntry[] },
+  data: { name: string; formatId: string; description?: string; cards: DeckCardEntry[]; tags?: string[] },
 ): Promise<void> {
   await withTx(async (client) => {
-    await client.query(`UPDATE decks SET name=$1, format_id=$2, description=$3, updated_at=now() WHERE id=$4`, [
+    await client.query(`UPDATE decks SET name=$1, format_id=$2, description=$3, tags=$4, updated_at=now() WHERE id=$5`, [
       data.name,
       data.formatId,
       data.description ?? "",
+      data.tags ?? [],
       deckId,
     ]);
     await client.query(`DELETE FROM deck_cards WHERE deck_id = $1`, [deckId]);

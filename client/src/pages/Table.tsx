@@ -7,6 +7,8 @@ import { useAuth } from "@/store/auth";
 import { useTable, type TableConn } from "@/game/useTable";
 import { CardImage } from "@/components/CardTile";
 import { Avatar } from "@/components/Avatar";
+import { useSettings } from "@/store/settings";
+import { playRoll, playTurnChime, playWarning, unlockAudio } from "@/lib/sound";
 
 const STEP_LABELS: Record<string, string> = {
   untap: "Untap",
@@ -157,6 +159,16 @@ function GameBoard({ t, state }: { t: TableConn; state: TableState }) {
   const isActive = you === state.activeSeat;
   const hasPriority = you === state.prioritySeat;
 
+  const { sound, turnLimitSeconds, setTurnLimit } = useSettings();
+  // Chime when it becomes your turn.
+  const prevActiveSeat = useRef(state.activeSeat);
+  useEffect(() => {
+    if (state.activeSeat !== prevActiveSeat.current) {
+      prevActiveSeat.current = state.activeSeat;
+      if (sound && you !== null && state.activeSeat === you && state.status === "playing") playTurnChime();
+    }
+  }, [state.activeSeat, you, sound, state.status]);
+
   return (
     <div className="flex h-full min-h-0 flex-col bg-table-bg">
       {/* Top bar */}
@@ -169,6 +181,8 @@ function GameBoard({ t, state }: { t: TableConn; state: TableState }) {
         <span className="text-table-muted">
           Turn {state.turnNumber} · {STEP_LABELS[state.step]}
         </span>
+        <TurnTimer startedAt={state.turnStartedAt} limit={turnLimitSeconds} isMine={isActive} sound={sound} />
+        <span className="text-xs text-table-muted">{state.players.find((p) => p.seat === state.activeSeat)?.name}'s turn</span>
         {state.status === "finished" && (
           <span className="rounded bg-table-accent px-2 py-0.5 text-black">
             {state.players.find((p) => p.seat === state.winnerSeat)?.name} wins!
@@ -181,6 +195,12 @@ function GameBoard({ t, state }: { t: TableConn; state: TableState }) {
           <button className="btn-ghost" onClick={() => t.undo()}>
             Undo
           </button>
+          <select className="input !py-1" value={turnLimitSeconds} onChange={(e) => setTurnLimit(Number(e.target.value))} title="Turn timer limit">
+            <option value={0}>No timer</option>
+            <option value={60}>1 min</option>
+            <option value={120}>2 min</option>
+            <option value={300}>5 min</option>
+          </select>
           <select
             className="input !py-1"
             value={state.enforcement}
@@ -526,6 +546,35 @@ function ZoneButtons({ you, t, objectsByZone }: { you: number; t: TableConn; obj
   );
 }
 
+// ---- turn timer ---------------------------------------------------------
+function TurnTimer({ startedAt, limit, isMine, sound }: { startedAt: number; limit: number; isMine: boolean; sound: boolean }) {
+  const [now, setNow] = useState(Date.now());
+  const warned = useRef(false);
+  useEffect(() => {
+    const iv = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(iv);
+  }, []);
+  useEffect(() => {
+    warned.current = false;
+  }, [startedAt]);
+  const elapsed = Math.max(0, Math.floor((now - startedAt) / 1000));
+  const over = limit > 0 && elapsed >= limit;
+  useEffect(() => {
+    if (over && isMine && sound && !warned.current) {
+      warned.current = true;
+      playWarning();
+    }
+  }, [over, isMine, sound]);
+  const mm = Math.floor(elapsed / 60);
+  const ss = String(elapsed % 60).padStart(2, "0");
+  return (
+    <span className={`rounded px-1.5 py-0.5 font-mono text-xs ${over ? "bg-red-800 text-white" : "bg-table-panel2 text-table-muted"}`} title="Time on the current turn">
+      ⏱ {mm}:{ss}
+      {limit > 0 ? ` / ${Math.floor(limit / 60)}:${String(limit % 60).padStart(2, "0")}` : ""}
+    </span>
+  );
+}
+
 // ---- dice ---------------------------------------------------------------
 function DiceRoller({ t, seat }: { t: TableConn; seat: number }) {
   return (
@@ -549,15 +598,17 @@ function RollOverlay({ roll }: { roll: RollResult | null }) {
   const [show, setShow] = useState(false);
   const [current, setCurrent] = useState<RollResult | null>(null);
   const lastId = useRef<number>(-1);
+  const { sound } = useSettings();
   useEffect(() => {
     if (roll && roll.id !== lastId.current) {
       lastId.current = roll.id;
       setCurrent(roll);
       setShow(true);
+      if (sound) playRoll();
       const to = setTimeout(() => setShow(false), 2200);
       return () => clearTimeout(to);
     }
-  }, [roll]);
+  }, [roll, sound]);
   if (!show || !current) return null;
   const isCoin = current.sides === 2;
   const faceText = isCoin ? (current.values[0] === 1 ? "Heads" : "Tails") : String(current.total);

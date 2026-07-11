@@ -4,6 +4,7 @@ import {
   type Card,
   type Color,
   type DeckStats,
+  type DeckTag,
   type DeckValidation,
   type DeckValidationIssue,
 } from "@mtg/shared";
@@ -67,6 +68,52 @@ export function computeStats(entries: DeckEntryWithCard[]): DeckStats {
   }
   stats.averageCmc = nonLandCount > 0 ? Math.round((cmcSum / nonLandCount) * 100) / 100 : 0;
   return stats;
+}
+
+function strengthFor(count: number): DeckTag["strength"] {
+  if (count >= 8) return "strong";
+  if (count >= 4) return "medium";
+  return "weak";
+}
+
+// Theme detectors over oracle text (archetype hints like MTGA shows).
+const THEMES: Array<{ tag: string; re: RegExp }> = [
+  { tag: "Lifegain", re: /gain(s)? [0-9]+ life|gain(s)? life|lifelink/i },
+  { tag: "+1/+1 Counters", re: /\+1\/\+1 counter/i },
+  { tag: "Sacrifice", re: /sacrifice (a|an|another|two|that)/i },
+  { tag: "Mill", re: /mill(s)? [0-9]+|into (their|your) graveyard from the top/i },
+  { tag: "Tokens", re: /create(s)? .*token/i },
+  { tag: "Card Draw", re: /draw(s)? (a|two|three|that many) card/i },
+  { tag: "Burn", re: /deals? [0-9]+ damage to any target|to target player/i },
+  { tag: "Artifacts Matter", re: /artifact(s)? you control|whenever an artifact/i },
+  { tag: "Graveyard", re: /from your graveyard|return .* from (a|your|their) graveyard/i },
+];
+
+// Dynamically derive tags with a strength based on how much support the deck has:
+// tribal (creature subtypes) + a few archetype themes. e.g. one Goblin -> "weak
+// Goblin", ten Elves -> "strong Elf".
+export function analyzeDeckTags(entries: DeckEntryWithCard[]): DeckTag[] {
+  const main = entries.filter((e) => e.board !== "sideboard");
+  const tribe = new Map<string, number>();
+  const theme = new Map<string, number>();
+  for (const e of main) {
+    const q = e.quantity;
+    if (e.card.cardTypes.includes("Creature")) {
+      for (const sub of e.card.subtypes) tribe.set(sub, (tribe.get(sub) ?? 0) + q);
+    }
+    const text = e.card.oracleText ?? "";
+    for (const t of THEMES) if (t.re.test(text)) theme.set(t.tag, (theme.get(t.tag) ?? 0) + q);
+  }
+  const tribeTags: DeckTag[] = [...tribe.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 8)
+    .map(([tag, count]) => ({ tag, count, strength: strengthFor(count) }));
+  const themeTags: DeckTag[] = [...theme.entries()]
+    .filter(([, c]) => c >= 3)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 6)
+    .map(([tag, count]) => ({ tag, count, strength: strengthFor(count) }));
+  return [...tribeTags, ...themeTags];
 }
 
 export function validateDeck(formatId: string, entries: DeckEntryWithCard[]): DeckValidation {

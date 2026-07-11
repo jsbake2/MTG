@@ -13,7 +13,8 @@ import {
   listPrecons,
   updateDeck,
 } from "./repo.js";
-import { validateDeck, type DeckEntryWithCard } from "./validate.js";
+import { analyzeDeckTags, validateDeck, type DeckEntryWithCard } from "./validate.js";
+import { resolveDecklist } from "./import.js";
 
 export const decksRouter = Router();
 
@@ -26,6 +27,7 @@ const saveSchema = z.object({
   name: z.string().min(1).max(120),
   formatId: z.string().min(1).max(40),
   description: z.string().max(2000).optional(),
+  tags: z.array(z.string().max(40)).max(30).optional(),
   cards: z.array(entrySchema).max(1000),
 });
 
@@ -62,7 +64,28 @@ decksRouter.post("/validate", async (req, res) => {
     .filter((c) => cards.has(c.cardId))
     .map((c) => ({ card: cards.get(c.cardId)!, quantity: c.quantity, board: c.board }));
   const result: DeckValidation = validateDeck(parsed.data.formatId, entries);
-  res.json(result);
+  res.json({ validation: result, dynamicTags: analyzeDeckTags(entries) });
+});
+
+// Import a pasted decklist (MTGA / MTGGoldfish / plain text) as a new deck.
+const importSchema = z.object({
+  name: z.string().min(1).max(120),
+  formatId: z.string().min(1).max(40),
+  text: z.string().min(1).max(100_000),
+});
+decksRouter.post("/import", async (req, res) => {
+  const parsed = importSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: "Invalid request" });
+    return;
+  }
+  const { entries, unresolved } = await resolveDecklist(parsed.data.text);
+  if (entries.length === 0) {
+    res.json({ id: null, resolved: 0, unresolved });
+    return;
+  }
+  const id = await createDeck(req.user!.id, { name: parsed.data.name, formatId: parsed.data.formatId, cards: entries });
+  res.json({ id, resolved: entries.length, unresolved });
 });
 
 decksRouter.get("/:id", async (req, res) => {
@@ -76,7 +99,7 @@ decksRouter.get("/:id", async (req, res) => {
     return;
   }
   const entries: DeckEntryWithCard[] = detail.cards.map((c) => ({ card: c.card, quantity: c.quantity, board: c.board }));
-  res.json({ deck: detail, validation: validateDeck(detail.formatId, entries) });
+  res.json({ deck: detail, validation: validateDeck(detail.formatId, entries), dynamicTags: analyzeDeckTags(entries) });
 });
 
 async function assertOwner(req: import("express").Request, res: import("express").Response): Promise<boolean> {

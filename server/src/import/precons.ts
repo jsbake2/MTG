@@ -64,12 +64,8 @@ export async function importPrecons(opts: { limit?: number } = {}): Promise<{ ma
   if (!admin) throw new Error("No admin user to own the precons.");
 
   const list = (await getJson<{ data: DeckListEntry[] }>(DECKLIST_URL)).data.filter((d) => WANTED.test(d.type));
-  // Commander decks first (most fun), then the rest, capped at `limit`.
-  list.sort((a, b) => {
-    const ca = /commander/i.test(a.type) ? 0 : 1;
-    const cb = /commander/i.test(b.type) ? 0 : 1;
-    return ca - cb || b.releaseDate.localeCompare(a.releaseDate);
-  });
+  // Most recent first, working backwards — import the newest `limit` precons.
+  list.sort((a, b) => b.releaseDate.localeCompare(a.releaseDate));
   const wanted = list.slice(0, limit);
 
   const existingNames = new Set(

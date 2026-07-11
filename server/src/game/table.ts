@@ -5,7 +5,8 @@ import type { GameAction, TableState, TableSummary } from "@mtg/shared";
 import { getFormat } from "@mtg/shared";
 import { getCardsByIds } from "../cards/repo.js";
 import { getAvatarForUser } from "../auth/users.js";
-import { getDeckDetail } from "../decks/repo.js";
+import { getDeckDetail, getDeckRow } from "../decks/repo.js";
+import { recordResult } from "./results.js";
 import { applyAction, checkStateBased, type ApplyResult, type CardIndex } from "./engine.js";
 import { buildInitialState, log, type SeatDeck } from "./state.js";
 
@@ -29,6 +30,7 @@ export class Table {
   cardIndex: CardIndex = {};
   history: TableState[] = [];
   listeners = new Set<() => void>();
+  private recorded = false;
 
   constructor(opts: { name: string; formatId: string; maxPlayers: number; enforcement: "relaxed" | "strict"; hostUserId: string }) {
     this.name = opts.name;
@@ -128,6 +130,7 @@ export class Table {
     this.state.status = "playing";
     log(this.state, { seat: null, kind: "system", text: `Game started — ${format?.name ?? this.formatId}. Good luck!` });
     this.history = [];
+    this.recorded = false;
     this.notify();
     return { ok: true };
   }
@@ -150,9 +153,33 @@ export class Table {
       // roll back the snapshot we just took
       this.history.pop();
     } else {
+      if (this.state.status === "finished" && !this.recorded) {
+        this.recorded = true;
+        void this.recordFinish();
+      }
       this.notify();
     }
     return res;
+  }
+
+  private async recordFinish(): Promise<void> {
+    if (!this.state || this.state.winnerSeat === null) return;
+    const winnerSeat = this.state.winnerSeat;
+    const player = this.state.players.find((p) => p.seat === winnerSeat);
+    const seat = this.seats.find((s) => s.seat === winnerSeat);
+    let deckName: string | null = null;
+    if (seat?.deckId) {
+      const row = await getDeckRow(seat.deckId).catch(() => null);
+      deckName = row?.name ?? null;
+    }
+    await recordResult({
+      formatId: this.formatId,
+      winnerUserId: seat?.userId ?? null,
+      winnerName: player?.name ?? "Unknown",
+      deckId: seat?.deckId ?? null,
+      deckName,
+      playerCount: this.state.players.length,
+    }).catch((e) => console.error("[results] record failed:", e));
   }
 
   undo(): boolean {

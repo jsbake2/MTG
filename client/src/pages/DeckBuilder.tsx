@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import type { CardSummary, DeckDetail, DeckValidation, FormatDef } from "@mtg/shared";
+import type { CardSummary, DeckDetail, DeckTag, DeckValidation, FormatDef } from "@mtg/shared";
 import { api } from "@/api/client";
 import { CardImage } from "@/components/CardTile";
 import { CardDetailModal } from "@/components/CardDetailModal";
@@ -32,7 +32,12 @@ export function DeckBuilder() {
   const [entries, setEntries] = useState<Entry[]>([]);
   const [cache, setCache] = useState<Record<string, CardSummary>>({});
   const [validation, setValidation] = useState<DeckValidation | null>(null);
+  const [dynamicTags, setDynamicTags] = useState<DeckTag[]>([]);
+  const [tags, setTags] = useState<string[]>([]);
+  const [tagInput, setTagInput] = useState("");
   const [detailId, setDetailId] = useState<string | null>(null);
+  const [preview, setPreview] = useState<CardSummary | null>(null);
+  const [importOpen, setImportOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const search = useCardSearch("");
   const valTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -44,10 +49,12 @@ export function DeckBuilder() {
   // Load existing deck.
   useEffect(() => {
     if (!id) return;
-    api.get<{ deck: DeckDetail; validation: DeckValidation }>(`/api/decks/${id}`).then((r) => {
+    api.get<{ deck: DeckDetail; validation: DeckValidation; dynamicTags: DeckTag[] }>(`/api/decks/${id}`).then((r) => {
       setName(r.deck.name);
       setFormatId(r.deck.formatId);
       setDescription(r.deck.description);
+      setTags(r.deck.tags ?? []);
+      setDynamicTags(r.dynamicTags ?? []);
       setEntries(r.deck.cards.map((c) => ({ cardId: c.cardId, quantity: c.quantity, board: c.board })));
       const cc: Record<string, CardSummary> = {};
       for (const c of r.deck.cards) {
@@ -81,8 +88,11 @@ export function DeckBuilder() {
       if (valTimer.current) clearTimeout(valTimer.current);
       valTimer.current = setTimeout(() => {
         api
-          .post<DeckValidation>("/api/decks/validate", { formatId: fmt, cards: es })
-          .then(setValidation)
+          .post<{ validation: DeckValidation; dynamicTags: DeckTag[] }>("/api/decks/validate", { formatId: fmt, cards: es })
+          .then((r) => {
+            setValidation(r.validation);
+            setDynamicTags(r.dynamicTags);
+          })
           .catch(() => setValidation(null));
       }, 300);
     },
@@ -135,7 +145,7 @@ export function DeckBuilder() {
   async function save() {
     setSaving(true);
     try {
-      const payload = { name, formatId, description, cards: entries };
+      const payload = { name, formatId, description, tags, cards: entries };
       if (isNew) {
         const r = await api.post<{ id: string }>("/api/decks", payload);
         nav(`/decks/${r.id}`, { replace: true });
@@ -180,7 +190,7 @@ export function DeckBuilder() {
               </div>
               <div className="grid grid-cols-3 gap-1.5 sm:grid-cols-4 lg:grid-cols-4">
                 {group.cards.map((c) => (
-                  <div key={c.id} className="group relative">
+                  <div key={c.id} className="group relative" onMouseEnter={() => setPreview(c)}>
                     <button onClick={() => addCard(c)} className="block w-full" title={`Add ${c.name}`}>
                       <CardImage id={c.id} name={c.name} />
                     </button>
@@ -212,6 +222,9 @@ export function DeckBuilder() {
             </select>
             <button className="btn-primary" onClick={save} disabled={saving}>
               {saving ? "Saving…" : "Save"}
+            </button>
+            <button className="btn-ghost" onClick={() => setImportOpen(true)}>
+              Import
             </button>
             <button className="btn-ghost" onClick={exportText}>
               Export
@@ -273,6 +286,25 @@ export function DeckBuilder() {
             </div>
 
             <div className="space-y-3">
+              {/* Card preview (MTG-Arena style) */}
+              <div className="panel overflow-hidden p-2">
+                {preview ? (
+                  <>
+                    <CardImage id={preview.id} name={preview.name} />
+                    <div className="mt-1 flex items-center justify-between gap-1 px-0.5">
+                      <span className="truncate text-xs font-semibold">{preview.name}</span>
+                      <ManaCost cost={preview.manaCost} size={13} />
+                    </div>
+                  </>
+                ) : (
+                  <div className="card-aspect flex items-center justify-center rounded text-center text-xs text-table-muted">
+                    Hover a card to preview it
+                  </div>
+                )}
+              </div>
+
+              <TagBar tags={tags} setTags={setTags} tagInput={tagInput} setTagInput={setTagInput} dynamicTags={dynamicTags} />
+
               <StatsPanel validation={validation} />
               {validation && validation.issues.length > 0 && (
                 <div className="panel p-3">
@@ -298,6 +330,148 @@ export function DeckBuilder() {
       </div>
 
       {detailId && <CardDetailModal cardId={detailId} onClose={() => setDetailId(null)} onAdd={(cid) => cache[cid] && addCard(cache[cid]!)} />}
+      {importOpen && (
+        <ImportModal
+          defaultFormat={formatId}
+          onClose={() => setImportOpen(false)}
+          onImported={(newId) => {
+            setImportOpen(false);
+            nav(`/decks/${newId}`);
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+const STRENGTH_STYLE: Record<string, string> = {
+  strong: "bg-green-900/50 text-green-200 border-green-700/50",
+  medium: "bg-amber-900/40 text-amber-200 border-amber-700/50",
+  weak: "bg-table-panel2 text-table-muted border-table-border",
+};
+
+function TagBar({
+  tags,
+  setTags,
+  tagInput,
+  setTagInput,
+  dynamicTags,
+}: {
+  tags: string[];
+  setTags: (t: string[]) => void;
+  tagInput: string;
+  setTagInput: (s: string) => void;
+  dynamicTags: DeckTag[];
+}) {
+  function addTag() {
+    const t = tagInput.trim();
+    if (t && !tags.includes(t)) setTags([...tags, t]);
+    setTagInput("");
+  }
+  return (
+    <div className="panel p-3">
+      <div className="mb-1 text-xs font-semibold uppercase tracking-wide text-table-muted">Your tags</div>
+      <div className="flex flex-wrap gap-1">
+        {tags.map((t) => (
+          <span key={t} className="chip">
+            {t}
+            <button className="ml-1 text-table-muted hover:text-red-300" onClick={() => setTags(tags.filter((x) => x !== t))}>
+              ✕
+            </button>
+          </span>
+        ))}
+        <input
+          className="input !w-28 !py-0.5 text-xs"
+          placeholder="+ add tag"
+          value={tagInput}
+          onChange={(e) => setTagInput(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && addTag()}
+          onBlur={addTag}
+        />
+      </div>
+      {dynamicTags.length > 0 && (
+        <>
+          <div className="mb-1 mt-3 text-xs font-semibold uppercase tracking-wide text-table-muted">Detected themes</div>
+          <div className="flex flex-wrap gap-1">
+            {dynamicTags.map((d) => (
+              <span key={d.tag} className={`rounded-full border px-2 py-0.5 text-xs ${STRENGTH_STYLE[d.strength]}`} title={`${d.count} cards`}>
+                {d.strength} {d.tag} · {d.count}
+              </span>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+function ImportModal({ defaultFormat, onClose, onImported }: { defaultFormat: string; onClose: () => void; onImported: (id: string) => void }) {
+  const [name, setName] = useState("Imported Deck");
+  const [formatId, setFormatId] = useState(defaultFormat);
+  const [text, setText] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [result, setResult] = useState<{ resolved: number; unresolved: string[] } | null>(null);
+
+  async function doImport() {
+    setBusy(true);
+    setResult(null);
+    try {
+      const r = await api.post<{ id: string | null; resolved: number; unresolved: string[] }>("/api/decks/import", { name, formatId, text });
+      if (r.id && r.unresolved.length === 0) {
+        onImported(r.id);
+      } else {
+        setResult({ resolved: r.resolved, unresolved: r.unresolved });
+        if (r.id) setTimeout(() => onImported(r.id!), 1500);
+      }
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4" onClick={onClose}>
+      <div className="panel w-full max-w-lg p-4" onClick={(e) => e.stopPropagation()}>
+        <h3 className="mb-2 font-display text-lg text-table-accentSoft">Import a decklist</h3>
+        <p className="mb-3 text-xs text-table-muted">
+          Paste from MTG Arena, MTGGoldfish, or plain text (e.g. <code>4 Lightning Bolt</code>). Section headers like <code>Deck</code>,{" "}
+          <code>Commander</code>, <code>Sideboard</code> are recognized.
+        </p>
+        <div className="flex gap-2">
+          <input className="input flex-1" value={name} onChange={(e) => setName(e.target.value)} placeholder="Deck name" />
+          <select className="input" value={formatId} onChange={(e) => setFormatId(e.target.value)}>
+            {["house", "standard", "pioneer", "modern", "pauper", "commander"].map((f) => (
+              <option key={f} value={f}>
+                {f}
+              </option>
+            ))}
+          </select>
+        </div>
+        <textarea
+          className="input mt-2 h-56 w-full resize-none font-mono text-xs"
+          placeholder={"Deck\n4 Lightning Bolt\n2 Mountain (M21) 275\n..."}
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+        />
+        {result && (
+          <div className="mt-2 text-xs">
+            <div className="text-green-300">Resolved {result.resolved} cards.</div>
+            {result.unresolved.length > 0 && (
+              <div className="mt-1 text-amber-300">
+                Couldn't find {result.unresolved.length}: {result.unresolved.slice(0, 8).join(", ")}
+                {result.unresolved.length > 8 ? "…" : ""}
+              </div>
+            )}
+          </div>
+        )}
+        <div className="mt-3 flex gap-2">
+          <button className="btn-primary" onClick={doImport} disabled={busy || !text.trim()}>
+            {busy ? "Importing…" : "Import"}
+          </button>
+          <button className="btn-ghost" onClick={onClose}>
+            Cancel
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
@@ -361,7 +535,21 @@ function StatsPanel({ validation }: { validation: DeckValidation | null }) {
   const colorBg: Record<string, string> = { W: "#f8f6d8", U: "#3b7dd8", B: "#4b4b52", R: "#d3452b", G: "#2f9e58", C: "#c9c6be" };
   return (
     <div className="panel p-3">
-      <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-table-muted">Stats</div>
+      <div className="mb-2 flex items-stretch gap-2">
+        <div className="flex-1 rounded-md bg-table-panel2 p-2 text-center">
+          <div className="font-display text-2xl leading-none text-table-accentSoft">{stats.averageCmc}</div>
+          <div className="mt-0.5 text-[10px] uppercase tracking-wide text-table-muted">Avg mana value</div>
+        </div>
+        <div className="flex-1 rounded-md bg-table-panel2 p-2 text-center">
+          <div className="font-display text-2xl leading-none text-table-ink">{stats.total}</div>
+          <div className="mt-0.5 text-[10px] uppercase tracking-wide text-table-muted">Cards</div>
+        </div>
+        <div className="flex-1 rounded-md bg-table-panel2 p-2 text-center">
+          <div className="font-display text-2xl leading-none text-table-ink">{stats.lands}</div>
+          <div className="mt-0.5 text-[10px] uppercase tracking-wide text-table-muted">Lands</div>
+        </div>
+      </div>
+      <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-table-muted">Breakdown</div>
       <div className="grid grid-cols-2 gap-x-3 gap-y-0.5 text-xs">
         <Stat label="Total" v={stats.total} />
         <Stat label="Lands" v={stats.lands} />

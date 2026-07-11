@@ -82,8 +82,34 @@ export interface Deck {
   colors: string[];
   cardCount: number;
   isPrecon: boolean;
+  tags: string[];
   updatedAt: string;
   createdAt: string;
+}
+
+// A dynamically-derived deck tag with a strength based on how much support it has.
+export interface DeckTag {
+  tag: string; // e.g. "Goblin", "Elves", "Lifegain"
+  strength: "weak" | "medium" | "strong";
+  count: number;
+}
+
+export interface LeaderboardEntry {
+  name: string;
+  wins: number;
+  decks: Array<{ deckName: string; wins: number }>;
+  lastWin: string;
+}
+
+export interface ImportDeckRequest {
+  name: string;
+  formatId: string;
+  text: string;
+}
+export interface ImportDeckResponse {
+  id: string | null;
+  resolved: number;
+  unresolved: string[];
 }
 
 export interface DeckDetail extends Deck {

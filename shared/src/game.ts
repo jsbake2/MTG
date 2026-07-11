@@ -154,6 +154,8 @@ export interface TableState {
   passStreak: number;
   // Last dice/coin roll, for shared animation. Null until someone rolls.
   lastRoll: RollResult | null;
+  // Epoch ms when the current turn began (for the shared turn timer).
+  turnStartedAt: number;
 }
 
 // ---- Actions (client -> engine) ----------------------------------------

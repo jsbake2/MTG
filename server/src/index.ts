@@ -6,12 +6,14 @@ import express from "express";
 import { FORMATS } from "@mtg/shared";
 import { env } from "./env.js";
 import { runMigrations } from "./db/migrate.js";
-import { sessionMiddleware } from "./auth/sessions.js";
+import { requireAuth, sessionMiddleware } from "./auth/sessions.js";
 import { ensureAdmin } from "./auth/users.js";
 import { authRouter } from "./auth/routes.js";
 import { cardsRouter } from "./cards/routes.js";
 import { decksRouter } from "./decks/routes.js";
 import { tablesRouter } from "./game/routes.js";
+import { adminRouter } from "./admin/routes.js";
+import { getLeaderboard } from "./game/results.js";
 import { attachWebSocket } from "./game/ws.js";
 import { seedStarterDecks } from "./seed/starterDecks.js";
 
@@ -43,6 +45,10 @@ async function main() {
   app.use("/api/cards", cardsRouter);
   app.use("/api/decks", decksRouter);
   app.use("/api/tables", tablesRouter);
+  app.use("/api/admin", adminRouter);
+  app.get("/api/leaderboard", requireAuth, async (_req, res) => {
+    res.json({ leaderboard: await getLeaderboard() });
+  });
 
   // Serve the built client (SPA) with history fallback.
   const clientDist = pickClientDist();

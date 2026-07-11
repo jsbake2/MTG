@@ -74,6 +74,15 @@ export function Decks() {
               <div className="mt-1 text-sm text-table-muted">
                 {formatName(d.formatId)} · {d.cardCount} cards
               </div>
+              {d.tags.length > 0 && (
+                <div className="mt-1 flex flex-wrap gap-1">
+                  {d.tags.map((tg) => (
+                    <span key={tg} className="chip text-xs">
+                      {tg}
+                    </span>
+                  ))}
+                </div>
+              )}
               {d.description && <p className="mt-2 line-clamp-2 text-sm text-table-muted">{d.description}</p>}
               <div className="mt-auto flex gap-2 pt-3">
                 <Link to={`/decks/${d.id}`} className="btn-ghost">
