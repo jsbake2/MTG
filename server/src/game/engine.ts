@@ -11,7 +11,7 @@ import {
   type TableState,
   type ZoneId,
 } from "@mtg/shared";
-import { getFormat, compileEffects, compileEtbEffects, type EffectOp, type EffectWho, type MassFilter } from "@mtg/shared";
+import { getFormat, compileEffects, compileEtbEffects, parseAbilities, type EffectOp, type EffectWho, type MassFilter } from "@mtg/shared";
 import { KEYWORD_ACTIONS } from "./rules.js";
 import {
   effectivePT,
@@ -419,6 +419,11 @@ function applyOps(state: TableState, ctx: CardIndex, source: GameObject, ops: Ef
       case "tuck":
         if (tgt.object) moveObject(state, ctx, tgt.object, "library", tgt.object.ownerSeat, { toTop: op.top });
         break;
+      case "add_mana": {
+        const p = playerBySeat(state, source.controllerSeat);
+        if (p) for (const [c, n] of Object.entries(op.mana)) p.manaPool[c as ManaColor] = (p.manaPool[c as ManaColor] ?? 0) + n;
+        break;
+      }
       case "mass_damage": {
         const md = amt(op.amount, op.xScaled);
         for (const o of massObjects(state, ctx, source, op.filter)) o.damage += md;
@@ -671,6 +676,32 @@ function dispatch(state: TableState, ctx: CardIndex, seat: number, action: GameA
       state.passStreak = 0;
       recountHiddenZones(state);
       log(state, { seat, kind: "action", text: `${playerBySeat(state, seat)?.name} casts ${o.name}.` });
+      return null;
+    }
+    case "activate": {
+      const o = findObj(state, action.objectId);
+      if (!o) return { ok: false, error: "Card not found" };
+      const ci = info(ctx, o);
+      const abilities = parseAbilities(ci?.oracleText ?? null, o.name);
+      const ability = abilities[action.abilityIndex];
+      if (!ability) return { ok: false, error: "No such ability" };
+      // Pay the tap cost (framework-enforced); mana/other costs are on the honor
+      // system for now (tracked pool). Summoning sickness blocks {T} abilities.
+      if (ability.needsTap) {
+        const tapCheck = enforce(state, !o.tapped, `${o.name} is already tapped.`);
+        if (tapCheck) return tapCheck;
+        if (isCreature(ctx, o)) {
+          const sick = enforce(state, !o.summoningSick || hasKeyword(ctx, o, "haste"), `${o.name} has summoning sickness.`);
+          if (sick) return sick;
+        }
+        o.tapped = true;
+      }
+      // Apply the ability's effect (respecting a chosen mode / X / targets).
+      o.xValue = action.x ?? 0;
+      const eff = ability.effect;
+      const ops = eff.modes && eff.modes.length > 0 ? eff.modes[0]!.ops : eff.ops;
+      applyOps(state, ctx, o, ops, action.targets ?? []);
+      log(state, { seat, kind: "action", text: `${playerBySeat(state, seat)?.name} activates ${o.name}: ${ability.cost}.` });
       return null;
     }
     case "resolve_top": {

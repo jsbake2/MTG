@@ -51,6 +51,7 @@ export type EffectOp =
   | { op: "grant"; what: EffectWho; keyword: string }
   | { op: "gain_control"; what: EffectWho }
   | { op: "tuck"; what: EffectWho; top: boolean }
+  | { op: "add_mana"; mana: Record<string, number> }
   | { op: "token"; who: EffectWho; count: number; power: number; toughness: number; name: string; colors: string[] }
   | { op: "mill"; who: EffectWho; count: number }
   // Mass (no single target) effects over a filtered set of permanents.
@@ -203,6 +204,21 @@ const PATTERNS: Pattern[] = [
     },
   },
 
+  // --- Mana abilities: "Add {G}", "Add {C}{C}", "Add {G}{G}{G}" ---
+  {
+    re: /^add\s+((?:\{[wubrgc0-9/]+\}\s*)+)/i,
+    build: (m) => {
+      const mana: Record<string, number> = { W: 0, U: 0, B: 0, R: 0, G: 0, C: 0 };
+      for (const sym of m[1]!.matchAll(/\{([^}]+)\}/g)) {
+        const s = sym[1]!.toUpperCase();
+        if (/^\d+$/.test(s)) mana.C += parseInt(s, 10);
+        else if ("WUBRG".includes(s)) mana[s] = (mana[s] ?? 0) + 1;
+        else mana.C = (mana.C ?? 0) + 1;
+      }
+      return { op: "add_mana", mana };
+    },
+  },
+
   // --- Choice-heavy: recognized, engine prompts to finish (still automation of setup) ---
   { re: /search your library for/i, build: () => ({ op: "manual", hint: "search your library, then shuffle" }) },
   { re: /(look at the top|reveal the top|surveil|scry)\s*\d*/i, build: (m) => ({ op: "manual", hint: m[1]!.toLowerCase() }) },
@@ -307,6 +323,48 @@ function finalize(ops: EffectOp[]): CompiledEffect {
     if (w && w.scope === "target") targets.push({ kind: w.kind, label: targetLabel(op.op, w.kind) });
   }
   return { ops, targets, matched: ops.length > 0 };
+}
+
+// Compile a raw effect string (no per-card script lookup) — used by modal modes
+// and activated abilities.
+export function compileText(text: string): CompiledEffect {
+  const clean = text.replace(/\([^)]*\)/g, " ");
+  const clauses = clean.split(/[.;\n]/).map((c) => c.trim()).filter(Boolean);
+  return finalize(opsFromClauses(clauses, false));
+}
+
+export interface Ability {
+  index: number;
+  cost: string;
+  mana: Record<string, number>;
+  needsTap: boolean;
+  effect: CompiledEffect;
+}
+
+// Parse activated abilities ("[cost]: [effect]") from oracle text.
+export function parseAbilities(oracleText: string | null, cardName: string): Ability[] {
+  if (!oracleText) return [];
+  const text = normalize(oracleText, cardName);
+  const out: Ability[] = [];
+  let idx = 0;
+  for (const line of text.split(/\n/)) {
+    const m = line.match(/^([^:]+):\s*(.+)$/);
+    if (!m) continue;
+    const cost = m[1]!.trim();
+    // The left of ':' must look like a cost, not "Choose one:" / a trigger.
+    const looksCost = /\{[wubrgtcxs0-9/]+\}/i.test(cost) || /^(sacrifice|discard|pay|exile|remove|return)\b/i.test(cost);
+    if (!looksCost || /^(choose|when|whenever|at |if |level up|equip|enchant|reconfigure)/i.test(cost)) continue;
+    const effect = compileText(m[2]!);
+    if (!effect.matched && !effect.modes) continue;
+    const mana: Record<string, number> = { W: 0, U: 0, B: 0, R: 0, G: 0, C: 0, generic: 0 };
+    for (const sym of cost.matchAll(/\{([^}]+)\}/g)) {
+      const s = sym[1]!.toUpperCase();
+      if (/^\d+$/.test(s)) mana.generic += parseInt(s, 10);
+      else if ("WUBRGC".includes(s)) mana[s] = (mana[s] ?? 0) + 1;
+    }
+    out.push({ index: idx++, cost, mana, needsTap: /\{T\}/i.test(cost), effect });
+  }
+  return out;
 }
 
 function targetLabel(op: string, kind: TargetKind): string {

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import type { CardDetailResponse, Deck, EffectMode, GameObject, PlayerState, RollResult, TableState, ZoneId } from "@mtg/shared";
-import { TURN_STEPS, compileEffects } from "@mtg/shared";
+import type { Ability, CardDetailResponse, Deck, EffectMode, GameObject, PlayerState, RollResult, TableState, ZoneId } from "@mtg/shared";
+import { TURN_STEPS, compileEffects, parseAbilities } from "@mtg/shared";
 import { api } from "@/api/client";
 import { useAuth } from "@/store/auth";
 import { useTable, type TableConn } from "@/game/useTable";
@@ -146,13 +146,19 @@ function GameBoard({ t, state }: { t: TableConn; state: TableState }) {
   const [sel, setSel] = useState<Selection | null>(null);
   const [chatText, setChatText] = useState("");
   const [tokenOpen, setTokenOpen] = useState(false);
-  const [targeting, setTargeting] = useState<{ objectId: string; name: string; specs: { kind: string; label: string }[]; collected: string[]; mode?: number; x?: number } | null>(null);
+  const [targeting, setTargeting] = useState<{ name: string; specs: { kind: string; label: string }[]; collected: string[]; send: (targets: string[]) => void } | null>(null);
   const [modePicker, setModePicker] = useState<{ objectId: string; name: string; modes: EffectMode[] } | null>(null);
 
-  // Begin targeting/casting for a given object + mode's target specs.
+  // Generic targeting: collect N targets then fire `send`.
+  function beginTargeting(name: string, specs: { kind: string; label: string }[], send: (targets: string[]) => void) {
+    if (specs.length === 0) send([]);
+    else setTargeting({ name, specs, collected: [], send });
+  }
   function startCast(objectId: string, name: string, specs: { kind: string; label: string }[], mode?: number, x?: number) {
-    if (specs.length === 0) t.send({ type: "cast", objectId, targets: [], mode, x });
-    else setTargeting({ objectId, name, specs, collected: [], mode, x });
+    beginTargeting(name, specs, (targets) => t.send({ type: "cast", objectId, targets, mode, x }));
+  }
+  function activateAbility(o: GameObject, abilityIndex: number, name: string, specs: { kind: string; label: string }[], x?: number) {
+    beginTargeting(name, specs, (targets) => t.send({ type: "activate", objectId: o.id, abilityIndex, targets, x }));
   }
   async function beginCast(o: GameObject) {
     if (!o.cardId) {
@@ -179,11 +185,16 @@ function GameBoard({ t, state }: { t: TableConn; state: TableState }) {
       if (!cur) return cur;
       const collected = [...cur.collected, id];
       if (collected.length >= cur.specs.length) {
-        t.send({ type: "cast", objectId: cur.objectId, targets: collected, mode: cur.mode, x: cur.x });
+        cur.send(collected);
         return null;
       }
       return { ...cur, collected };
     });
+  }
+  async function onActivate(o: GameObject, abilityIndex: number, targets: { kind: string; label: string }[], usesX: boolean) {
+    let x: number | undefined;
+    if (usesX) x = Math.max(0, Math.floor(Number(prompt(`Choose X for ${o.name}:`, "0")) || 0));
+    activateAbility(o, abilityIndex, o.name, targets, x);
   }
   function clickObject(o: GameObject, e: React.MouseEvent) {
     if (targeting) addTarget(o.id);
@@ -368,7 +379,7 @@ function GameBoard({ t, state }: { t: TableConn; state: TableState }) {
           }}
         />
       )}
-      {sel && <CardMenu sel={sel} state={state} you={you} t={t} onCast={beginCast} onClose={() => setSel(null)} />}
+      {sel && <CardMenu sel={sel} state={state} you={you} t={t} onCast={beginCast} onActivate={onActivate} onClose={() => setSel(null)} />}
       <RollOverlay roll={state.lastRoll} />
       {modePicker && (
         <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/60 p-4" onClick={() => setModePicker(null)}>
@@ -807,9 +818,39 @@ function TokenPicker({ onClose, onPick }: { onClose: () => void; onPick: (t: Tok
 }
 
 // ---- card action menu ---------------------------------------------------
-function CardMenu({ sel, state, you, t, onClose, onCast }: { sel: Selection; state: TableState; you: number | null; t: TableConn; onClose: () => void; onCast: (o: GameObject) => void }) {
+function CardMenu({
+  sel,
+  state,
+  you,
+  t,
+  onClose,
+  onCast,
+  onActivate,
+}: {
+  sel: Selection;
+  state: TableState;
+  you: number | null;
+  t: TableConn;
+  onClose: () => void;
+  onCast: (o: GameObject) => void;
+  onActivate: (o: GameObject, abilityIndex: number, targets: { kind: string; label: string }[], usesX: boolean) => void;
+}) {
   const o = state.objects[sel.objectId];
   const ref = useRef<HTMLDivElement>(null);
+  const [abilities, setAbilities] = useState<Ability[]>([]);
+  const cardId = o?.cardId;
+  const onBattlefield = o?.zone === "battlefield";
+  useEffect(() => {
+    if (!onBattlefield || !cardId) return;
+    let cancelled = false;
+    api
+      .get<CardDetailResponse>(`/api/cards/${cardId}`)
+      .then((d) => !cancelled && setAbilities(parseAbilities(d.card.oracleText, d.card.name)))
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [cardId, onBattlefield]);
   useEffect(() => {
     const h = (e: MouseEvent) => {
       if (ref.current && !ref.current.contains(e.target as Node)) onClose();
@@ -841,6 +882,14 @@ function CardMenu({ sel, state, you, t, onClose, onCast }: { sel: Selection; sta
       <div className="truncate border-b border-table-border px-3 py-1 text-xs text-table-muted">{o.name}</div>
       {o.zone === "battlefield" && (
         <>
+          {abilities.map((ab) => (
+            <Item
+              key={`ab${ab.index}`}
+              label={`▶ ${ab.cost}`}
+              onClick={() => onActivate(o, ab.index, ab.effect.targets, ab.effect.ops.some((op) => (op as { xScaled?: boolean }).xScaled))}
+            />
+          ))}
+          {abilities.length > 0 && <div className="my-1 border-t border-table-border" />}
           <Item label={o.tapped ? "Untap" : "Tap"} onClick={() => t.send({ type: "tap", objectId: o.id, tapped: !o.tapped })} />
           {/* Combat: attack (your turn) or block (a defender). The engine does the math. */}
           {you !== null && o.controllerSeat === you && you === state.activeSeat && o.attacking === null &&
