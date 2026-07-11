@@ -49,6 +49,12 @@ export interface GameObject {
   // Combat state (cleared at end of combat). attacking = defending seat.
   attacking: number | null;
   blocking: string | null; // attacker instance id this creature is blocking
+  // Marked as having taken damage from a deathtouch source this turn.
+  deathtouched: boolean;
+  // Card type/keyword info surfaced to the client for public objects (populated
+  // on send for battlefield/stack cards; used for combat UX + land/creature rows).
+  cardTypes: string[] | null;
+  keywords: string[] | null;
 }
 
 export type Phase =

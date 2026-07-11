@@ -39,6 +39,7 @@ export function DeckBuilder() {
   const [detailId, setDetailId] = useState<string | null>(null);
   const [preview, setPreview] = useState<CardSummary | null>(null);
   const [importOpen, setImportOpen] = useState(false);
+  const [deckView, setDeckView] = useState<"list" | "visual">("list");
   const [saving, setSaving] = useState(false);
   const search = useCardSearch("");
   const valTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -250,6 +251,14 @@ export function DeckBuilder() {
             ) : (
               <span className="text-table-muted">Empty deck</span>
             )}
+            <div className="ml-auto flex gap-1">
+              <button className={`chip ${deckView === "list" ? "border-table-accent text-table-accentSoft" : ""}`} onClick={() => setDeckView("list")}>
+                ☰ List
+              </button>
+              <button className={`chip ${deckView === "visual" ? "border-table-accent text-table-accentSoft" : ""}`} onClick={() => setDeckView("visual")}>
+                ▦ Visual
+              </button>
+            </div>
           </div>
         </div>
 
@@ -272,18 +281,30 @@ export function DeckBuilder() {
                   Search on the left and click a card to add it. Set the commander by moving a legendary creature to the Commander row.
                 </div>
               )}
-              {TYPE_ORDER.filter((t) => grouped[t]?.length).map((t) => (
-                <BoardSection
-                  key={t}
-                  title={`${t} (${grouped[t]!.reduce((n, e) => n + e.quantity, 0)})`}
-                  entries={grouped[t]!}
-                  cache={cache}
-                  onQty={(cid, q) => setQty(cid, "main", q)}
-                  onInfo={setDetailId}
-                  onMove={format?.requiresCommander ? (cid) => moveBoard(cid, "main", "commander") : undefined}
-                  moveLabel="set commander"
-                />
-              ))}
+              {deckView === "list"
+                ? TYPE_ORDER.filter((t) => grouped[t]?.length).map((t) => (
+                    <BoardSection
+                      key={t}
+                      title={`${t} (${grouped[t]!.reduce((n, e) => n + e.quantity, 0)})`}
+                      entries={grouped[t]!}
+                      cache={cache}
+                      onQty={(cid, q) => setQty(cid, "main", q)}
+                      onInfo={setDetailId}
+                      onMove={format?.requiresCommander ? (cid) => moveBoard(cid, "main", "commander") : undefined}
+                      moveLabel="set commander"
+                    />
+                  ))
+                : TYPE_ORDER.filter((t) => grouped[t]?.length).map((t) => (
+                    <VisualSection
+                      key={t}
+                      title={`${t} (${grouped[t]!.reduce((n, e) => n + e.quantity, 0)})`}
+                      entries={grouped[t]!}
+                      cache={cache}
+                      onQty={(cid, q) => setQty(cid, "main", q)}
+                      onInfo={setDetailId}
+                      onHover={setPreview}
+                    />
+                  ))}
             </div>
 
             <div className="space-y-3">
@@ -520,6 +541,49 @@ function BoardSection({
                   {moveLabel}
                 </button>
               )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function VisualSection({
+  title,
+  entries,
+  cache,
+  onQty,
+  onInfo,
+  onHover,
+}: {
+  title: string;
+  entries: Entry[];
+  cache: Record<string, CardSummary>;
+  onQty: (cardId: string, q: number) => void;
+  onInfo: (id: string) => void;
+  onHover: (c: CardSummary | null) => void;
+}) {
+  return (
+    <div className="mb-4">
+      <h3 className="mb-1 font-display text-sm text-table-accentSoft">{title}</h3>
+      <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-5">
+        {entries.map((e) => {
+          const c = cache[e.cardId];
+          return (
+            <div key={e.cardId} className="group relative" onMouseEnter={() => c && onHover(c)}>
+              <button className="block w-full" onClick={() => onInfo(e.cardId)} title={c?.name}>
+                <CardImage id={e.cardId} name={c?.name ?? e.cardId} />
+              </button>
+              <span className="absolute left-1 top-1 rounded bg-black/80 px-1.5 text-xs font-bold text-white">{e.quantity}×</span>
+              <div className="absolute bottom-1 left-1 right-1 hidden items-center justify-between group-hover:flex">
+                <button className="rounded bg-black/80 px-1.5 text-sm text-white hover:bg-red-700" onClick={() => onQty(e.cardId, e.quantity - 1)}>
+                  −
+                </button>
+                <button className="rounded bg-black/80 px-1.5 text-sm text-white hover:bg-green-700" onClick={() => onQty(e.cardId, e.quantity + 1)}>
+                  +
+                </button>
+              </div>
             </div>
           );
         })}

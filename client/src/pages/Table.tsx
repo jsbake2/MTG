@@ -400,17 +400,29 @@ function BattlefieldRow({
   highlight?: boolean;
   compact?: boolean;
 }) {
-  const lands = objects.filter((o) => o.tapped);
-  void lands;
+  const isLand = (o: GameObject) => o.cardTypes?.includes("Land") ?? false;
+  const lands = objects.filter(isLand);
+  const nonlands = objects.filter((o) => !isLand(o));
+  const size = compact ? 60 : 84;
   return (
     <div className={`rounded-lg ${highlight ? "border border-table-accent/30 bg-table-panel2/40 p-2" : ""}`}>
       {title && <div className="mb-1 text-xs uppercase tracking-wide text-table-muted">{title}</div>}
-      <div className="flex flex-wrap gap-1">
-        {objects.length === 0 && <div className="py-3 text-xs text-table-muted">— empty —</div>}
-        {objects.map((o) => (
-          <GameCard key={o.id} o={o} onClick={(e) => onSelect(o, e)} size={compact ? 64 : 88} />
-        ))}
-      </div>
+      {objects.length === 0 && <div className="py-3 text-xs text-table-muted">— empty —</div>}
+      {/* Creatures / other permanents in front, lands in a tidy back row. */}
+      {nonlands.length > 0 && (
+        <div className="mb-1 flex flex-wrap gap-1">
+          {nonlands.map((o) => (
+            <GameCard key={o.id} o={o} onClick={(e) => onSelect(o, e)} size={size} />
+          ))}
+        </div>
+      )}
+      {lands.length > 0 && (
+        <div className="flex flex-wrap gap-1 opacity-95">
+          {lands.map((o) => (
+            <GameCard key={o.id} o={o} onClick={(e) => onSelect(o, e)} size={size * 0.82} />
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -733,18 +745,22 @@ function CardMenu({ sel, state, you, t, onClose }: { sel: Selection; state: Tabl
       {o.zone === "battlefield" && (
         <>
           <Item label={o.tapped ? "Untap" : "Tap"} onClick={() => t.send({ type: "tap", objectId: o.id, tapped: !o.tapped })} />
+          {/* Combat: attack (your turn) or block (a defender). The engine does the math. */}
+          {you !== null && o.controllerSeat === you && you === state.activeSeat && o.attacking === null &&
+            state.players
+              .filter((p) => p.seat !== you && !p.hasLost)
+              .map((p) => (
+                <Item key={`atk${p.seat}`} label={`⚔ Attack ${p.name}`} onClick={() => t.send({ type: "declare_attacker", objectId: o.id, defendingSeat: p.seat })} />
+              ))}
+          {you !== null && o.controllerSeat === you && you !== state.activeSeat &&
+            Object.values(state.objects)
+              .filter((a) => a.attacking !== null && a.zone === "battlefield" && a.controllerSeat !== you)
+              .map((a) => (
+                <Item key={`blk${a.id}`} label={`🛡 Block ${a.name}`} onClick={() => t.send({ type: "declare_blocker", blockerId: o.id, attackerId: a.id })} />
+              ))}
+          {o.attacking !== null && <Item label="✖ Remove from combat" onClick={() => t.send({ type: "declare_attacker", objectId: o.id, defendingSeat: -1 })} />}
           <Item label="Add +1/+1" onClick={() => t.send({ type: "add_counter", objectId: o.id, counterType: "+1/+1", delta: 1 })} />
           <Item label="Add -1/-1" onClick={() => t.send({ type: "add_counter", objectId: o.id, counterType: "-1/-1", delta: 1 })} />
-          {you !== null && (
-            <Item
-              label="Attack…"
-              onClick={() => {
-                const targets = state.players.filter((p) => p.seat !== you && !p.hasLost);
-                const target = targets[0];
-                if (target) t.send({ type: "declare_attacker", objectId: o.id, defendingSeat: target.seat });
-              }}
-            />
-          )}
           <Item label="Flip face down/up" onClick={() => t.send({ type: "flip", objectId: o.id, faceDown: !o.faceDown })} />
           <Item label="→ Hand" onClick={() => move("hand")} />
           <Item label="→ Graveyard" onClick={() => move("graveyard")} danger />

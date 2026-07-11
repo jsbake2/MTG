@@ -206,6 +206,12 @@ export class Table {
         o.faceDown = true;
       }
       if (ownHand) (hands[viewerSeat!] ??= []).push(o.id);
+      // Surface type/keyword info for public objects so the client can drive the
+      // combat UX and split land/creature rows.
+      if ((o.zone === "battlefield" || o.zone === "stack") && o.cardId && this.cardIndex[o.cardId]) {
+        o.cardTypes = this.cardIndex[o.cardId]!.cardTypes;
+        o.keywords = this.cardIndex[o.cardId]!.keywords;
+      }
     }
     return { state: clone, hands };
   }

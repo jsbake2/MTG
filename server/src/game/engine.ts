@@ -113,12 +113,16 @@ export function checkStateBased(state: TableState, ctx: CardIndex): void {
       }
     }
   }
-  // Lethal-damage / zero-toughness creature death (auto damage math promise).
+  // Lethal-damage / zero-toughness creature death (auto damage math promise),
+  // respecting indestructible and deathtouch.
   for (const o of objectsIn(state, "battlefield")) {
     if (!isCreature(ctx, o)) continue;
     const ci = info(ctx, o);
     const { toughness } = effectivePT(state, o, ci ?? undefined);
-    if (toughness <= 0 || (o.damage > 0 && o.damage >= toughness)) {
+    const indestructible = hasKeyword(ctx, o, "indestructible");
+    const lethalDamage = o.damage > 0 && o.damage >= toughness;
+    const deathtouchKill = o.deathtouched && o.damage > 0;
+    if (toughness <= 0 || ((lethalDamage || deathtouchKill) && !indestructible)) {
       moveObject(state, ctx, o, "graveyard", o.ownerSeat, {});
       log(state, { seat: o.controllerSeat, kind: "combat", text: `${o.name} dies.` });
     }
@@ -211,6 +215,9 @@ function onEnterStep(state: TableState, ctx: CardIndex): void {
       drawCards(state, state.activeSeat, 1);
       log(state, { seat: state.activeSeat, kind: "phase", text: `${active.name} draws for the turn.` });
     }
+  } else if (state.step === "combat_damage") {
+    // Auto-resolve all combat damage/keywords when reaching the damage step.
+    resolveCombat(state, ctx);
   } else if (state.step === "cleanup") {
     // Empty mana, remove combat damage marks, clear combat.
     for (const p of state.players) p.manaPool = { W: 0, U: 0, B: 0, R: 0, G: 0, C: 0 };
@@ -218,6 +225,7 @@ function onEnterStep(state: TableState, ctx: CardIndex): void {
       o.damage = 0;
       o.attacking = null;
       o.blocking = null;
+      o.deathtouched = false;
     }
   } else if (state.step === "end_combat") {
     for (const o of objectsIn(state, "battlefield")) {
@@ -498,6 +506,10 @@ function dispatch(state: TableState, ctx: CardIndex, seat: number, action: GameA
     case "declare_attacker": {
       const o = findObj(state, action.objectId);
       if (!o) return { ok: false, error: "Card not found" };
+      if (action.defendingSeat < 0) {
+        o.attacking = null;
+        return null;
+      }
       const check1 = enforce(state, o.controllerSeat === state.activeSeat, "Only the active player can attack.");
       if (check1) return check1;
       const check2 = enforce(state, isCreature(ctx, o), `${o.name} isn't a creature.`);
@@ -521,12 +533,18 @@ function dispatch(state: TableState, ctx: CardIndex, seat: number, action: GameA
       if (c2) return c2;
       const c3 = enforce(state, attacker.attacking !== null, `${attacker.name} isn't attacking.`);
       if (c3) return c3;
+      const c4 = enforce(
+        state,
+        !hasKeyword(ctx, attacker, "flying") || hasKeyword(ctx, blocker, "flying") || hasKeyword(ctx, blocker, "reach"),
+        `${blocker.name} can't block ${attacker.name} — it has flying.`,
+      );
+      if (c4) return c4;
       blocker.blocking = action.attackerId;
       log(state, { seat, kind: "combat", text: `${blocker.name} blocks ${attacker.name}.` });
       return null;
     }
     case "assign_combat_damage": {
-      assignCombatDamage(state, ctx);
+      resolveCombat(state, ctx);
       return null;
     }
     case "note": {
@@ -607,6 +625,9 @@ function newTokenObject(seat: number, name: string): GameObject {
     ptOverride: null,
     attacking: null,
     blocking: null,
+    deathtouched: false,
+    cardTypes: null,
+    keywords: null,
   };
 }
 
@@ -614,33 +635,89 @@ function cryptoRandomId(): string {
   return "tok_" + Math.random().toString(36).slice(2) + Date.now().toString(36);
 }
 
-function assignCombatDamage(state: TableState, ctx: CardIndex): void {
-  const attackers = objectsIn(state, "battlefield").filter((o) => o.attacking !== null);
-  for (const atk of attackers) {
-    const ci = info(ctx, atk);
-    const { power } = effectivePT(state, atk, ci ?? undefined);
-    const blockers = objectsIn(state, "battlefield").filter((o) => o.blocking === atk.id);
-    if (blockers.length === 0) {
-      const p = playerBySeat(state, atk.attacking!);
-      if (p) {
-        p.life -= power;
-        // Track commander damage automatically if the attacker is a commander.
-        if (atk.isCommander) p.commanderDamage[atk.controllerSeat] = (p.commanderDamage[atk.controllerSeat] ?? 0) + power;
-        log(state, { seat: atk.controllerSeat, kind: "combat", text: `${atk.name} deals ${power} to ${p.name}.` });
-      }
-    } else {
-      let remaining = power;
-      for (const b of blockers) {
-        const bci = info(ctx, b);
-        const bt = effectivePT(state, b, bci ?? undefined).toughness;
-        const assign = Math.min(remaining, Math.max(bt, 0));
-        b.damage += assign > 0 ? assign : remaining; // if toughness 0, dump rest
-        remaining -= assign;
-        // Blocker hits attacker.
-        const bp = effectivePT(state, b, bci ?? undefined).power;
-        atk.damage += bp;
-      }
-      log(state, { seat: atk.controllerSeat, kind: "combat", text: `${atk.name} trades blows in combat.` });
-    }
+function pow(state: TableState, ctx: CardIndex, o: GameObject): number {
+  return effectivePT(state, o, info(ctx, o) ?? undefined).power;
+}
+function tou(state: TableState, ctx: CardIndex, o: GameObject): number {
+  return effectivePT(state, o, info(ctx, o) ?? undefined).toughness;
+}
+function dealToCreature(state: TableState, ctx: CardIndex, source: GameObject, target: GameObject, amount: number): void {
+  if (amount <= 0) return;
+  target.damage += amount;
+  if (hasKeyword(ctx, source, "deathtouch")) target.deathtouched = true;
+  if (hasKeyword(ctx, source, "lifelink")) {
+    const c = playerBySeat(state, source.controllerSeat);
+    if (c) c.life += amount;
   }
+}
+function dealToPlayer(state: TableState, ctx: CardIndex, source: GameObject, seat: number, amount: number): void {
+  if (amount <= 0) return;
+  const p = playerBySeat(state, seat);
+  if (p) {
+    p.life -= amount;
+    if (source.isCommander) p.commanderDamage[source.controllerSeat] = (p.commanderDamage[source.controllerSeat] ?? 0) + amount;
+  }
+  if (hasKeyword(ctx, source, "lifelink")) {
+    const c = playerBySeat(state, source.controllerSeat);
+    if (c) c.life += amount;
+  }
+}
+
+// Full keyword-aware combat resolution: first-strike/regular sub-steps, deathtouch,
+// trample, lifelink, and commander damage — the "do all the math" automation.
+function resolveCombat(state: TableState, ctx: CardIndex): void {
+  const attackers = objectsIn(state, "battlefield").filter((o) => o.attacking !== null);
+  if (attackers.length === 0) return;
+  const blockedIds = new Set(
+    objectsIn(state, "battlefield").filter((o) => o.blocking !== null).map((o) => o.blocking as string),
+  );
+
+  const dealsInStep = (o: GameObject, step: "first" | "regular"): boolean => {
+    const fs = hasKeyword(ctx, o, "first strike");
+    const ds = hasKeyword(ctx, o, "double strike");
+    return step === "first" ? fs || ds : !fs || ds;
+  };
+
+  for (const step of ["first", "regular"] as const) {
+    // Only run the first-strike step if someone actually has (double) first strike.
+    if (step === "first") {
+      const anyFS = objectsIn(state, "battlefield").some(
+        (o) => (o.attacking !== null || o.blocking !== null) && (hasKeyword(ctx, o, "first strike") || hasKeyword(ctx, o, "double strike")),
+      );
+      if (!anyFS) continue;
+    }
+    // Attackers deal damage.
+    for (const atk of attackers) {
+      if (atk.zone !== "battlefield" || !dealsInStep(atk, step)) continue;
+      const power = Math.max(0, pow(state, ctx, atk));
+      const blockers = objectsIn(state, "battlefield").filter((o) => o.blocking === atk.id && o.zone === "battlefield");
+      if (blockers.length === 0) {
+        if (!blockedIds.has(atk.id)) {
+          dealToPlayer(state, ctx, atk, atk.attacking!, power);
+        } else if (hasKeyword(ctx, atk, "trample")) {
+          // Blockers all died; trample the rest through.
+          dealToPlayer(state, ctx, atk, atk.attacking!, power);
+        }
+      } else {
+        let remaining = power;
+        for (const b of blockers) {
+          const lethal = hasKeyword(ctx, atk, "deathtouch") ? 1 : Math.max(0, tou(state, ctx, b) - b.damage);
+          const assign = Math.min(remaining, lethal > 0 ? lethal : remaining);
+          dealToCreature(state, ctx, atk, b, assign);
+          remaining -= assign;
+        }
+        if (remaining > 0 && hasKeyword(ctx, atk, "trample")) dealToPlayer(state, ctx, atk, atk.attacking!, remaining);
+      }
+    }
+    // Blockers deal damage back to their attacker.
+    for (const b of objectsIn(state, "battlefield").filter((o) => o.blocking !== null && o.zone === "battlefield")) {
+      if (!dealsInStep(b, step)) continue;
+      const atk = b.blocking ? state.objects[b.blocking] : undefined;
+      if (!atk || atk.zone !== "battlefield") continue;
+      dealToCreature(state, ctx, b, atk, Math.max(0, pow(state, ctx, b)));
+    }
+    // State-based checks (first-strike deaths happen before the regular step).
+    checkStateBased(state, ctx);
+  }
+  log(state, { seat: state.activeSeat, kind: "combat", text: "Combat damage resolved." });
 }
