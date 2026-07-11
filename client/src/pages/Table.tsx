@@ -762,9 +762,10 @@ function CardMenu({ sel, state, you, t, onClose }: { sel: Selection; state: Tabl
           <Item label="Add +1/+1" onClick={() => t.send({ type: "add_counter", objectId: o.id, counterType: "+1/+1", delta: 1 })} />
           <Item label="Add -1/-1" onClick={() => t.send({ type: "add_counter", objectId: o.id, counterType: "-1/-1", delta: 1 })} />
           <Item label="Flip face down/up" onClick={() => t.send({ type: "flip", objectId: o.id, faceDown: !o.faceDown })} />
-          <Item label="→ Hand" onClick={() => move("hand")} />
-          <Item label="→ Graveyard" onClick={() => move("graveyard")} danger />
-          <Item label="→ Exile" onClick={() => move("exile")} />
+          <Item label="Return to hand" onClick={() => t.send({ type: "keyword_action", objectId: o.id, action: "bounce" })} />
+          <Item label="Destroy" onClick={() => t.send({ type: "keyword_action", objectId: o.id, action: "destroy" })} danger />
+          <Item label="Sacrifice" onClick={() => t.send({ type: "keyword_action", objectId: o.id, action: "sacrifice" })} danger />
+          <Item label="Exile" onClick={() => t.send({ type: "keyword_action", objectId: o.id, action: "exile" })} />
         </>
       )}
       {(o.zone === "hand" || o.zone === "command") && (
@@ -777,7 +778,8 @@ function CardMenu({ sel, state, you, t, onClose }: { sel: Selection; state: Tabl
       {o.zone === "stack" && (
         <>
           <Item label="Resolve (top)" onClick={() => t.send({ type: "resolve_top" })} />
-          <Item label="Counter (to GY)" onClick={() => t.send({ type: "counter_top" })} danger />
+          <Item label="Counter → graveyard" onClick={() => t.send({ type: "keyword_action", objectId: o.id, action: "counter" })} danger />
+          <Item label="Counter → exile" onClick={() => t.send({ type: "keyword_action", objectId: o.id, action: "exile" })} danger />
         </>
       )}
       {(o.zone === "graveyard" || o.zone === "exile") && (

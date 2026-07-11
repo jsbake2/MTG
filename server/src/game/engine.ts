@@ -12,6 +12,7 @@ import {
   type ZoneId,
 } from "@mtg/shared";
 import { getFormat } from "@mtg/shared";
+import { KEYWORD_ACTIONS } from "./rules.js";
 import {
   effectivePT,
   libraryOrdered,
@@ -565,6 +566,29 @@ function dispatch(state: TableState, ctx: CardIndex, seat: number, action: GameA
     case "set_enforcement": {
       state.enforcement = action.level;
       log(state, { seat, kind: "system", text: `Enforcement set to ${action.level}.` });
+      return null;
+    }
+    case "keyword_action": {
+      const o = findObj(state, action.objectId);
+      if (!o) return { ok: false, error: "Card not found" };
+      const rule = KEYWORD_ACTIONS[action.action];
+      // Destroy is prevented by indestructible; sacrifice/exile are not.
+      if (action.action === "destroy" && hasKeyword(ctx, o, "indestructible")) {
+        log(state, { seat, kind: "action", text: `${o.name} is indestructible — not destroyed.` });
+        return null;
+      }
+      const verb: Record<string, string> = {
+        destroy: "destroys",
+        sacrifice: "sacrifices",
+        exile: "exiles",
+        bounce: "returns to hand",
+        counter: "counters",
+        tuck_top: "puts on top of library",
+        tuck_bottom: "puts on bottom of library",
+      };
+      const toSeat = rule.toOwner ? o.ownerSeat : o.controllerSeat;
+      moveObject(state, ctx, o, rule.dest, toSeat, { toTop: rule.toTop });
+      log(state, { seat, kind: "action", text: `${playerBySeat(state, seat)?.name} ${verb[action.action]}: ${o.name}.` });
       return null;
     }
     case "roll": {

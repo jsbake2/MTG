@@ -201,6 +201,9 @@ export type GameAction =
   | { type: "note"; objectId: string; note: string | null }
   | { type: "concede"; seat: number }
   | { type: "set_enforcement"; level: EnforcementLevel }
+  // Semantic zone change routed through the rules table (correct destination +
+  // nuance: destroy respects indestructible, counter→graveyard from stack, etc.)
+  | { type: "keyword_action"; objectId: string; action: "destroy" | "sacrifice" | "exile" | "bounce" | "counter" | "tuck_top" | "tuck_bottom" }
   | { type: "roll"; seat: number; sides: number; count: number; label?: string } // dice/coin roll
   | { type: "roll_first" } // roll for each seated player; highest becomes active
   | { type: "override"; description: string; inner: GameAction }; // bypass a framework check, logged
