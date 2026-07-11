@@ -1,12 +1,15 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import type { CreateTableRequest, FormatDef, TableSummary } from "@mtg/shared";
+import type { CreateTableRequest, Deck, FormatDef, TableSummary } from "@mtg/shared";
 import { api } from "@/api/client";
 import { useAuth } from "@/store/auth";
 
 export function Play() {
   const [tables, setTables] = useState<TableSummary[]>([]);
   const [formats, setFormats] = useState<FormatDef[]>([]);
+  const [decks, setDecks] = useState<Deck[]>([]);
+  const [precons, setPrecons] = useState<Deck[]>([]);
+  const [deckId, setDeckId] = useState<string>("");
   const [form, setForm] = useState<CreateTableRequest>({ name: "", formatId: "commander", maxPlayers: 4, enforcement: "relaxed" });
   const nav = useNavigate();
   const { user } = useAuth();
@@ -21,16 +24,33 @@ export function Play() {
   }
   useEffect(() => {
     load();
+    Promise.all([
+      api.get<{ decks: Deck[] }>("/api/decks"),
+      api.get<{ decks: Deck[] }>("/api/decks/public"),
+    ]).then(([mine, pub]) => {
+      setDecks(mine.decks);
+      setPrecons(pub.decks);
+    });
     const iv = setInterval(load, 4000);
     return () => clearInterval(iv);
   }, []);
+
+  // Only decks legal for the chosen format (house = anything-goes shows all).
+  const matches = (d: Deck) => form.formatId === "house" || d.formatId === form.formatId;
+  const myDecks = useMemo(() => decks.filter(matches), [decks, form.formatId]);
+  const preconDecks = useMemo(() => precons.filter(matches), [precons, form.formatId]);
+  // Keep the selected deck valid when the format changes.
+  useEffect(() => {
+    if (deckId && ![...myDecks, ...preconDecks].some((d) => d.id === deckId)) setDeckId("");
+  }, [form.formatId, myDecks, preconDecks]);
 
   async function create() {
     const r = await api.post<{ table: TableSummary }>("/api/tables", {
       ...form,
       name: form.name || `${form.formatId} table`,
     });
-    nav(`/table/${r.table.id}`);
+    // Seat the creator with their chosen (format-legal) deck straight away.
+    nav(`/table/${r.table.id}`, { state: deckId ? { autoDeckId: deckId } : undefined });
   }
 
   async function removeTable(id: string) {
@@ -51,13 +71,37 @@ export function Play() {
             <input className="input mt-1" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Friday night game" />
           </label>
           <label className="flex flex-col text-xs text-table-muted">
-            Format
+            Format (legality)
             <select className="input mt-1" value={form.formatId} onChange={(e) => setForm({ ...form, formatId: e.target.value })}>
               {formats.map((f) => (
                 <option key={f.id} value={f.id}>
                   {f.name}
                 </option>
               ))}
+            </select>
+          </label>
+          <label className="flex flex-col text-xs text-table-muted">
+            Your deck
+            <select className="input mt-1 min-w-[12rem]" value={deckId} onChange={(e) => setDeckId(e.target.value)}>
+              <option value="">— pick in lobby / spectate —</option>
+              {myDecks.length > 0 && (
+                <optgroup label="My decks">
+                  {myDecks.map((d) => (
+                    <option key={d.id} value={d.id}>
+                      {d.name} ({d.cardCount})
+                    </option>
+                  ))}
+                </optgroup>
+              )}
+              {preconDecks.length > 0 && (
+                <optgroup label="Preconstructed">
+                  {preconDecks.map((d) => (
+                    <option key={d.id} value={d.id}>
+                      {d.name} ({d.cardCount})
+                    </option>
+                  ))}
+                </optgroup>
+              )}
             </select>
           </label>
           <label className="flex flex-col text-xs text-table-muted">

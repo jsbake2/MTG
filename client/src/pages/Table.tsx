@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useLocation, useParams } from "react-router-dom";
 import type { Ability, CardDetailResponse, Deck, EffectMode, GameObject, PlayerState, RollResult, TableState, ZoneId } from "@mtg/shared";
 import { TURN_STEPS, compileEffects, parseAbilities } from "@mtg/shared";
 import { api } from "@/api/client";
@@ -63,6 +63,27 @@ function Lobby({ t }: { t: TableConn }) {
       }
     });
   }, [lobby?.formatId]);
+
+  // If we arrived here from "Create & sit down" with a chosen deck, claim the
+  // first open seat with it automatically (once).
+  const location = useLocation();
+  const autoDeckId = (location.state as { autoDeckId?: string } | null)?.autoDeckId;
+  const autoSeated = useRef(false);
+  useEffect(() => {
+    if (!lobby || autoSeated.current || !autoDeckId) return;
+    if (lobby.you !== null) {
+      autoSeated.current = true;
+      return;
+    }
+    const taken = new Set(lobby.seats.map((s) => s.seat));
+    const seat = Array.from({ length: lobby.maxPlayers }, (_, i) => i).find((i) => !taken.has(i));
+    if (seat !== undefined) {
+      autoSeated.current = true;
+      setDeckId(autoDeckId);
+      t.takeSeat(seat, autoDeckId);
+    }
+  }, [lobby, autoDeckId]);
+
   if (!lobby) return <div className="p-8 text-center text-table-muted">Connecting to table…</div>;
 
   const isHost = lobby.hostUserId === user?.id;
