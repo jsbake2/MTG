@@ -59,12 +59,23 @@ export function Decks() {
   const byName = (a: Deck, b: Deck) => a.name.localeCompare(b.name);
   const byUpdated = (a: Deck, b: Deck) => (a.updatedAt < b.updatedAt ? 1 : -1);
   const sorter = sort === "name" ? byName : byUpdated;
-  const filteredDecks = decks.filter((d) => !ownFormat || d.formatId === ownFormat).sort(sorter);
+  const filteredDecks = decks
+    .filter((d) => !ownFormat || d.formatId === ownFormat)
+    .filter((d) => !legalityFormat || legalityMap[d.id] === undefined || legalityMap[d.id].valid === true)
+    .sort(sorter);
   const usedFormats = [...new Set([...decks, ...precons].map((d) => d.formatId))];
   const filteredPrecons = precons
     .filter((p) => p.name.toLowerCase().includes(preconQuery.toLowerCase()))
     .filter((p) => !preconFormat || p.formatId === preconFormat)
+    .filter((p) => !legalityFormat || legalityMap[p.id] === undefined || legalityMap[p.id].valid === true)
     .sort(byName);
+
+  async function togglePreconStar(id: string) {
+    const r = await api.post<{ id: string }>(`/api/decks/${id}/duplicate`);
+    await api.post(`/api/decks/${r.id}/star`, { starred: true });
+    load();
+    alert("Copied to Your Decks and added to favorites!");
+  }
   async function remove(id: string) {
     if (!confirm("Delete this deck?")) return;
     await api.del(`/api/decks/${id}`);
@@ -199,9 +210,18 @@ export function Decks() {
             {filteredPrecons.slice(0, 120).map((d) => (
               <div key={d.id} className="panel flex flex-col p-4">
                 <div className="flex items-start justify-between gap-2">
-                  <Link to={`/decks/${d.id}`} className="font-display text-base text-table-ink hover:text-table-accentSoft">
-                    {d.name}
-                  </Link>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => togglePreconStar(d.id)}
+                      className="text-lg transition-all duration-150 hover:scale-110 active:scale-90 text-table-muted/30 hover:text-amber-300/80"
+                      title="Favorite this precon (creates a copy in your decks)"
+                    >
+                      ★
+                    </button>
+                    <Link to={`/decks/${d.id}`} className="font-display text-base text-table-ink hover:text-table-accentSoft">
+                      {d.name}
+                    </Link>
+                  </div>
                   <div className="flex gap-0.5">
                     {d.colors.map((c) => (
                       <span key={c} className="h-3 w-3 rounded-full border border-white/25" style={{ background: MANA_DOT[c] ?? "#c9c6be" }} />

@@ -47,6 +47,15 @@ export function DeckBuilder() {
   const search = useCardSearch("");
   const valTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [basicLands, setBasicLands] = useState<Record<string, CardSummary>>({});
+  const [isStarred, setIsStarred] = useState(false);
+  const [isPrecon, setIsPrecon] = useState(false);
+
+  async function toggleStar() {
+    if (!id || isPrecon) return;
+    const next = !isStarred;
+    setIsStarred(next);
+    await api.post(`/api/decks/${id}/star`, { starred: next });
+  }
 
   useEffect(() => {
     api.get<{ formats: FormatDef[] }>("/api/formats").then((r) => setFormats(r.formats));
@@ -94,6 +103,8 @@ export function DeckBuilder() {
       }
       setCache(cc);
       setValidation(r.validation);
+      setIsStarred(r.deck.isStarred);
+      setIsPrecon(r.deck.isPrecon);
     });
   }, [id]);
 
@@ -285,6 +296,15 @@ export function DeckBuilder() {
                 </option>
               ))}
             </select>
+            {!isPrecon && id && (
+              <button
+                onClick={toggleStar}
+                className={`text-xl transition-all duration-150 hover:scale-110 active:scale-95 px-1 ${isStarred ? "text-amber-400" : "text-table-muted/30 hover:text-amber-300/80"}`}
+                title={isStarred ? "Remove Favorite" : "Add Favorite"}
+              >
+                ★
+              </button>
+            )}
             <button className="btn-primary" onClick={save} disabled={saving}>
               {saving ? "Saving…" : "Save"}
             </button>
