@@ -51,10 +51,19 @@ export function DeckBuilder() {
   const [isPrecon, setIsPrecon] = useState(false);
 
   async function toggleStar() {
-    if (!id || isPrecon) return;
+    if (isPrecon) {
+      // Duplicate precon, star the copy, and go to the copy in the builder
+      const r = await api.post<{ id: string }>(`/api/decks/${id}/duplicate`);
+      await api.post(`/api/decks/${r.id}/star`, { starred: true });
+      alert("This is a shared preconstructed deck. A copy has been created and added to your favorites!");
+      nav(`/decks/${r.id}`);
+      return;
+    }
     const next = !isStarred;
     setIsStarred(next);
-    await api.post(`/api/decks/${id}/star`, { starred: next });
+    if (id) {
+      await api.post(`/api/decks/${id}/star`, { starred: next });
+    }
   }
 
   useEffect(() => {
@@ -193,6 +202,9 @@ export function DeckBuilder() {
       const payload = { name, formatId, description, tags, cards: entries };
       if (isNew) {
         const r = await api.post<{ id: string }>("/api/decks", payload);
+        if (isStarred) {
+          await api.post(`/api/decks/${r.id}/star`, { starred: true });
+        }
         nav(`/decks/${r.id}`, { replace: true });
       } else {
         await api.put(`/api/decks/${id}`, payload);
@@ -296,15 +308,13 @@ export function DeckBuilder() {
                 </option>
               ))}
             </select>
-            {!isPrecon && id && (
-              <button
-                onClick={toggleStar}
-                className={`text-xl transition-all duration-150 hover:scale-110 active:scale-95 px-1 ${isStarred ? "text-amber-400" : "text-table-muted/30 hover:text-amber-300/80"}`}
-                title={isStarred ? "Remove Favorite" : "Add Favorite"}
-              >
-                ★
-              </button>
-            )}
+            <button
+              onClick={toggleStar}
+              className={`text-xl transition-all duration-150 hover:scale-110 active:scale-95 px-1 ${isStarred ? "text-amber-400" : "text-table-muted/30 hover:text-amber-300/80"}`}
+              title={isStarred ? "Remove Favorite" : "Add Favorite"}
+            >
+              ★
+            </button>
             <button className="btn-primary" onClick={save} disabled={saving}>
               {saving ? "Saving…" : "Save"}
             </button>

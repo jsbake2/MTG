@@ -98,10 +98,10 @@ export function Decks() {
           <option value="updated">Recently updated</option>
           <option value="name">Name (A–Z)</option>
         </select>
-        <select className="input !py-1 border-emerald-500/30 text-emerald-400 bg-emerald-500/5 focus:ring-emerald-500/55 font-semibold" value={legalityFormat} onChange={(e) => setLegalityFormat(e.target.value)} title="Check legality">
-          <option value="" className="text-table-ink font-normal">— Check Legality —</option>
+        <select className="input !py-1 border-emerald-600/40 dark:border-emerald-500/35 text-table-ink font-semibold" value={legalityFormat} onChange={(e) => setLegalityFormat(e.target.value)} title="Check legality">
+          <option value="">— Check Legality —</option>
           {formats.map((f) => (
-            <option key={f.id} value={f.id} className="text-table-ink font-normal">
+            <option key={f.id} value={f.id}>
               {f.name} Legality
             </option>
           ))}
