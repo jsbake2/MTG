@@ -333,6 +333,32 @@ export function compileText(text: string): CompiledEffect {
   return finalize(opsFromClauses(clauses, false));
 }
 
+export type TriggerEvent = "upkeep" | "endstep" | "attack" | "dies" | "combat_damage_player";
+export interface Trigger {
+  event: TriggerEvent;
+  effect: CompiledEffect;
+}
+
+// Parse triggered abilities that fire on common game events.
+export function compileTriggers(oracleText: string | null, cardName: string): Trigger[] {
+  if (!oracleText) return [];
+  const text = normalize(oracleText, cardName);
+  const triggers: Trigger[] = [];
+  const add = (event: TriggerEvent, effectText: string) => {
+    const eff = compileText(effectText);
+    if (eff.matched || eff.modes) triggers.push({ event, effect: eff });
+  };
+  const grab = (re: RegExp, event: TriggerEvent) => {
+    for (const m of text.matchAll(re)) add(event, m[1]!);
+  };
+  grab(/at the beginning of (?:your|each) upkeep,\s*([^.]+)\.?/gi, "upkeep");
+  grab(/at the beginning of your (?:end step|next end step),\s*([^.]+)\.?/gi, "endstep");
+  grab(/whenever this(?: creature)? attacks,\s*([^.]+)\.?/gi, "attack");
+  grab(/when this(?: creature)? dies,\s*([^.]+)\.?/gi, "dies");
+  grab(/whenever this(?: creature)? deals combat damage to a player,\s*([^.]+)\.?/gi, "combat_damage_player");
+  return triggers;
+}
+
 export interface Ability {
   index: number;
   cost: string;

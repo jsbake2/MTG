@@ -11,7 +11,7 @@ import {
   type TableState,
   type ZoneId,
 } from "@mtg/shared";
-import { getFormat, compileEffects, compileEtbEffects, parseAbilities, type EffectOp, type EffectWho, type MassFilter } from "@mtg/shared";
+import { getFormat, compileEffects, compileEtbEffects, compileTriggers, parseAbilities, type EffectOp, type EffectWho, type MassFilter, type TriggerEvent } from "@mtg/shared";
 import { KEYWORD_ACTIONS } from "./rules.js";
 import {
   effectivePT,
@@ -127,6 +127,7 @@ export function checkStateBased(state: TableState, ctx: CardIndex): void {
     if (toughness <= 0 || ((lethalDamage || deathtouchKill) && !indestructible)) {
       moveObject(state, ctx, o, "graveyard", o.ownerSeat, {});
       log(state, { seat: o.controllerSeat, kind: "combat", text: `${o.name} dies.` });
+      runTriggers(state, ctx, o, "dies");
     }
   }
   const alive = aliveSeats(state);
@@ -212,6 +213,8 @@ function onEnterStep(state: TableState, ctx: CardIndex): void {
       o.summoningSick = false; // controlled since last turn
     }
     log(state, { seat: state.activeSeat, kind: "phase", text: `Turn ${state.turnNumber}: ${active?.name}'s untap.` });
+  } else if (state.step === "upkeep") {
+    for (const o of objectsIn(state, "battlefield", state.activeSeat)) runTriggers(state, ctx, o, "upkeep");
   } else if (state.step === "draw") {
     // First player skips their first draw in a 2-player game.
     const skip = state.turnNumber === 1 && state.activeSeat === state.startingPlayerSeat && aliveSeats(state).length === 2;
@@ -341,6 +344,28 @@ function runEtb(state: TableState, ctx: CardIndex, source: GameObject): void {
   }
   if (comp.ops.length > auto.length) {
     log(state, { seat: source.controllerSeat, kind: "system", text: `${source.name}'s enter ability needs a target/choice — resolve it manually.` });
+  }
+}
+
+// Fire a permanent's triggered abilities for a game event (non-targeted ops
+// auto-run; targeted ones prompt for manual resolution).
+function runTriggers(state: TableState, ctx: CardIndex, o: GameObject, event: TriggerEvent): void {
+  const ci = info(ctx, o);
+  if (!ci?.oracleText) return;
+  for (const tr of compileTriggers(ci.oracleText, o.name)) {
+    if (tr.event !== event) continue;
+    const ops = tr.effect.modes && tr.effect.modes.length > 0 ? tr.effect.modes[0]!.ops : tr.effect.ops;
+    const auto = ops.filter((op) => {
+      const w = whoOf(op);
+      return op.op !== "manual" && !(w && w.scope === "target");
+    });
+    if (auto.length > 0) {
+      applyOps(state, ctx, o, auto, []);
+      log(state, { seat: o.controllerSeat, kind: "action", text: `${o.name}'s ${event.replace("_", " ")} ability resolves.` });
+    }
+    if (ops.length > auto.length) {
+      log(state, { seat: o.controllerSeat, kind: "system", text: `${o.name}'s triggered ability needs a target/choice — resolve manually.` });
+    }
   }
 }
 
@@ -780,6 +805,7 @@ function dispatch(state: TableState, ctx: CardIndex, seat: number, action: GameA
       o.attacking = action.defendingSeat;
       if (!hasKeyword(ctx, o, "vigilance")) o.tapped = true;
       log(state, { seat, kind: "combat", text: `${o.name} attacks ${playerBySeat(state, action.defendingSeat)?.name}.` });
+      runTriggers(state, ctx, o, "attack");
       return null;
     }
     case "declare_blocker": {
