@@ -58,11 +58,13 @@ services:
       - "8477:8477"
 
   # Optional: publish at https://mtg.jsb-emr.us via Cloudflare Tunnel.
-  # Remove this service (and TUNNEL_TOKEN) to run LAN-only.
+  # Gated behind the "tunnel" profile so LAN-only runs need no tunnel config.
+  # Start it with:  docker compose --profile tunnel up -d
   cloudflared:
     image: cloudflare/cloudflared:2026.3.0
     container_name: mtg-cloudflared
     restart: unless-stopped
+    profiles: ["tunnel"]
     depends_on:
       - app
     command:
@@ -70,7 +72,7 @@ services:
       - --no-autoupdate
       - run
       - --token
-      - ${TUNNEL_TOKEN:?set TUNNEL_TOKEN in .env or remove the cloudflared service}
+      - ${TUNNEL_TOKEN:-}
 
 volumes:
   mtg_pgdata:
