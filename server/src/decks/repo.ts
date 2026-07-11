@@ -52,7 +52,8 @@ const DECK_SELECT = `
   FROM decks d JOIN users u ON u.id = d.owner_id`;
 
 export async function listDecks(ownerId: string): Promise<Deck[]> {
-  const rows = (await query<DeckRow>(`${DECK_SELECT} WHERE d.owner_id = $1 ORDER BY d.updated_at DESC`, [ownerId])).rows;
+  // Precons are shared and shown separately, not in the owner's personal list.
+  const rows = (await query<DeckRow>(`${DECK_SELECT} WHERE d.owner_id = $1 AND d.is_precon = false ORDER BY d.updated_at DESC`, [ownerId])).rows;
   const decks: Deck[] = [];
   for (const r of rows) decks.push(toDeck(r, await deckColors(r.id)));
   return decks;

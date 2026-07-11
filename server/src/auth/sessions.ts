@@ -6,7 +6,6 @@ import type { NextFunction, Request, Response } from "express";
 import type { User } from "@mtg/shared";
 import { query } from "../db/pool.js";
 import { getUserById, toUser } from "./users.js";
-import { isProd } from "../env.js";
 
 const COOKIE_NAME = "mtg_session";
 const SESSION_DAYS = 30;
@@ -54,7 +53,11 @@ export function setSessionCookie(res: Response, token: string): void {
     serializeCookie(COOKIE_NAME, token, {
       httpOnly: true,
       sameSite: "lax",
-      secure: isProd,
+      // NOT Secure: this is a private home app reached over plain HTTP on the LAN
+      // (http://10.0.0.31:8477). A Secure cookie would be dropped by the browser
+      // over HTTP, breaking sessions. Lax + httpOnly is appropriate here; the
+      // cookie also works fine over the HTTPS Cloudflare tunnel.
+      secure: false,
       path: "/",
       maxAge: SESSION_DAYS * 86400,
     }),
