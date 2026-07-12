@@ -4,6 +4,7 @@ import type { GameObject, PlayerState, TableState } from "@mtg/shared";
 import type { TableConn } from "@/game/useTable";
 import { CardImage } from "@/components/CardTile";
 import { Avatar } from "@/components/Avatar";
+import { useSettings } from "@/store/settings";
 import { DiceRoller, RollOverlay, TokenPicker, ZoneBrowserModal } from "@/pages/Table";
 
 // Purely-manual virtual tabletop. No automation: players drag cards anywhere, tap,
@@ -14,12 +15,21 @@ import { DiceRoller, RollOverlay, TokenPicker, ZoneBrowserModal } from "@/pages/
 const GRID = 12; // snap granularity
 const snap = (n: number) => Math.round(n / GRID) * GRID;
 
+// A drag can carry a whole stack (all ids at one position move together).
 interface DragState {
-  id: string;
+  ids: string[];
   offsetX: number;
   offsetY: number;
   x: number;
   y: number;
+}
+
+interface Pile {
+  key: string;
+  seat: number;
+  x: number;
+  y: number;
+  cards: GameObject[]; // bottom -> top
 }
 
 export function FreeformBoard({ t, state }: { t: TableConn; state: TableState }) {
@@ -27,13 +37,18 @@ export function FreeformBoard({ t, state }: { t: TableConn; state: TableState })
   const me = state.players.find((p) => p.seat === you) ?? null;
   const opponents = state.players.filter((p) => p.seat !== you);
   const matRef = useRef<HTMLDivElement>(null);
+  const { tableCardWidth, setTableCardWidth } = useSettings();
   const [drag, setDrag] = useState<DragState | null>(null);
   const [menu, setMenu] = useState<{ id: string; x: number; y: number } | null>(null);
-  const [hover, setHover] = useState<{ id: string; name: string; x: number; y: number } | null>(null);
+  const [hover, setHover] = useState<{ id: string; name: string } | null>(null);
+  const [expanded, setExpanded] = useState<string | null>(null);
   const [tokenOpen, setTokenOpen] = useState(false);
   const [browse, setBrowse] = useState<{ zoneId: string; title: string } | null>(null);
   const [notesOpen, setNotesOpen] = useState(false);
   const [chatText, setChatText] = useState("");
+
+  const CARD_W = tableCardWidth;
+  const CARD_H = Math.round((CARD_W * 88) / 63);
 
   const objectsByZone = useMemo(() => {
     const map: Record<string, GameObject[]> = {};
@@ -44,20 +59,46 @@ export function FreeformBoard({ t, state }: { t: TableConn; state: TableState })
     return map;
   }, [state.objects]);
 
-  const battlefield = Object.values(state.objects).filter((o) => o.zone === "battlefield");
-  const myHand = you !== null ? (t.hands[you] ?? []).map((id) => state.objects[id]).filter(Boolean) as GameObject[] : [];
+  const myHand = you !== null ? ((t.hands[you] ?? []).map((id) => state.objects[id]).filter(Boolean) as GameObject[]) : [];
 
-  // ---- dragging permanents around the mat --------------------------------
+  // Smart stacking: permanents sharing a position (same seat + x + y) render as one
+  // pile with a count. Dropping a card onto another snaps them together.
+  const piles = useMemo<Pile[]>(() => {
+    const map = new Map<string, Pile>();
+    const order: string[] = [];
+    for (const o of Object.values(state.objects)) {
+      if (o.zone !== "battlefield") continue;
+      const gx = o.x || 0;
+      const gy = o.y || 0;
+      const key = `${o.controllerSeat}:${gx}:${gy}`;
+      let g = map.get(key);
+      if (!g) {
+        g = { key, seat: o.controllerSeat, x: gx, y: gy, cards: [] };
+        map.set(key, g);
+        order.push(key);
+      }
+      g.cards.push(o);
+    }
+    return order.map((k) => map.get(k)!);
+  }, [state.objects]);
+
+  // Latest values for the drag listeners (avoids stale closures).
+  const env = useRef({ piles, CARD_W, CARD_H, you });
+  env.current = { piles, CARD_W, CARD_H, you };
+
   function matPoint(e: { clientX: number; clientY: number }): { x: number; y: number } {
     const r = matRef.current?.getBoundingClientRect();
     return { x: e.clientX - (r?.left ?? 0), y: e.clientY - (r?.top ?? 0) };
   }
-  function onCardPointerDown(o: GameObject, e: React.PointerEvent) {
-    if (you === null || o.controllerSeat !== you) return; // only move your own
+  // Start dragging one card or a whole pile. originX/Y = the group's current spot.
+  function startDrag(ids: string[], originX: number, originY: number, e: React.PointerEvent) {
+    if (you === null) return;
     e.preventDefault();
+    e.stopPropagation();
     (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
     const p = matPoint(e);
-    setDrag({ id: o.id, offsetX: p.x - (o.x || 0), offsetY: p.y - (o.y || 0), x: o.x || 0, y: o.y || 0 });
+    setExpanded(null);
+    setDrag({ ids, offsetX: p.x - originX, offsetY: p.y - originY, x: originX, y: originY });
   }
   useEffect(() => {
     if (!drag) return;
@@ -67,7 +108,21 @@ export function FreeformBoard({ t, state }: { t: TableConn; state: TableState })
     };
     const up = () => {
       setDrag((d) => {
-        if (d) t.send({ type: "move_card", objectId: d.id, toZone: "battlefield", toSeat: you ?? undefined, x: Math.max(0, snap(d.x)), y: Math.max(0, snap(d.y)) });
+        if (d) {
+          const { piles: pl, CARD_W: cw, CARD_H: ch, you: me } = env.current;
+          let tx = Math.max(0, snap(d.x));
+          let ty = Math.max(0, snap(d.y));
+          // Snap onto a nearby pile (not one we're dragging) → stack them.
+          for (const target of pl) {
+            if (target.cards.some((c) => d.ids.includes(c.id))) continue;
+            if (Math.abs(target.x - d.x) < cw * 0.6 && Math.abs(target.y - d.y) < ch * 0.5) {
+              tx = target.x;
+              ty = target.y;
+              break;
+            }
+          }
+          for (const id of d.ids) t.send({ type: "move_card", objectId: id, toZone: "battlefield", toSeat: me ?? undefined, x: tx, y: ty });
+        }
         return null;
       });
     };
@@ -77,18 +132,15 @@ export function FreeformBoard({ t, state }: { t: TableConn; state: TableState })
       window.removeEventListener("pointermove", move);
       window.removeEventListener("pointerup", up);
     };
-  }, [drag, you]);
+  }, [drag]);
 
   // Play a card from hand onto your side of the mat (cascade so they don't stack).
   function playFromHand(o: GameObject) {
-    const mine = battlefield.filter((b) => b.controllerSeat === you).length;
-    const x = 80 + (mine % 8) * 96;
-    const y = 360 + Math.floor(mine / 8) * 40;
+    const mine = Object.values(state.objects).filter((b) => b.zone === "battlefield" && b.controllerSeat === you).length;
+    const x = 80 + (mine % 8) * Math.round(CARD_W * 1.1);
+    const y = 380 + Math.floor(mine / 8) * 44;
     t.send({ type: "move_card", objectId: o.id, toZone: "battlefield", toSeat: you ?? undefined, x, y });
   }
-
-  const CARD_W = 84;
-  const CARD_H = 117;
 
   return (
     <div className="flex h-full min-h-0 flex-col bg-table-bg">
@@ -109,6 +161,10 @@ export function FreeformBoard({ t, state }: { t: TableConn; state: TableState })
           <button className="btn-ghost !py-1" onClick={() => setTokenOpen(true)}>＋ Token</button>
           {you !== null && <DiceRoller t={t} seat={you} />}
           <button className={`btn-ghost !py-1 ${notesOpen ? "text-table-accentSoft" : ""}`} onClick={() => setNotesOpen((v) => !v)}>📝 Notes</button>
+          <label className="flex items-center gap-1 text-xs text-table-muted" title="Card size">
+            🔍
+            <input type="range" min={90} max={260} step={6} value={tableCardWidth} onChange={(e) => setTableCardWidth(Number(e.target.value))} className="w-24 accent-table-accent" />
+          </label>
           <button className="btn-ghost !py-1" onClick={() => t.undo()}>Undo</button>
           {you !== null && state.status !== "finished" && (
             <button className="btn-ghost !py-1 text-red-300 hover:border-red-400" onClick={() => { if (confirm("Resign this game?")) t.send({ type: "concede", seat: you }); }}>
@@ -121,36 +177,59 @@ export function FreeformBoard({ t, state }: { t: TableConn; state: TableState })
       <div className="flex min-h-0 flex-1">
         {/* The mat */}
         <div className="relative min-h-0 flex-1 overflow-auto">
-          <div ref={matRef} className="freeform-felt relative" style={{ minWidth: 1200, minHeight: 720, height: "100%" }}>
+          <div ref={matRef} className="freeform-felt relative" style={{ minWidth: 1200, minHeight: 760, height: "100%" }} onClick={() => setExpanded(null)}>
             {/* subtle midline between your side and the opponents' */}
             <div className="pointer-events-none absolute inset-x-0 top-1/2 h-px -translate-y-1/2 bg-table-accent/25" />
 
-            {battlefield.map((o) => {
-              const isDragging = drag?.id === o.id;
-              const x = isDragging ? drag!.x : o.x || 0;
-              const y = isDragging ? drag!.y : o.y || 0;
-              const mine = you !== null && o.controllerSeat === you;
+            {piles.map((pile) => {
+              const dragging = !!drag && pile.cards.some((c) => drag.ids.includes(c.id));
+              const x = dragging ? drag!.x : pile.x;
+              const y = dragging ? drag!.y : pile.y;
+              const mine = you !== null && pile.seat === you;
+              const top = pile.cards[pile.cards.length - 1]!;
+              const count = pile.cards.length;
+              const isExpanded = expanded === pile.key && count > 1 && !dragging;
               return (
                 <div
-                  key={o.id}
-                  className={`absolute ${mine ? "cursor-grab active:cursor-grabbing" : "cursor-default"} ${isDragging ? "z-30" : ""}`}
-                  style={{ left: x, top: y, width: CARD_W, transition: isDragging ? "none" : "left 0.08s, top 0.08s" }}
-                  onPointerDown={(e) => onCardPointerDown(o, e)}
-                  onClick={(e) => { e.stopPropagation(); setMenu({ id: o.id, x: e.clientX, y: e.clientY }); }}
-                  onMouseEnter={() => o.cardId && setHover({ id: o.cardId, name: o.name, x, y })}
+                  key={pile.key}
+                  className={`absolute ${mine ? "cursor-grab active:cursor-grabbing" : "cursor-pointer"} ${dragging ? "z-30" : isExpanded ? "z-20" : ""}`}
+                  style={{ left: x, top: y, width: CARD_W, transition: dragging ? "none" : "left 0.08s, top 0.08s" }}
+                  onPointerDown={(e) => mine && startDrag(pile.cards.map((c) => c.id), pile.x, pile.y, e)}
+                  onClick={(e) => { e.stopPropagation(); if (count === 1) setMenu({ id: top.id, x: e.clientX, y: e.clientY }); else setExpanded(isExpanded ? null : pile.key); }}
+                  onMouseEnter={() => { if (count > 1) setExpanded(pile.key); if (top.cardId && !top.faceDown) setHover({ id: top.cardId, name: top.name }); }}
                   onMouseLeave={() => setHover(null)}
                 >
-                  <div className="relative origin-center" style={{ width: CARD_W, height: CARD_H, transform: o.tapped ? "rotate(90deg)" : "none", transition: "transform 0.12s" }}>
-                    <CardImage id={o.faceDown ? null : o.cardId} name={o.faceDown ? "Card" : o.name} className="rounded-md shadow-card" />
-                    {o.counters.length > 0 && (
-                      <div className="absolute -bottom-1 left-0 flex flex-wrap gap-0.5">
-                        {o.counters.map((c) => (
-                          <span key={c.type} className="rounded bg-black/85 px-1 text-[9px] font-bold text-white ring-1 ring-white/30">{c.type} {c.count}</span>
-                        ))}
-                      </div>
-                    )}
-                    {o.isCommander && <span className="absolute left-0 top-0 rounded bg-table-accent px-1 text-[9px] text-black">CMD</span>}
-                  </div>
+                  {/* depth shadows for a stack */}
+                  {count > 1 && <div className="absolute rounded-md bg-black/40 shadow-card" style={{ width: CARD_W, height: CARD_H, left: 5, top: 5 }} />}
+                  {count > 2 && <div className="absolute rounded-md bg-black/30 shadow-card" style={{ width: CARD_W, height: CARD_H, left: 2.5, top: 2.5 }} />}
+                  <CardFace o={top} w={CARD_W} h={CARD_H} />
+                  {count > 1 && (
+                    <span className="absolute -right-1.5 -top-1.5 z-10 flex h-6 min-w-6 items-center justify-center rounded-full border border-black/50 bg-table-accent px-1 text-xs font-bold text-black shadow">
+                      ×{count}
+                    </span>
+                  )}
+
+                  {/* Hover/click to fan the stack out into a readable row. */}
+                  {isExpanded && (
+                    <div
+                      className="absolute z-40 flex gap-1 rounded-lg border border-table-border bg-table-panel/95 p-1.5 shadow-panel"
+                      style={{ left: 0, top: -(CARD_H * 0.62), transform: "translateY(-8px)" }}
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      {pile.cards.map((c) => (
+                        <div
+                          key={c.id}
+                          className={`${mine ? "cursor-grab active:cursor-grabbing" : "cursor-pointer"}`}
+                          style={{ width: CARD_W * 0.9 }}
+                          onPointerDown={(e) => mine && startDrag([c.id], pile.x, pile.y, e)}
+                          onClick={(e) => { e.stopPropagation(); setMenu({ id: c.id, x: e.clientX, y: e.clientY }); }}
+                          onMouseEnter={() => c.cardId && !c.faceDown && setHover({ id: c.cardId, name: c.name })}
+                        >
+                          <CardFace o={c} w={CARD_W * 0.9} h={CARD_H * 0.9} />
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               );
             })}
@@ -194,7 +273,7 @@ export function FreeformBoard({ t, state }: { t: TableConn; state: TableState })
                 key={o.id}
                 className="w-[70px] shrink-0 transition-transform hover:-translate-y-1"
                 onClick={() => playFromHand(o)}
-                onMouseEnter={() => o.cardId && setHover({ id: o.cardId, name: o.name, x: 0, y: 0 })}
+                onMouseEnter={() => o.cardId && setHover({ id: o.cardId, name: o.name })}
                 onMouseLeave={() => setHover(null)}
                 title={`Play ${o.name}`}
               >
@@ -232,6 +311,25 @@ export function FreeformBoard({ t, state }: { t: TableConn; state: TableState })
           <img src={`/api/cards/${hover.id}/image`} alt={hover.name} className="w-52 rounded-lg shadow-2xl card-aspect" />
         </div>
       )}
+    </div>
+  );
+}
+
+// A single card face on the mat: tap rotation, counters, commander badge.
+function CardFace({ o, w, h }: { o: GameObject; w: number; h: number }) {
+  return (
+    <div className="relative origin-center" style={{ width: w, height: h, transform: o.tapped ? "rotate(90deg)" : "none", transition: "transform 0.12s" }}>
+      <CardImage id={o.faceDown ? null : o.cardId} name={o.faceDown ? "Card" : o.name} className="rounded-md shadow-card" />
+      {o.counters.length > 0 && (
+        <div className="absolute -bottom-1 left-0 flex flex-wrap gap-0.5">
+          {o.counters.map((c) => (
+            <span key={c.type} className="rounded bg-black/85 px-1 text-[10px] font-bold text-white ring-1 ring-white/30">
+              {c.type} {c.count}
+            </span>
+          ))}
+        </div>
+      )}
+      {o.isCommander && <span className="absolute left-0 top-0 rounded bg-table-accent px-1 text-[9px] text-black">CMD</span>}
     </div>
   );
 }
