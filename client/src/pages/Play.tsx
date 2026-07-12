@@ -11,7 +11,7 @@ export function Play() {
   const [decks, setDecks] = useState<Deck[]>([]);
   const [precons, setPrecons] = useState<Deck[]>([]);
   const [deckId, setDeckId] = useState<string>("");
-  const [form, setForm] = useState<CreateTableRequest>({ name: "", formatId: "commander", maxPlayers: 4, enforcement: "relaxed" });
+  const [form, setForm] = useState<CreateTableRequest>({ name: "", formatId: "commander", maxPlayers: 4, enforcement: "relaxed", mode: "guided" });
   const nav = useNavigate();
   const { user } = useAuth();
 
@@ -120,19 +120,37 @@ export function Play() {
             </select>
           </label>
           <label className="flex flex-col text-xs text-table-muted">
-            Rules
-            <select className="input mt-1" value={form.enforcement} onChange={(e) => setForm({ ...form, enforcement: e.target.value as "relaxed" | "strict" })}>
-              <option value="relaxed">Relaxed (learning)</option>
-              <option value="strict">Strict</option>
+            Table type
+            <select className="input mt-1" value={form.mode} onChange={(e) => setForm({ ...form, mode: e.target.value as "guided" | "freeform" })}>
+              <option value="guided">Guided (rules engine)</option>
+              <option value="freeform">Tabletop (manual)</option>
             </select>
           </label>
+          {form.mode === "guided" && (
+            <label className="flex flex-col text-xs text-table-muted">
+              Rules
+              <select className="input mt-1" value={form.enforcement} onChange={(e) => setForm({ ...form, enforcement: e.target.value as "relaxed" | "strict" })}>
+                <option value="relaxed">Relaxed (learning)</option>
+                <option value="strict">Strict</option>
+              </select>
+            </label>
+          )}
           <button className="btn-primary" onClick={create}>
             Create & sit down
           </button>
         </div>
         <p className="mt-2 text-xs text-table-muted">
-          Relaxed mode nudges but lets you do anything (great for little ones). Strict mode enforces the framework rules — turns,
-          timing, land drops, summoning sickness, combat.
+          {form.mode === "freeform" ? (
+            <>
+              <b className="text-table-ink">Tabletop (manual):</b> a virtual playmat — no automation. Move cards anywhere, tap, add
+              counters, track life, make tokens, take notes. Just like playing in person. Deck legality is still enforced.
+            </>
+          ) : (
+            <>
+              <b className="text-table-ink">Guided:</b> the rules engine runs turns, phases, priority and combat. Relaxed nudges but
+              lets you do anything (great for little ones); Strict enforces the framework.
+            </>
+          )}
         </p>
       </div>
 
@@ -146,7 +164,7 @@ export function Play() {
               <div>
                 <div className="font-semibold">{t.name}</div>
                 <div className="text-xs text-table-muted">
-                  {t.formatId} · {t.playerCount}/{t.maxPlayers} seated · {t.status}
+                  {t.mode === "freeform" ? "🃏 Tabletop" : "⚙ Guided"} · {t.formatId} · {t.playerCount}/{t.maxPlayers} seated · {t.status}
                 </div>
               </div>
               {user?.isAdmin && (

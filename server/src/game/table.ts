@@ -1,7 +1,7 @@
 // In-memory table manager: lobby, seating, starting games, applying actions with
 // undo history, and producing per-seat redacted state views (hidden zones).
 import { randomUUID } from "node:crypto";
-import type { GameAction, TableState, TableSummary } from "@mtg/shared";
+import type { GameAction, TableMode, TableState, TableSummary } from "@mtg/shared";
 import { getFormat } from "@mtg/shared";
 import { getCardsByIds } from "../cards/repo.js";
 import { getAvatarForUser } from "../auth/users.js";
@@ -26,6 +26,7 @@ export class Table {
   formatId: string;
   maxPlayers: number;
   enforcement: "relaxed" | "strict";
+  mode: TableMode;
   hostUserId: string;
   seats: SeatAssignment[] = [];
   state: TableState | null = null;
@@ -34,11 +35,12 @@ export class Table {
   listeners = new Set<() => void>();
   private recorded = false;
 
-  constructor(opts: { name: string; formatId: string; maxPlayers: number; enforcement: "relaxed" | "strict"; hostUserId: string }) {
+  constructor(opts: { name: string; formatId: string; maxPlayers: number; enforcement: "relaxed" | "strict"; mode?: TableMode; hostUserId: string }) {
     this.name = opts.name;
     this.formatId = opts.formatId;
     this.maxPlayers = opts.maxPlayers;
     this.enforcement = opts.enforcement;
+    this.mode = opts.mode ?? "guided";
     this.hostUserId = opts.hostUserId;
   }
 
@@ -50,6 +52,7 @@ export class Table {
       status: this.state?.status ?? "lobby",
       playerCount: this.seats.length,
       maxPlayers: this.maxPlayers,
+      mode: this.mode,
       seats: this.seats.map((s) => ({ seat: s.seat, name: s.name, userId: s.userId })),
     };
   }
@@ -149,6 +152,7 @@ export class Table {
       id: this.id,
       name: this.name,
       formatId: this.formatId,
+      mode: this.mode,
       enforcement: this.enforcement,
       seats: seatDecks,
     });
@@ -287,7 +291,7 @@ function actionCardName(state: TableState, action: GameAction): string | null {
 class TableManager {
   private tables = new Map<string, Table>();
 
-  create(opts: { name: string; formatId: string; maxPlayers: number; enforcement: "relaxed" | "strict"; hostUserId: string }): Table {
+  create(opts: { name: string; formatId: string; maxPlayers: number; enforcement: "relaxed" | "strict"; mode?: TableMode; hostUserId: string }): Table {
     const t = new Table(opts);
     this.tables.set(t.id, t);
     return t;

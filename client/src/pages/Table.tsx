@@ -11,6 +11,7 @@ import { Avatar } from "@/components/Avatar";
 import { useSettings } from "@/store/settings";
 import { playRoll, playTurnChime, playWarning, unlockAudio } from "@/lib/sound";
 import { MANA_HEX, MANA_FG } from "@/lib/mana";
+import { FreeformBoard } from "@/pages/FreeformBoard";
 
 const STEP_LABELS: Record<string, string> = {
   untap: "Untap",
@@ -30,7 +31,7 @@ const STEP_LABELS: Record<string, string> = {
 export function TablePage() {
   const { id = "" } = useParams();
   const t = useTable(id);
-  if (t.state) return <GameBoard t={t} state={t.state} />;
+  if (t.state) return t.state.mode === "freeform" ? <FreeformBoard t={t} state={t.state} /> : <GameBoard t={t} state={t.state} />;
   return <Lobby t={t} />;
 }
 
@@ -658,7 +659,7 @@ function GameBoard({ t, state }: { t: TableConn; state: TableState }) {
   );
 }
 
-function ZoneBrowserModal({
+export function ZoneBrowserModal({
   title,
   objects,
   onClose,
@@ -1132,7 +1133,7 @@ function TurnTimer({ startedAt, limit, isMine, sound }: { startedAt: number; lim
 }
 
 // ---- dice ---------------------------------------------------------------
-function DiceRoller({ t, seat }: { t: TableConn; seat: number }) {
+export function DiceRoller({ t, seat }: { t: TableConn; seat: number }) {
   return (
     <div className="flex items-center gap-0.5">
       <button className="chip hover:border-table-accent" onClick={() => t.send({ type: "roll", seat, sides: 6, count: 1 })} title="Roll a d6">
@@ -1150,7 +1151,7 @@ function DiceRoller({ t, seat }: { t: TableConn; seat: number }) {
 
 // Shows an animated overlay whenever a new roll appears in the shared state, so
 // every player sees the same roll animate.
-function RollOverlay({ roll }: { roll: RollResult | null }) {
+export function RollOverlay({ roll }: { roll: RollResult | null }) {
   const [show, setShow] = useState(false);
   const [current, setCurrent] = useState<RollResult | null>(null);
   const lastId = useRef<number>(-1);
@@ -1181,7 +1182,7 @@ function RollOverlay({ roll }: { roll: RollResult | null }) {
 }
 
 // ---- token picker -------------------------------------------------------
-interface TokenCard {
+export interface TokenCard {
   id: string;
   name: string;
   typeLine: string;
@@ -1191,7 +1192,7 @@ interface TokenCard {
   imageUrl: string | null;
 }
 
-function TokenPicker({ onClose, onPick }: { onClose: () => void; onPick: (t: TokenCard) => void }) {
+export function TokenPicker({ onClose, onPick }: { onClose: () => void; onPick: (t: TokenCard) => void }) {
   const [q, setQ] = useState("");
   const [tokens, setTokens] = useState<TokenCard[]>([]);
   const [loading, setLoading] = useState(false);

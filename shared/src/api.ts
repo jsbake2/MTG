@@ -2,6 +2,7 @@
 
 import type { Card, CardSummary } from "./cards.js";
 import type { DeckValidationIssue } from "./formats.js";
+import type { TableMode } from "./game.js";
 
 export interface User {
   id: string;
@@ -163,6 +164,7 @@ export interface TableSummary {
   status: string;
   playerCount: number;
   maxPlayers: number;
+  mode: TableMode;
   seats: Array<{ seat: number; name: string | null; userId: string | null }>;
 }
 
@@ -171,4 +173,5 @@ export interface CreateTableRequest {
   formatId: string;
   maxPlayers: number;
   enforcement: "relaxed" | "strict";
+  mode: TableMode;
 }

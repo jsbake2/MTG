@@ -17,6 +17,7 @@ const createSchema = z.object({
   formatId: z.string().min(1).max(40),
   maxPlayers: z.number().int().min(1).max(4),
   enforcement: z.enum(["relaxed", "strict"]),
+  mode: z.enum(["guided", "freeform"]).optional().default("guided"),
 });
 
 tablesRouter.post("/", (req, res) => {

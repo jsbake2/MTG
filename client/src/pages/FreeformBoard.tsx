@@ -1,0 +1,325 @@
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Link } from "react-router-dom";
+import type { GameObject, PlayerState, TableState } from "@mtg/shared";
+import type { TableConn } from "@/game/useTable";
+import { CardImage } from "@/components/CardTile";
+import { Avatar } from "@/components/Avatar";
+import { DiceRoller, RollOverlay, TokenPicker, ZoneBrowserModal } from "@/pages/Table";
+
+// Purely-manual virtual tabletop. No automation: players drag cards anywhere, tap,
+// add counters, track life, make tokens, and take notes — like an in-person game.
+// Everything rides on the same GameActions the engine already supports (move_card
+// with x/y, tap, add_counter, flip, adjust_life, create_token, keyword_action…).
+
+const GRID = 12; // snap granularity
+const snap = (n: number) => Math.round(n / GRID) * GRID;
+
+interface DragState {
+  id: string;
+  offsetX: number;
+  offsetY: number;
+  x: number;
+  y: number;
+}
+
+export function FreeformBoard({ t, state }: { t: TableConn; state: TableState }) {
+  const you = t.you;
+  const me = state.players.find((p) => p.seat === you) ?? null;
+  const opponents = state.players.filter((p) => p.seat !== you);
+  const matRef = useRef<HTMLDivElement>(null);
+  const [drag, setDrag] = useState<DragState | null>(null);
+  const [menu, setMenu] = useState<{ id: string; x: number; y: number } | null>(null);
+  const [hover, setHover] = useState<{ id: string; name: string; x: number; y: number } | null>(null);
+  const [tokenOpen, setTokenOpen] = useState(false);
+  const [browse, setBrowse] = useState<{ zoneId: string; title: string } | null>(null);
+  const [notesOpen, setNotesOpen] = useState(false);
+  const [chatText, setChatText] = useState("");
+
+  const objectsByZone = useMemo(() => {
+    const map: Record<string, GameObject[]> = {};
+    for (const o of Object.values(state.objects)) {
+      const key = o.zone === "battlefield" ? `battlefield:${o.controllerSeat}` : `${o.zone}:${o.ownerSeat}`;
+      (map[key] ??= []).push(o);
+    }
+    return map;
+  }, [state.objects]);
+
+  const battlefield = Object.values(state.objects).filter((o) => o.zone === "battlefield");
+  const myHand = you !== null ? (t.hands[you] ?? []).map((id) => state.objects[id]).filter(Boolean) as GameObject[] : [];
+
+  // ---- dragging permanents around the mat --------------------------------
+  function matPoint(e: { clientX: number; clientY: number }): { x: number; y: number } {
+    const r = matRef.current?.getBoundingClientRect();
+    return { x: e.clientX - (r?.left ?? 0), y: e.clientY - (r?.top ?? 0) };
+  }
+  function onCardPointerDown(o: GameObject, e: React.PointerEvent) {
+    if (you === null || o.controllerSeat !== you) return; // only move your own
+    e.preventDefault();
+    (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
+    const p = matPoint(e);
+    setDrag({ id: o.id, offsetX: p.x - (o.x || 0), offsetY: p.y - (o.y || 0), x: o.x || 0, y: o.y || 0 });
+  }
+  useEffect(() => {
+    if (!drag) return;
+    const move = (e: PointerEvent) => {
+      const p = matPoint(e);
+      setDrag((d) => (d ? { ...d, x: p.x - d.offsetX, y: p.y - d.offsetY } : d));
+    };
+    const up = () => {
+      setDrag((d) => {
+        if (d) t.send({ type: "move_card", objectId: d.id, toZone: "battlefield", toSeat: you ?? undefined, x: Math.max(0, snap(d.x)), y: Math.max(0, snap(d.y)) });
+        return null;
+      });
+    };
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", up);
+    return () => {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", up);
+    };
+  }, [drag, you]);
+
+  // Play a card from hand onto your side of the mat (cascade so they don't stack).
+  function playFromHand(o: GameObject) {
+    const mine = battlefield.filter((b) => b.controllerSeat === you).length;
+    const x = 80 + (mine % 8) * 96;
+    const y = 360 + Math.floor(mine / 8) * 40;
+    t.send({ type: "move_card", objectId: o.id, toZone: "battlefield", toSeat: you ?? undefined, x, y });
+  }
+
+  const CARD_W = 84;
+  const CARD_H = 117;
+
+  return (
+    <div className="flex h-full min-h-0 flex-col bg-table-bg">
+      {/* Top bar */}
+      <div className="flex shrink-0 items-center gap-2 border-b border-table-border bg-table-panel px-3 py-1.5 text-sm">
+        <Link to="/play" className="text-table-muted hover:text-table-ink">← Leave</Link>
+        <span className={`h-2 w-2 rounded-full ${t.connected ? "bg-green-400" : "bg-red-500"}`} />
+        <span className="font-display text-table-accentSoft">{state.name}</span>
+        <span className="chip">🃏 Tabletop (manual)</span>
+        {state.status === "finished" && (
+          <span className="rounded bg-table-accent px-2 py-0.5 text-black">{state.players.find((p) => p.seat === state.winnerSeat)?.name} wins!</span>
+        )}
+        <div className="ml-auto flex items-center gap-1">
+          {me && <LifeWidget p={me} t={t} you={you!} />}
+          {opponents.map((p) => (
+            <LifeWidget key={p.seat} p={p} t={t} you={you} compact />
+          ))}
+          <button className="btn-ghost !py-1" onClick={() => setTokenOpen(true)}>＋ Token</button>
+          {you !== null && <DiceRoller t={t} seat={you} />}
+          <button className={`btn-ghost !py-1 ${notesOpen ? "text-table-accentSoft" : ""}`} onClick={() => setNotesOpen((v) => !v)}>📝 Notes</button>
+          <button className="btn-ghost !py-1" onClick={() => t.undo()}>Undo</button>
+          {you !== null && state.status !== "finished" && (
+            <button className="btn-ghost !py-1 text-red-300 hover:border-red-400" onClick={() => { if (confirm("Resign this game?")) t.send({ type: "concede", seat: you }); }}>
+              Resign
+            </button>
+          )}
+        </div>
+      </div>
+
+      <div className="flex min-h-0 flex-1">
+        {/* The mat */}
+        <div className="relative min-h-0 flex-1 overflow-auto">
+          <div ref={matRef} className="freeform-felt relative" style={{ minWidth: 1200, minHeight: 720, height: "100%" }}>
+            {/* subtle midline between your side and the opponents' */}
+            <div className="pointer-events-none absolute inset-x-0 top-1/2 h-px -translate-y-1/2 bg-table-accent/25" />
+
+            {battlefield.map((o) => {
+              const isDragging = drag?.id === o.id;
+              const x = isDragging ? drag!.x : o.x || 0;
+              const y = isDragging ? drag!.y : o.y || 0;
+              const mine = you !== null && o.controllerSeat === you;
+              return (
+                <div
+                  key={o.id}
+                  className={`absolute ${mine ? "cursor-grab active:cursor-grabbing" : "cursor-default"} ${isDragging ? "z-30" : ""}`}
+                  style={{ left: x, top: y, width: CARD_W, transition: isDragging ? "none" : "left 0.08s, top 0.08s" }}
+                  onPointerDown={(e) => onCardPointerDown(o, e)}
+                  onClick={(e) => { e.stopPropagation(); setMenu({ id: o.id, x: e.clientX, y: e.clientY }); }}
+                  onMouseEnter={() => o.cardId && setHover({ id: o.cardId, name: o.name, x, y })}
+                  onMouseLeave={() => setHover(null)}
+                >
+                  <div className="relative origin-center" style={{ width: CARD_W, height: CARD_H, transform: o.tapped ? "rotate(90deg)" : "none", transition: "transform 0.12s" }}>
+                    <CardImage id={o.faceDown ? null : o.cardId} name={o.faceDown ? "Card" : o.name} className="rounded-md shadow-card" />
+                    {o.counters.length > 0 && (
+                      <div className="absolute -bottom-1 left-0 flex flex-wrap gap-0.5">
+                        {o.counters.map((c) => (
+                          <span key={c.type} className="rounded bg-black/85 px-1 text-[9px] font-bold text-white ring-1 ring-white/30">{c.type} {c.count}</span>
+                        ))}
+                      </div>
+                    )}
+                    {o.isCommander && <span className="absolute left-0 top-0 rounded bg-table-accent px-1 text-[9px] text-black">CMD</span>}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Right rail: zones + log */}
+        <div className="hidden w-52 shrink-0 flex-col border-l border-table-border bg-table-panel md:flex">
+          {you !== null && (
+            <div className="grid grid-cols-2 gap-1 border-b border-table-border p-2 text-xs">
+              <PileButton label="Library" count={(objectsByZone[`library:${you}`] ?? []).length} onClick={() => setBrowse({ zoneId: `library:${you}`, title: "Your Library" })} />
+              <button className="chip" onClick={() => t.send({ type: "draw", seat: you, count: 1 })}>Draw</button>
+              <PileButton label="Graveyard" count={(objectsByZone[`graveyard:${you}`] ?? []).length} onClick={() => setBrowse({ zoneId: `graveyard:${you}`, title: "Your Graveyard" })} />
+              <PileButton label="Exile" count={(objectsByZone[`exile:${you}`] ?? []).length} onClick={() => setBrowse({ zoneId: `exile:${you}`, title: "Your Exile" })} />
+              <button className="chip" onClick={() => t.send({ type: "shuffle", seat: you })}>Shuffle</button>
+              <button className="chip" onClick={() => t.send({ type: "untap_all", seat: you })}>Untap all</button>
+            </div>
+          )}
+          <div className="min-h-0 flex-1 overflow-y-auto p-2 text-xs">
+            {state.log.slice(-120).map((l) => (
+              <div key={l.id} className="mb-0.5 leading-snug text-table-muted">{l.text}</div>
+            ))}
+          </div>
+          <form
+            className="flex gap-1 border-t border-table-border p-2"
+            onSubmit={(e) => { e.preventDefault(); if (chatText.trim()) t.chat(chatText.trim()); setChatText(""); }}
+          >
+            <input className="input flex-1 !py-1" placeholder="Say something…" value={chatText} onChange={(e) => setChatText(e.target.value)} />
+            <button className="btn-ghost">Send</button>
+          </form>
+        </div>
+      </div>
+
+      {/* Your hand */}
+      {you !== null && (
+        <div className="shrink-0 border-t border-table-border bg-table-panel px-3 py-2">
+          <div className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-table-muted">Your hand ({myHand.length}) — click to play</div>
+          <div className="flex gap-1 overflow-x-auto pb-1">
+            {myHand.map((o) => (
+              <button
+                key={o.id}
+                className="w-[70px] shrink-0 transition-transform hover:-translate-y-1"
+                onClick={() => playFromHand(o)}
+                onMouseEnter={() => o.cardId && setHover({ id: o.cardId, name: o.name, x: 0, y: 0 })}
+                onMouseLeave={() => setHover(null)}
+                title={`Play ${o.name}`}
+              >
+                <CardImage id={o.cardId} name={o.name} />
+              </button>
+            ))}
+            {myHand.length === 0 && <div className="py-4 text-xs text-table-muted">Empty — draw from your library.</div>}
+          </div>
+        </div>
+      )}
+
+      {menu && <FreeformCardMenu menu={menu} state={state} you={you} t={t} onClose={() => setMenu(null)} />}
+      {tokenOpen && you !== null && (
+        <TokenPicker
+          onClose={() => setTokenOpen(false)}
+          onPick={(tk) => {
+            const num = (v: string | null) => (v ? parseInt(v.replace(/[^0-9-]/g, ""), 10) || undefined : undefined);
+            t.send({ type: "create_token", seat: you, name: tk.name, cardId: tk.id, oracleId: null, power: num(tk.power), toughness: num(tk.toughness) });
+            setTokenOpen(false);
+          }}
+        />
+      )}
+      {browse && (
+        <ZoneBrowserModal
+          title={browse.title}
+          objects={objectsByZone[browse.zoneId] ?? []}
+          onClose={() => setBrowse(null)}
+          onSelect={(o) => { setBrowse(null); setMenu({ id: o.id, x: window.innerWidth / 2, y: window.innerHeight / 2 }); }}
+        />
+      )}
+      {notesOpen && <Notepad tableId={state.id} onClose={() => setNotesOpen(false)} />}
+      <RollOverlay roll={state.lastRoll} />
+      {hover && (
+        <div className="pointer-events-none fixed bottom-28 left-4 z-40">
+          <img src={`/api/cards/${hover.id}/image`} alt={hover.name} className="w-52 rounded-lg shadow-2xl card-aspect" />
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ---- life ----------------------------------------------------------------
+function LifeWidget({ p, t, you, compact }: { p: PlayerState; t: TableConn; you: number | null; compact?: boolean }) {
+  const canEdit = you === p.seat;
+  return (
+    <div className="flex items-center gap-1 rounded-lg bg-table-panel2 px-1.5 py-0.5">
+      <Avatar cardId={p.avatarCardId} name={p.name} size={compact ? 22 : 28} />
+      {!compact && <span className="text-xs text-table-muted">{p.name}</span>}
+      <button className="btn-ghost h-6 w-6 !px-0" onClick={() => t.send({ type: "adjust_life", seat: p.seat, delta: -1 })}>−</button>
+      <span className={`life-diamond text-sm font-bold text-white ${p.life <= 5 ? "border-red-500" : ""}`} style={{ width: 34, height: 34 }}>
+        <span>{p.life}</span>
+      </span>
+      <button className="btn-ghost h-6 w-6 !px-0" onClick={() => t.send({ type: "adjust_life", seat: p.seat, delta: 1 })}>+</button>
+      {canEdit && p.poison > 0 && <span className="chip text-green-300">☠{p.poison}</span>}
+    </div>
+  );
+}
+
+function PileButton({ label, count, onClick }: { label: string; count: number; onClick: () => void }) {
+  return (
+    <button className="chip flex items-center justify-between hover:border-table-accent" onClick={onClick}>
+      <span>{label}</span>
+      <span className="tabular-nums text-table-accentSoft">{count}</span>
+    </button>
+  );
+}
+
+// ---- per-card manual menu -------------------------------------------------
+function FreeformCardMenu({ menu, state, you, t, onClose }: { menu: { id: string; x: number; y: number }; state: TableState; you: number | null; t: TableConn; onClose: () => void }) {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const h = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) onClose(); };
+    window.addEventListener("mousedown", h);
+    return () => window.removeEventListener("mousedown", h);
+  }, [onClose]);
+  const o = state.objects[menu.id];
+  if (!o) return null;
+  const mine = you !== null && o.controllerSeat === you;
+  const act = (fn: () => void) => () => { fn(); onClose(); };
+  const move = (zone: GameObject["zone"], toTop?: boolean) => t.send({ type: "move_card", objectId: o.id, toZone: zone, toSeat: o.ownerSeat, toTop });
+  const Item = ({ label, onClick, danger }: { label: string; onClick: () => void; danger?: boolean }) => (
+    <button className={`block w-full px-3 py-1.5 text-left text-sm hover:bg-table-panel2 ${danger ? "text-red-300" : ""}`} onClick={act(onClick)}>{label}</button>
+  );
+  const style: React.CSSProperties = { left: Math.min(menu.x, window.innerWidth - 210), top: Math.min(menu.y, window.innerHeight - 340) };
+  return (
+    <div ref={ref} className="panel fixed z-50 w-52 overflow-hidden py-1" style={style}>
+      <div className="truncate border-b border-table-border px-3 py-1 text-xs text-table-muted">{o.name}{!mine && <span className="ml-1 text-amber-300/80">· opponent's</span>}</div>
+      <Item label={o.tapped ? "Untap" : "Tap"} onClick={() => t.send({ type: "tap", objectId: o.id, tapped: !o.tapped })} />
+      <Item label="Flip face down/up" onClick={() => t.send({ type: "flip", objectId: o.id, faceDown: !o.faceDown })} />
+      <div className="my-1 border-t border-table-border" />
+      <Item label="＋ +1/+1 counter" onClick={() => t.send({ type: "add_counter", objectId: o.id, counterType: "+1/+1", delta: 1 })} />
+      <Item label="－ +1/+1 counter" onClick={() => t.send({ type: "add_counter", objectId: o.id, counterType: "+1/+1", delta: -1 })} />
+      <Item label="＋ -1/-1 counter" onClick={() => t.send({ type: "add_counter", objectId: o.id, counterType: "-1/-1", delta: 1 })} />
+      <Item label="＋ loyalty" onClick={() => t.send({ type: "add_counter", objectId: o.id, counterType: "loyalty", delta: 1 })} />
+      <div className="my-1 border-t border-table-border" />
+      <Item label="→ Hand" onClick={() => move("hand")} />
+      <Item label="→ Graveyard" onClick={() => move("graveyard")} danger />
+      <Item label="→ Exile" onClick={() => move("exile")} />
+      <Item label="→ Library (top)" onClick={() => move("library", true)} />
+      <Item label="→ Library (bottom)" onClick={() => move("library", false)} />
+    </div>
+  );
+}
+
+// ---- per-player notepad (local, persists per table) -----------------------
+function Notepad({ tableId, onClose }: { tableId: string; onClose: () => void }) {
+  const key = `mtg-notes-${tableId}`;
+  const [text, setText] = useState(() => localStorage.getItem(key) ?? "");
+  useEffect(() => {
+    const id = setTimeout(() => localStorage.setItem(key, text), 300);
+    return () => clearTimeout(id);
+  }, [text, key]);
+  return (
+    <div className="fixed bottom-24 right-4 z-40 w-72 rounded-lg border border-table-border bg-table-panel shadow-panel">
+      <div className="flex items-center gap-2 border-b border-table-border px-3 py-1.5 text-sm">
+        <span className="font-semibold text-table-accentSoft">📝 Notes</span>
+        <span className="text-[10px] text-table-muted">private · saved on this device</span>
+        <button className="ml-auto text-table-muted hover:text-red-300" onClick={onClose}>✕</button>
+      </div>
+      <textarea
+        className="input h-48 w-full resize-none rounded-t-none border-0 text-sm"
+        placeholder="Life totals, triggers to remember, turn order, house rules…"
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+      />
+    </div>
+  );
+}

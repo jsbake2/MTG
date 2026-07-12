@@ -137,6 +137,9 @@ export interface RollResult {
 }
 
 export type EnforcementLevel = "relaxed" | "strict";
+// "guided" = rules-engine table (turns/phases/priority). "freeform" = purely manual
+// virtual tabletop — no automation, players move everything by hand.
+export type TableMode = "guided" | "freeform";
 export type TableStatus = "lobby" | "mulligan" | "playing" | "finished";
 
 export interface LogEntry {
@@ -152,6 +155,7 @@ export interface TableState {
   id: string;
   name: string;
   formatId: string;
+  mode: TableMode;
   status: TableStatus;
   players: PlayerState[];
   activeSeat: number;
@@ -254,6 +258,7 @@ export type ServerMessage =
       seats: LobbySeat[];
       maxPlayers: number;
       formatId: string;
+      mode: TableMode;
       name: string;
       hostUserId: string;
       you: number | null;

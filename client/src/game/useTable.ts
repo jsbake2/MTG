@@ -5,6 +5,7 @@ export interface LobbyInfo {
   seats: LobbySeat[];
   maxPlayers: number;
   formatId: string;
+  mode: import("@mtg/shared").TableMode;
   name: string;
   hostUserId: string;
   you: number | null;
@@ -65,6 +66,7 @@ export function useTable(tableId: string): TableConn {
             seats: msg.seats,
             maxPlayers: msg.maxPlayers,
             formatId: msg.formatId,
+            mode: msg.mode,
             name: msg.name,
             hostUserId: msg.hostUserId,
             you: msg.you,
