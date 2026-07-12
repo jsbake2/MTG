@@ -22,7 +22,7 @@ import {
   recountHiddenZones,
 } from "./state.js";
 import { derivePT, staticKeywordsFor, combatFlagsFor, controlsLandType } from "./continuous.js";
-import { entersTappedUnconditional, entersTappedConditional } from "./replacements.js";
+import { entersTappedUnconditional, entersTappedConditional, entersWithCounters } from "./replacements.js";
 
 export interface CardInfo {
   typeLine: string;
@@ -177,6 +177,9 @@ function moveObject(
       if (entersTappedUnconditional(etbText)) o.tapped = true;
       else if (entersTappedConditional(etbText))
         log(state, { seat: o.controllerSeat, kind: "system", text: `${o.name} may enter tapped — tap it manually if its condition applies.` });
+      // Replacement (CR 614.1c): enters with +1/+1 or -1/-1 counters.
+      const etbCounters = entersWithCounters(etbText);
+      if (etbCounters) o.counters.push({ type: etbCounters.kind, count: etbCounters.count });
     }
   } else {
     o.controllerSeat = o.ownerSeat;

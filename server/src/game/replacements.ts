@@ -19,6 +19,21 @@ export function entersTappedUnconditional(oracleText: string | null): boolean {
   return false;
 }
 
+const WORD_NUM: Record<string, number> = { a: 1, an: 1, one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10 };
+
+// "This creature enters with N +1/+1 (or -1/-1) counters on it" (CR 614.1c).
+// Returns null for variable amounts (X / "a number of"), which need the cast
+// context and fall back to the player setting counters manually.
+export function entersWithCounters(oracleText: string | null): { kind: "+1/+1" | "-1/-1"; count: number } | null {
+  if (!oracleText) return null;
+  const m = oracleText.toLowerCase().match(/enters (?:the battlefield )?with (\w+) (\+1\/\+1|-1\/-1) counters?/);
+  if (!m) return null;
+  const w = m[1]!;
+  const count = /^\d+$/.test(w) ? parseInt(w, 10) : (WORD_NUM[w] ?? 0);
+  if (count <= 0) return null; // X / unknown → player sets it
+  return { kind: m[2] === "+1/+1" ? "+1/+1" : "-1/-1", count };
+}
+
 // Is there a conditional/optional "enters tapped" the player should decide?
 export function entersTappedConditional(oracleText: string | null): boolean {
   if (!oracleText) return false;
