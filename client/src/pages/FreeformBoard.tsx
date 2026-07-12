@@ -130,10 +130,12 @@ export function FreeformBoard({ t, state }: { t: TableConn; state: TableState })
       if (zoneName === "library") return { x: 1060, y: 475 };
       if (zoneName === "graveyard") return { x: 1060, y: 640 };
       if (zoneName === "exile") return { x: 940, y: 640 };
+      if (zoneName === "command") return { x: 820, y: 640 };
     } else {
       if (zoneName === "library") return { x: 1060, y: 175 };
       if (zoneName === "graveyard") return { x: 1060, y: 10 };
       if (zoneName === "exile") return { x: 940, y: 10 };
+      if (zoneName === "command") return { x: 820, y: 10 };
     }
     return { x: 0, y: 0 };
   };
@@ -171,6 +173,8 @@ export function FreeformBoard({ t, state }: { t: TableConn; state: TableState })
           setBrowse({ zoneId: `graveyard:${seat}`, title: `${seat === you ? "Your" : "Opponent's"} Graveyard` });
         } else if (zoneName === "exile") {
           setBrowse({ zoneId: `exile:${seat}`, title: `${seat === you ? "Your" : "Opponent's"} Exile` });
+        } else if (zoneName === "command") {
+          setBrowse({ zoneId: `command:${seat}`, title: `${seat === you ? "Your" : "Opponent's"} Command Zone` });
         }
       }
     };
@@ -935,6 +939,7 @@ export function FreeformBoard({ t, state }: { t: TableConn; state: TableState })
               const libCards = objectsByZone[`library:${seat}`] ?? [];
               const graveCards = objectsByZone[`graveyard:${seat}`] ?? [];
               const exileCards = objectsByZone[`exile:${seat}`] ?? [];
+              const cmdCards = objectsByZone[`command:${seat}`] ?? [];
 
               const invert = you === 1;
 
@@ -953,8 +958,13 @@ export function FreeformBoard({ t, state }: { t: TableConn; state: TableState })
               const rxExile = invert ? (1200 - exileLoc.x - CARD_W) : exileLoc.x;
               const ryExile = invert ? (800 - exileLoc.y - CARD_H) : exileLoc.y;
 
+              const cmdLoc = getZonePos(seat, "command");
+              const rxCmd = invert ? (1200 - cmdLoc.x - CARD_W) : cmdLoc.x;
+              const ryCmd = invert ? (800 - cmdLoc.y - CARD_H) : cmdLoc.y;
+
               const topGraveCard = graveCards[graveCards.length - 1];
               const topExileCard = exileCards[exileCards.length - 1];
+              const topCmdCard = cmdCards[cmdCards.length - 1];
 
               return (
                 <div key={seat} className="pointer-events-auto">
@@ -995,6 +1005,19 @@ export function FreeformBoard({ t, state }: { t: TableConn; state: TableState })
                       onClick={() => { if (seat !== you) setBrowse({ zoneId: `exile:${seat}`, title: `${p.name}'s Exile` }); }}
                     />
                   </div>
+
+                  {/* Command zone (Commander) — only shown when it holds cards */}
+                  {cmdCards.length > 0 && (
+                    <div className="absolute" style={{ left: rxCmd, top: ryCmd }}>
+                      <CardStackDeck
+                        count={cmdCards.length}
+                        faceUpCardId={topCmdCard?.cardId}
+                        label={`${p.name} (Command)`}
+                        onPointerDown={(e) => { if (seat === you) startZoneDrag(seat, "command", e); }}
+                        onClick={() => { if (seat !== you) setBrowse({ zoneId: `command:${seat}`, title: `${p.name}'s Command Zone` }); }}
+                      />
+                    </div>
+                  )}
                 </div>
               );
             })}
@@ -1043,6 +1066,9 @@ export function FreeformBoard({ t, state }: { t: TableConn; state: TableState })
               <button className="chip" onClick={() => t.send({ type: "draw", seat: you, count: 1 })}>Draw</button>
               <PileButton label="Graveyard" count={(objectsByZone[`graveyard:${you}`] ?? []).length} onClick={() => setBrowse({ zoneId: `graveyard:${you}`, title: "Your Graveyard" })} />
               <PileButton label="Exile" count={(objectsByZone[`exile:${you}`] ?? []).length} onClick={() => setBrowse({ zoneId: `exile:${you}`, title: "Your Exile" })} />
+              {(objectsByZone[`command:${you}`]?.length ?? 0) > 0 && (
+                <PileButton label="Command" count={(objectsByZone[`command:${you}`] ?? []).length} onClick={() => setBrowse({ zoneId: `command:${you}`, title: "Your Command Zone" })} />
+              )}
               <button className="chip" onClick={() => t.send({ type: "shuffle", seat: you })}>Shuffle</button>
               <button className="chip" onClick={() => t.send({ type: "untap_all", seat: you })}>Untap all</button>
             </div>
@@ -1340,6 +1366,7 @@ function FreeformCardMenu({ menu, state, you, t, onClose }: { menu: { id: string
       <Item label="＋ loyalty" onClick={() => t.send({ type: "add_counter", objectId: o.id, counterType: "loyalty", delta: 1 })} />
       <div className="my-1 border-t border-table-border" />
       <Item label="→ Hand" onClick={() => move("hand")} />
+      <Item label="→ Command zone" onClick={() => move("command")} />
       <Item label="→ Graveyard" onClick={() => move("graveyard")} danger />
       <Item label="→ Exile" onClick={() => move("exile")} />
       <Item label="→ Library (top)" onClick={() => move("library", true)} />

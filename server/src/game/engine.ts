@@ -151,6 +151,16 @@ function moveObject(
   opts: { x?: number; y?: number; toTop?: boolean },
 ): void {
   const fromZone = o.zone;
+  // Commander recursion (CR 903.9b): in Commander, a commander that would go to
+  // the graveyard or exile may instead be put into the command zone. Default to
+  // that (the common choice) so commanders stay available; the player can move it
+  // to the graveyard/exile manually if they intended that.
+  const fmt = getFormat(state.formatId);
+  if (o.isCommander && fmt?.requiresCommander && (toZone === "graveyard" || toZone === "exile")) {
+    log(state, { seat: o.ownerSeat, kind: "system", text: `${o.name} returns to the command zone (commander).` });
+    toZone = "command";
+    toSeat = o.ownerSeat;
+  }
   // Anything leaving the stack (resolved or countered) leaves the stack order,
   // so countering a counterspell (and cancels-on-cancels) works cleanly.
   if (fromZone === "stack") state.stackOrder = state.stackOrder.filter((id) => id !== o.id);
