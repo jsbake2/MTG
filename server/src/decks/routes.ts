@@ -11,6 +11,7 @@ import {
   getDeckRow,
   listDecks,
   listPrecons,
+  preconSets,
   starDeck,
   updateDeck,
   getDecksCards,
@@ -64,8 +65,16 @@ decksRouter.get("/legality", async (req, res) => {
 });
 
 // Preconstructed decks — visible to everyone, copyable to your own account.
-decksRouter.get("/public", async (_req, res) => {
-  res.json({ decks: await listPrecons() });
+// Optional ?set=CODE filters to precons from that set (for "play a precon from
+// an old set").
+decksRouter.get("/public", async (req, res) => {
+  const set = typeof req.query.set === "string" && req.query.set ? req.query.set : undefined;
+  res.json({ decks: await listPrecons(set) });
+});
+
+// Sets that have precons, with counts — drives a set picker for precon play.
+decksRouter.get("/precon-sets", async (_req, res) => {
+  res.json({ sets: await preconSets() });
 });
 
 decksRouter.post("/", async (req, res) => {

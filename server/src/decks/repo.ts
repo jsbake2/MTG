@@ -100,11 +100,37 @@ export async function createDeck(
   });
 }
 
-export async function listPrecons(): Promise<Deck[]> {
-  const rows = (await query<DeckRow>(`${DECK_SELECT} WHERE d.is_precon = true ORDER BY d.name ASC`)).rows;
+// Precons store their set code in the description ("<type> · <SET> · <date>"),
+// so we filter/group by parsing that segment — no schema change needed.
+export async function listPrecons(setCode?: string): Promise<Deck[]> {
+  const params: string[] = [];
+  let where = "d.is_precon = true";
+  if (setCode) {
+    params.push(setCode.toUpperCase());
+    where += ` AND upper(split_part(d.description, ' · ', 2)) = $${params.length}`;
+  }
+  const rows = (await query<DeckRow>(`${DECK_SELECT} WHERE ${where} ORDER BY d.name ASC`, params)).rows;
   const decks: Deck[] = [];
   for (const r of rows) decks.push(toDeck(r, await deckColors(r.id)));
   return decks;
+}
+
+// The sets that have precons (code + display name + count) for a "play a precon
+// from set X" picker.
+export async function preconSets(): Promise<Array<{ code: string; name: string; count: number }>> {
+  const rows = (
+    await query<{ code: string; name: string; count: string }>(
+      `SELECT upper(split_part(d.description, ' · ', 2)) AS code,
+              coalesce((SELECT min(set_name) FROM cards WHERE upper(set_code) = upper(split_part(d.description, ' · ', 2))),
+                       upper(split_part(d.description, ' · ', 2))) AS name,
+              count(*)::text AS count
+       FROM decks d
+       WHERE d.is_precon = true AND split_part(d.description, ' · ', 2) <> ''
+       GROUP BY 1, 2
+       ORDER BY count(*) DESC, name ASC`,
+    )
+  ).rows;
+  return rows.map((r) => ({ code: r.code, name: r.name, count: Number(r.count) }));
 }
 
 export async function preconCount(): Promise<number> {
