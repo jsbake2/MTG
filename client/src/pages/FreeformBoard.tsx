@@ -37,8 +37,9 @@ export function FreeformBoard({ t, state }: { t: TableConn; state: TableState })
   const me = state.players.find((p) => p.seat === you) ?? null;
   const opponents = state.players.filter((p) => p.seat !== you);
   const matRef = useRef<HTMLDivElement>(null);
-  const { tableCardWidth, setTableCardWidth } = useSettings();
+  const { handCardWidth, setHandCardWidth } = useSettings();
   const [drag, setDrag] = useState<DragState | null>(null);
+  const [handDrag, setHandDrag] = useState<{ id: string; cardId: string | null; name: string; x: number; y: number } | null>(null);
   const [menu, setMenu] = useState<{ id: string; x: number; y: number } | null>(null);
   const [hover, setHover] = useState<{ id: string; name: string } | null>(null);
   const [expanded, setExpanded] = useState<string | null>(null);
@@ -47,7 +48,10 @@ export function FreeformBoard({ t, state }: { t: TableConn; state: TableState })
   const [notesOpen, setNotesOpen] = useState(false);
   const [chatText, setChatText] = useState("");
 
-  const CARD_W = tableCardWidth;
+  // FIXED mat card size — positions (x/y) are shared between players, so the card
+  // size must be identical on every screen or the board looks different for each
+  // player. The scalable size lives on the hand instead (that's personal/local).
+  const CARD_W = 108;
   const CARD_H = Math.round((CARD_W * 88) / 63);
 
   const objectsByZone = useMemo(() => {
@@ -142,6 +146,41 @@ export function FreeformBoard({ t, state }: { t: TableConn; state: TableState })
     t.send({ type: "move_card", objectId: o.id, toZone: "battlefield", toSeat: you ?? undefined, x, y });
   }
 
+  // Drag a card out of your hand and drop it anywhere on the mat.
+  function onHandPointerDown(o: GameObject, e: React.PointerEvent) {
+    if (you === null) return;
+    e.preventDefault();
+    (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
+    setHandDrag({ id: o.id, cardId: o.cardId, name: o.name, x: e.clientX, y: e.clientY });
+  }
+  useEffect(() => {
+    if (!handDrag) return;
+    const move = (e: PointerEvent) => setHandDrag((d) => (d ? { ...d, x: e.clientX, y: e.clientY } : d));
+    const up = (e: PointerEvent) => {
+      setHandDrag((d) => {
+        if (d && you !== null) {
+          const r = matRef.current?.getBoundingClientRect();
+          const overMat = r && e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom;
+          if (overMat && r) {
+            const x = Math.max(0, snap(e.clientX - r.left - CARD_W / 2));
+            const y = Math.max(0, snap(e.clientY - r.top - CARD_H / 2));
+            t.send({ type: "move_card", objectId: d.id, toZone: "battlefield", toSeat: you, x, y });
+          } else {
+            const o = state.objects[d.id];
+            if (o) playFromHand(o); // released off the mat → default cascade spot
+          }
+        }
+        return null;
+      });
+    };
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", up);
+    return () => {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", up);
+    };
+  }, [handDrag, you]);
+
   return (
     <div className="flex h-full min-h-0 flex-col bg-table-bg">
       {/* Top bar */}
@@ -160,11 +199,8 @@ export function FreeformBoard({ t, state }: { t: TableConn; state: TableState })
           ))}
           <button className="btn-ghost !py-1" onClick={() => setTokenOpen(true)}>＋ Token</button>
           {you !== null && <DiceRoller t={t} seat={you} />}
+          {you !== null && <button className="btn-ghost !py-1" onClick={() => t.send({ type: "draw", seat: you, count: 1 })}>🃏 Draw</button>}
           <button className={`btn-ghost !py-1 ${notesOpen ? "text-table-accentSoft" : ""}`} onClick={() => setNotesOpen((v) => !v)}>📝 Notes</button>
-          <label className="flex items-center gap-1 text-xs text-table-muted" title="Card size">
-            🔍
-            <input type="range" min={90} max={260} step={6} value={tableCardWidth} onChange={(e) => setTableCardWidth(Number(e.target.value))} className="w-24 accent-table-accent" />
-          </label>
           <button className="btn-ghost !py-1" onClick={() => t.undo()}>Undo</button>
           {you !== null && state.status !== "finished" && (
             <button className="btn-ghost !py-1 text-red-300 hover:border-red-400" onClick={() => { if (confirm("Resign this game?")) t.send({ type: "concede", seat: you }); }}>
@@ -263,25 +299,40 @@ export function FreeformBoard({ t, state }: { t: TableConn; state: TableState })
         </div>
       </div>
 
-      {/* Your hand */}
+      {/* Your hand — drag cards onto the table, or click to play. Card size here is
+          personal (local) and doesn't affect anyone else's view. */}
       {you !== null && (
         <div className="shrink-0 border-t border-table-border bg-table-panel px-3 py-2">
-          <div className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-table-muted">Your hand ({myHand.length}) — click to play</div>
-          <div className="flex gap-1 overflow-x-auto pb-1">
+          <div className="mb-1 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wide text-table-muted">
+            <span>Your hand ({myHand.length}) — drag onto the table, or click</span>
+            <button className="chip normal-case" onClick={() => you !== null && t.send({ type: "draw", seat: you, count: 1 })}>🃏 Draw</button>
+            <label className="ml-auto flex items-center gap-1 normal-case" title="Hand card size (only affects your screen)">
+              🔍
+              <input type="range" min={80} max={240} step={6} value={handCardWidth} onChange={(e) => setHandCardWidth(Number(e.target.value))} className="w-28 accent-table-accent" />
+            </label>
+          </div>
+          <div className="flex items-end gap-1.5 overflow-x-auto pb-1">
             {myHand.map((o) => (
-              <button
+              <div
                 key={o.id}
-                className="w-[70px] shrink-0 transition-transform hover:-translate-y-1"
-                onClick={() => playFromHand(o)}
+                className="shrink-0 cursor-grab touch-none transition-transform hover:-translate-y-1.5 active:cursor-grabbing"
+                style={{ width: handCardWidth, opacity: handDrag?.id === o.id ? 0.4 : 1 }}
+                onPointerDown={(e) => onHandPointerDown(o, e)}
                 onMouseEnter={() => o.cardId && setHover({ id: o.cardId, name: o.name })}
                 onMouseLeave={() => setHover(null)}
-                title={`Play ${o.name}`}
+                title={`Drag to play ${o.name}`}
               >
                 <CardImage id={o.cardId} name={o.name} />
-              </button>
+              </div>
             ))}
-            {myHand.length === 0 && <div className="py-4 text-xs text-table-muted">Empty — draw from your library.</div>}
+            {myHand.length === 0 && <div className="py-4 text-xs text-table-muted">Empty — use Draw to pull from your library.</div>}
           </div>
+        </div>
+      )}
+      {/* Floating card that follows the cursor while dragging from hand. */}
+      {handDrag && (
+        <div className="pointer-events-none fixed z-50" style={{ left: handDrag.x - CARD_W / 2, top: handDrag.y - CARD_H / 2, width: CARD_W }}>
+          <CardImage id={handDrag.cardId} name={handDrag.name} className="rounded-md shadow-2xl ring-2 ring-table-accent/60" />
         </div>
       )}
 
