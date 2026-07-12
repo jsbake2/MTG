@@ -5,9 +5,10 @@ import type { TableConn } from "@/game/useTable";
 import { CardImage } from "@/components/CardTile";
 import { Avatar } from "@/components/Avatar";
 import { useSettings } from "@/store/settings";
-import { RollOverlay, TokenPicker, ZoneBrowserModal } from "@/pages/Table";
+import { RollOverlay, ZoneBrowserModal } from "@/pages/Table";
 import { api } from "@/api/client";
 import { playRoll } from "@/lib/sound";
+import type { TokenCard } from "@/pages/Table";
 
 const GRID = 24; // standard MTG Arena snap size
 const snap = (n: number) => Math.round(n / GRID) * GRID;
@@ -42,6 +43,13 @@ interface ActiveRollAnimation {
   endY: number;
 }
 
+interface FlyingCard {
+  id: string;
+  cardId: string | null;
+  startX: number;
+  startY: number;
+}
+
 export function FreeformBoard({ t, state }: { t: TableConn; state: TableState }) {
   const you = t.you;
   const me = state.players.find((p) => p.seat === you) ?? null;
@@ -49,7 +57,7 @@ export function FreeformBoard({ t, state }: { t: TableConn; state: TableState })
   const matRef = useRef<HTMLDivElement>(null);
   const { handCardWidth, setHandCardWidth } = useSettings();
   const [drag, setDrag] = useState<DragState | null>(null);
-  const [handDrag, setHandDrag] = useState<{ id: string; cardId: string | null; name: string; x: number; y: number } | null>(null);
+  const [handDrag, setHandDrag] = useState<{ id: string; cardId: string | null; name: string; x: number; y: number; isToken?: boolean; power?: string | number; toughness?: string | number; typeLine?: string } | null>(null);
   const [menu, setMenu] = useState<{ id: string; x: number; y: number } | null>(null);
   const [hover, setHover] = useState<{ id: string; name: string } | null>(null);
   const [expanded, setExpanded] = useState<string | null>(null);
@@ -71,6 +79,17 @@ export function FreeformBoard({ t, state }: { t: TableConn; state: TableState })
   // Toolbox panel
   const [toolboxOpen, setToolboxOpen] = useState(true);
   const [activeCounterTool, setActiveCounterTool] = useState<string | null>(null);
+  const [draggingCounter, setDraggingCounter] = useState<string | null>(null);
+  const [counterDragPos, setCounterDragPos] = useState({ x: 0, y: 0 });
+
+  // Token spawning drawer
+  const [tokenDrawerOpen, setTokenDrawerOpen] = useState(false);
+  const [tokenSearchQuery, setTokenSearchQuery] = useState("");
+  const [drawerTokens, setDrawerTokens] = useState<TokenCard[]>([]);
+  const [tokensLoading, setTokensLoading] = useState(false);
+
+  // Stacks Context Menus
+  const [libraryMenu, setLibraryMenu] = useState<{ seat: number; x: number; y: number } | null>(null);
 
   // Collapsible Right Sidebar
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -85,6 +104,10 @@ export function FreeformBoard({ t, state }: { t: TableConn; state: TableState })
 
   // Active rolls tray
   const [activeRolls, setActiveRolls] = useState<ActiveRollAnimation[]>([]);
+
+  // Flying cards (draw animation)
+  const [flyingCards, setFlyingCards] = useState<FlyingCard[]>([]);
+  const prevLibraryCount = useRef<Record<number, number>>({});
 
   const CARD_W = 108;
   const CARD_H = Math.round((CARD_W * 88) / 63);
@@ -148,6 +171,66 @@ export function FreeformBoard({ t, state }: { t: TableConn; state: TableState })
       });
     });
   }, [state.objects]);
+
+  // Dynamically load tokens for drawer search
+  useEffect(() => {
+    if (!tokenDrawerOpen) return;
+    setTokensLoading(true);
+    const id = setTimeout(() => {
+      api
+        .get<{ tokens: TokenCard[] }>(`/api/cards/tokens?q=${encodeURIComponent(tokenSearchQuery)}`)
+        .then((r) => setDrawerTokens(r.tokens))
+        .finally(() => setTokensLoading(false));
+    }, 250);
+    return () => clearTimeout(id);
+  }, [tokenSearchQuery, tokenDrawerOpen]);
+
+  // Track library draw animation
+  useEffect(() => {
+    if (you === null) return;
+    const count = (objectsByZone[`library:${you}`] ?? []).length;
+    const prev = prevLibraryCount.current[you];
+    if (prev !== undefined && count < prev) {
+      // Card was drawn, trigger fly
+      const cards = objectsByZone[`library:${you}`] ?? [];
+      const topCard = cards[cards.length - 1];
+      const startX = 1060;
+      const invert = you === 1;
+      const startY = invert ? 175 : 475;
+      
+      const newFly: FlyingCard = {
+        id: Math.random().toString(),
+        cardId: topCard?.cardId ?? null,
+        startX,
+        startY,
+      };
+      setFlyingCards((f) => [...f, newFly]);
+      setTimeout(() => {
+        setFlyingCards((f) => f.filter((item) => item.id !== newFly.id));
+      }, 480);
+    }
+    prevLibraryCount.current[you] = count;
+  }, [state.objects, you]);
+
+  // Find card at exact screen coordinates (used for dropping counters)
+  const getCardAt = (clientX: number, clientY: number) => {
+    const r = matRef.current?.getBoundingClientRect();
+    if (!r) return null;
+    const x = (clientX - r.left) / zoom;
+    const y = (clientY - r.top) / zoom;
+    
+    const invert = you === 1;
+    for (const pile of piles) {
+      const rx = invert ? (1200 - pile.x - CARD_W) : pile.x;
+      const ry = invert ? (800 - pile.y - CARD_H) : pile.y;
+      
+      const isOver = x >= rx && x <= rx + CARD_W && y >= ry && y <= ry + CARD_H;
+      if (isOver && pile.cards.length > 0) {
+        return pile.cards[pile.cards.length - 1]; // top card in stack
+      }
+    }
+    return null;
+  };
 
   // Dice roll tumble sequence
   const triggerTumbleRoll = (sides: number) => {
@@ -215,6 +298,9 @@ export function FreeformBoard({ t, state }: { t: TableConn; state: TableState })
   };
 
   const handlePointerMove = (e: React.PointerEvent) => {
+    if (draggingCounter) {
+      setCounterDragPos({ x: e.clientX, y: e.clientY });
+    }
     if (!isPanning) return;
     const dx = e.clientX - panStart.current.x;
     const dy = e.clientY - panStart.current.y;
@@ -222,7 +308,14 @@ export function FreeformBoard({ t, state }: { t: TableConn; state: TableState })
     setPanY(panStart.current.panY + dy);
   };
 
-  const handlePointerUp = () => {
+  const handlePointerUp = (e: React.PointerEvent) => {
+    if (draggingCounter) {
+      const card = getCardAt(e.clientX, e.clientY);
+      if (card) {
+        t.send({ type: "add_counter", objectId: card.id, counterType: draggingCounter, delta: 1 });
+      }
+      setDraggingCounter(null);
+    }
     setIsPanning(false);
   };
 
@@ -308,6 +401,24 @@ export function FreeformBoard({ t, state }: { t: TableConn; state: TableState })
     setHandDrag({ id: o.id, cardId: o.cardId, name: o.name, x: e.clientX, y: e.clientY });
   }
 
+  // Drag token from picker drawer
+  const onTokenPointerDown = (tk: TokenCard, e: React.PointerEvent) => {
+    if (you === null) return;
+    e.preventDefault();
+    (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
+    setHandDrag({
+      id: "create-token-" + Math.random(),
+      cardId: tk.id,
+      name: tk.name,
+      x: e.clientX,
+      y: e.clientY,
+      isToken: true,
+      power: tk.power ?? undefined,
+      toughness: tk.toughness ?? undefined,
+      typeLine: tk.typeLine ?? undefined,
+    });
+  };
+
   useEffect(() => {
     if (!handDrag) return;
     const move = (e: PointerEvent) => setHandDrag((d) => (d ? { ...d, x: e.clientX, y: e.clientY } : d));
@@ -327,10 +438,30 @@ export function FreeformBoard({ t, state }: { t: TableConn; state: TableState })
             const finalX = invert ? (1200 - tx - CARD_W) : tx;
             const finalY = invert ? (800 - ty - CARD_H) : ty;
 
-            t.send({ type: "move_card", objectId: d.id, toZone: "battlefield", toSeat: you, x: finalX, y: finalY });
+            if (d.id.startsWith("create-token-")) {
+              const num = (v: string | number | null | undefined) => {
+                if (v === undefined || v === null) return undefined;
+                return typeof v === "number" ? v : parseInt(v.toString().replace(/[^0-9-]/g, ""), 10) || undefined;
+              };
+              t.send({
+                type: "create_token",
+                seat: you,
+                name: d.name,
+                cardId: d.cardId,
+                oracleId: null,
+                power: num(d.power),
+                toughness: num(d.toughness),
+                x: finalX,
+                y: finalY,
+              });
+            } else {
+              t.send({ type: "move_card", objectId: d.id, toZone: "battlefield", toSeat: you, x: finalX, y: finalY });
+            }
           } else {
-            const o = state.objects[d.id];
-            if (o) playFromHand(o);
+            if (!d.id.startsWith("create-token-")) {
+              const o = state.objects[d.id];
+              if (o) playFromHand(o);
+            }
           }
         }
         return null;
@@ -383,10 +514,8 @@ export function FreeformBoard({ t, state }: { t: TableConn; state: TableState })
     return list;
   }, [myHand, handQuery, handFilter, handSort, cardCache]);
 
-  const opponentPlayer = state.players.find((p) => p.seat !== you) ?? null;
-
   return (
-    <div className="flex h-full min-h-0 flex-col bg-[#07090c] text-white">
+    <div className="flex h-full min-h-0 flex-col bg-[#07090c] text-white select-none">
       {/* Top bar */}
       <div className="flex shrink-0 items-center gap-2 border-b border-table-border bg-[#0b0f19] px-3 py-1.5 text-sm z-30">
         <Link to="/play" className="text-table-muted hover:text-table-ink font-semibold">← Leave</Link>
@@ -395,6 +524,7 @@ export function FreeformBoard({ t, state }: { t: TableConn; state: TableState })
         <span className="chip bg-table-accent/15 border-table-accent/30 text-table-accentSoft">🃏 Manual Sandbox</span>
 
         <button className={`btn-ghost !py-1 text-xs ml-4 ${toolboxOpen ? "text-table-accentSoft bg-table-accent/10 border-table-accent/30" : ""}`} onClick={() => setToolboxOpen(!toolboxOpen)}>🛠 Toolbox</button>
+        <button className={`btn-ghost !py-1 text-xs ${tokenDrawerOpen ? "text-table-accentSoft bg-table-accent/10 border-table-accent/30" : ""}`} onClick={() => setTokenDrawerOpen(!tokenDrawerOpen)}>🃏 Tokens Drawer</button>
         <button className={`btn-ghost !py-1 text-xs ${!sidebarCollapsed ? "text-table-accentSoft bg-table-accent/10 border-table-accent/30" : ""}`} onClick={() => setSidebarCollapsed(!sidebarCollapsed)}>💬 Chat/Log</button>
 
         <label className="flex items-center gap-1.5 text-xs text-table-muted ml-4 cursor-pointer select-none">
@@ -442,47 +572,19 @@ export function FreeformBoard({ t, state }: { t: TableConn; state: TableState })
                 ))}
               </div>
             </div>
-            {/* Token Quick Spawn */}
+            {/* Tokens Button Shortcut */}
             <div>
-              <div className="text-[10px] font-semibold uppercase tracking-wider text-table-muted mb-2">Spawn Tokens</div>
-              <div className="flex flex-col gap-1">
-                {[
-                  { name: "Soldier", power: 1, toughness: 1, desc: "1/1 white Soldier" },
-                  { name: "Zombie", power: 2, toughness: 2, desc: "2/2 black Zombie" },
-                  { name: "Goblin", power: 1, toughness: 1, desc: "1/1 red Goblin" },
-                  { name: "Vampire", power: 1, toughness: 1, desc: "1/1 black Vampire" },
-                  { name: "Spirit", power: 1, toughness: 1, desc: "1/1 white Spirit" },
-                  { name: "Beast", power: 3, toughness: 3, desc: "3/3 green Beast" },
-                  { name: "Treasure", power: 0, toughness: 0, desc: "Treasure artifact" },
-                  { name: "Clue", power: 0, toughness: 0, desc: "Clue artifact" },
-                  { name: "Food", power: 0, toughness: 0, desc: "Food artifact" },
-                ].map((tk) => (
-                  <button
-                    key={tk.name}
-                    className="btn-ghost !py-1 text-left text-xs border border-table-border/40 hover:border-table-accent/40 rounded w-full"
-                    onClick={() => {
-                      if (you === null) return;
-                      t.send({
-                        type: "create_token",
-                        seat: you,
-                        name: tk.name,
-                        power: tk.power || undefined,
-                        toughness: tk.toughness || undefined,
-                        colors: tk.name === "Soldier" ? ["W"] : tk.name === "Zombie" ? ["B"] : tk.name === "Goblin" ? ["R"] : tk.name === "Spirit" ? ["W"] : tk.name === "Beast" ? ["G"] : [],
-                      });
-                    }}
-                  >
-                    <div className="font-semibold text-table-accentSoft">{tk.name}</div>
-                    <div className="text-[9px] text-table-muted">{tk.desc}</div>
-                  </button>
-                ))}
-              </div>
+              <button className="btn-primary w-full text-xs" onClick={() => setTokenDrawerOpen(!tokenDrawerOpen)}>
+                {tokenDrawerOpen ? "✕ Close Tokens Drawer" : "🃏 Open Tokens Drawer"}
+              </button>
             </div>
             {/* Counters Box */}
             <div>
               <div className="text-[10px] font-semibold uppercase tracking-wider text-table-muted mb-2">Counters Box</div>
-              <div className="text-[10px] text-table-muted mb-2">Click counter type below, then click any card on the battlefield to apply:</div>
-              <div className="flex flex-col gap-1">
+              <div className="text-[9px] text-table-muted mb-2 leading-relaxed">
+                <span className="text-table-accentSoft font-semibold">Click & Drag</span> counters directly onto cards, or click to use as a click-and-apply tool:
+              </div>
+              <div className="flex flex-col gap-1.5">
                 {[
                   { type: "+1/+1", label: "+1/+1 Counter", color: "text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/5" },
                   { type: "-1/-1", label: "-1/-1 Counter", color: "text-rose-400 border-rose-500/30 hover:bg-rose-500/5" },
@@ -491,14 +593,56 @@ export function FreeformBoard({ t, state }: { t: TableConn; state: TableState })
                 ].map((c) => (
                   <button
                     key={c.type}
-                    className={`btn-ghost !py-1 text-xs text-left border rounded ${c.color} ${activeCounterTool === c.type ? "ring-2 ring-table-accent bg-table-accent/15" : ""}`}
+                    className={`btn-ghost !py-1.5 text-xs text-left border rounded cursor-grab active:cursor-grabbing ${c.color} ${activeCounterTool === c.type ? "ring-2 ring-table-accent bg-table-accent/15" : ""}`}
                     onClick={() => setActiveCounterTool(activeCounterTool === c.type ? null : c.type)}
+                    onPointerDown={(e) => {
+                      e.preventDefault();
+                      setDraggingCounter(c.type);
+                      setCounterDragPos({ x: e.clientX, y: e.clientY });
+                    }}
                   >
                     {c.label}
                   </button>
                 ))}
               </div>
             </div>
+          </div>
+        </div>
+
+        {/* Tokens Drawer overlay (floating on the left, next to toolbox) */}
+        <div className={`shrink-0 flex flex-col border-r border-table-border bg-[#090d14]/95 backdrop-blur-md transition-all duration-300 z-20 absolute left-0 inset-y-0 ${tokenDrawerOpen ? "w-[440px] translate-x-0" : "w-0 -translate-x-full overflow-hidden"}`} style={{ left: toolboxOpen ? 224 : 0 }}>
+          <div className="border-b border-table-border p-3 flex items-center justify-between shrink-0">
+            <span className="font-semibold text-table-accentSoft">🃏 Tokens Card Drawer</span>
+            <input
+              className="input !py-1 text-xs w-48 font-normal"
+              placeholder="Search scryfall tokens..."
+              value={tokenSearchQuery}
+              onChange={(e) => setTokenSearchQuery(e.target.value)}
+            />
+            <button className="text-table-muted hover:text-table-ink text-sm px-1.5" onClick={() => setTokenDrawerOpen(false)}>✕</button>
+          </div>
+          <div className="flex-1 min-h-0 overflow-y-auto p-3.5">
+            {tokensLoading && drawerTokens.length === 0 ? (
+              <div className="py-12 text-center text-table-muted text-xs">Searching Scryfall database…</div>
+            ) : drawerTokens.length === 0 ? (
+              <div className="py-12 text-center text-table-muted text-xs">No tokens found. Type "Soldier", "Zombie", "Vampire", "Treasure"…</div>
+            ) : (
+              <div className="grid grid-cols-3 gap-2.5">
+                {drawerTokens.map((tk) => (
+                  <div
+                    key={tk.id}
+                    className="cursor-grab active:cursor-grabbing hover:scale-105 transition-transform duration-100 relative group"
+                    onPointerDown={(e) => onTokenPointerDown(tk, e)}
+                    title="Drag and drop onto tabletop"
+                  >
+                    <CardImage id={tk.id} name={tk.name} />
+                    <div className="absolute inset-x-0 bottom-0 bg-black/80 text-center py-0.5 text-[8px] font-semibold truncate rounded-b">
+                      {tk.name}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 
@@ -621,7 +765,7 @@ export function FreeformBoard({ t, state }: { t: TableConn; state: TableState })
                     return (
                       <div
                         key={c.id}
-                        className={`absolute rounded-md transition-all duration-150 ${isMine ? "cursor-grab active:cursor-grabbing" : "cursor-pointer"} ${isHovered ? "z-50 scale-125 shadow-2xl ring-2 ring-table-accent/60" : "shadow-md"}`}
+                        className={`absolute rounded-md transition-all duration-150 hover:scale-105 ${isMine ? "cursor-grab active:cursor-grabbing" : "cursor-pointer"} ${isHovered ? "z-50 scale-125 shadow-2xl ring-2 ring-table-accent/60" : "shadow-md"}`}
                         style={{
                           left: cardX,
                           top: cardY,
@@ -635,36 +779,62 @@ export function FreeformBoard({ t, state }: { t: TableConn; state: TableState })
                             startDrag([c.id], pile.x + cardX, pile.y + cardY, e);
                           }
                         }}
+                        onDoubleClick={(e) => {
+                          e.stopPropagation();
+                          t.send({ type: "tap", objectId: c.id, tapped: !c.tapped });
+                        }}
+                        onContextMenu={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setMenu({ id: c.id, x: e.clientX, y: e.clientY });
+                        }}
                         onClick={(e) => {
                           e.stopPropagation();
                           if (activeCounterTool) {
                             t.send({ type: "add_counter", objectId: c.id, counterType: activeCounterTool, delta: 1 });
                             setActiveCounterTool(null);
                           } else {
-                            setMenu({ id: c.id, x: e.clientX, y: e.clientY });
+                            if (c.cardId && !c.faceDown) {
+                              setHover({ id: c.cardId, name: c.name });
+                            }
                           }
                         }}
                         onMouseEnter={() => {
                           setHoveredBoardCardId(c.id);
-                          if (c.cardId && !c.faceDown) {
-                            setHover({ id: c.cardId, name: c.name });
-                          }
                         }}
                         onMouseLeave={() => {
                           setHoveredBoardCardId(null);
-                          setHover(null);
                         }}
                       >
                         <CardImage id={c.faceDown ? null : c.cardId} name={c.faceDown ? "Card" : c.name} className="rounded-md" />
                         
-                        {/* Counters indicator overlay */}
+                        {/* Counters indicator overlay with +/- button manipulators */}
                         {c.counters.length > 0 && (
-                          <div className="absolute -bottom-1 left-0 flex flex-wrap gap-0.5 z-10 pointer-events-none">
-                            {c.counters.map((cnt) => (
-                              <span key={cnt.type} className="rounded bg-black/90 px-1 text-[9px] font-bold text-white ring-1 ring-white/25 leading-none py-0.5">
-                                {cnt.type} {cnt.count}
-                              </span>
-                            ))}
+                          <div className="absolute -bottom-1 left-0 flex flex-col gap-0.5 z-20 pointer-events-auto">
+                            {c.counters.map((cnt) => {
+                              if (cnt.count === 0) return null;
+                              return (
+                                <div
+                                  key={cnt.type}
+                                  className="flex items-center gap-1 bg-black/95 border border-table-border/60 px-1 py-0.5 rounded text-[9px] font-bold text-white shadow-lg pointer-events-auto"
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  <span>{cnt.type === "+1/+1" ? "+1/+1" : cnt.type === "-1/-1" ? "-1/-1" : cnt.type}: {cnt.count}</span>
+                                  <button
+                                    className="hover:text-red-400 font-bold px-0.5 text-xs text-table-muted"
+                                    onClick={(e) => { e.stopPropagation(); t.send({ type: "add_counter", objectId: c.id, counterType: cnt.type, delta: -1 }); }}
+                                  >
+                                    −
+                                  </button>
+                                  <button
+                                    className="hover:text-emerald-400 font-bold px-0.5 text-xs text-table-muted"
+                                    onClick={(e) => { e.stopPropagation(); t.send({ type: "add_counter", objectId: c.id, counterType: cnt.type, delta: 1 }); }}
+                                  >
+                                    +
+                                  </button>
+                                </div>
+                              );
+                            })}
                           </div>
                         )}
                         
@@ -680,6 +850,86 @@ export function FreeformBoard({ t, state }: { t: TableConn; state: TableState })
                 </div>
               );
             })}
+
+            {/* Visual Library, Graveyard, and Exile card stacks on the mat */}
+            {state.players.map((p) => {
+              const seat = p.seat;
+              const libCards = objectsByZone[`library:${seat}`] ?? [];
+              const graveCards = objectsByZone[`graveyard:${seat}`] ?? [];
+              const exileCards = objectsByZone[`exile:${seat}`] ?? [];
+
+              const invert = you === 1;
+              const isPYou = seat === you;
+
+              // Absolute coordinates
+              const libLoc = { x: 1060, y: seat === 0 ? 475 : 175 };
+              const graveLoc = { x: 1060, y: seat === 0 ? 640 : 10 };
+              const exileLoc = { x: 940, y: seat === 0 ? 640 : 10 };
+
+              // Local rendering coordinates corrected for perspective inversion
+              const rxLib = invert ? (1200 - libLoc.x - CARD_W) : libLoc.x;
+              const ryLib = invert ? (800 - libLoc.y - CARD_H) : libLoc.y;
+
+              const rxGrave = invert ? (1200 - graveLoc.x - CARD_W) : graveLoc.x;
+              const ryGrave = invert ? (800 - graveLoc.y - CARD_H) : graveLoc.y;
+
+              const rxExile = invert ? (1200 - exileLoc.x - CARD_W) : exileLoc.x;
+              const ryExile = invert ? (800 - exileLoc.y - CARD_H) : exileLoc.y;
+
+              const topGraveCard = graveCards[graveCards.length - 1];
+              const topExileCard = exileCards[exileCards.length - 1];
+
+              return (
+                <div key={seat} className="pointer-events-auto">
+                  {/* Library stack */}
+                  <div className="absolute" style={{ left: rxLib, top: ryLib }}>
+                    <CardStackDeck
+                      count={libCards.length}
+                      label="Library"
+                      onClick={() => isPYou && t.send({ type: "draw", seat, count: 1 })}
+                      onRightClick={(e) => { e.preventDefault(); e.stopPropagation(); setLibraryMenu({ seat, x: e.clientX, y: e.clientY }); }}
+                    />
+                  </div>
+
+                  {/* Graveyard stack */}
+                  <div className="absolute" style={{ left: rxGrave, top: ryGrave }}>
+                    <CardStackDeck
+                      count={graveCards.length}
+                      faceUpCardId={topGraveCard?.cardId}
+                      label="Graveyard"
+                      onClick={() => setBrowse({ zoneId: `graveyard:${seat}`, title: `${p.name}'s Graveyard` })}
+                    />
+                  </div>
+
+                  {/* Exile stack */}
+                  <div className="absolute" style={{ left: rxExile, top: ryExile }}>
+                    <CardStackDeck
+                      count={exileCards.length}
+                      faceUpCardId={topExileCard?.cardId}
+                      label="Exile"
+                      onClick={() => setBrowse({ zoneId: `exile:${seat}`, title: `${p.name}'s Exile` })}
+                    />
+                  </div>
+                </div>
+              );
+            })}
+
+            {/* Smooth flying card animation projection */}
+            {flyingCards.map((f) => (
+              <div
+                key={f.id}
+                className="absolute z-50 pointer-events-none rounded-md animate-fly-draw"
+                style={{
+                  width: CARD_W,
+                  height: CARD_H,
+                  transformOrigin: "center",
+                  "--fly-start-x": `${f.startX}px`,
+                  "--fly-start-y": `${f.startY}px`,
+                } as any}
+              >
+                <CardImage id={f.cardId} name="Card" className="rounded-md shadow-2xl ring-2 ring-table-accent/60 animate-spin-once" />
+              </div>
+            ))}
           </div>
         </div>
 
@@ -748,7 +998,7 @@ export function FreeformBoard({ t, state }: { t: TableConn; state: TableState })
         </div>
       </div>
 
-      {/* Your hand */}
+      {/* Your hand (centered in the hand pane) */}
       {you !== null && (
         <div className="shrink-0 border-t border-table-border bg-[#0b0f19] px-3 py-2 z-20">
           <div className="mb-1.5 flex flex-wrap items-center gap-3 text-[11px] font-semibold uppercase tracking-wide text-table-muted">
@@ -780,7 +1030,7 @@ export function FreeformBoard({ t, state }: { t: TableConn; state: TableState })
               <input type="range" min={80} max={240} step={6} value={handCardWidth} onChange={(e) => setHandCardWidth(Number(e.target.value))} className="w-24 accent-table-accent" />
             </label>
           </div>
-          <div className="flex items-end gap-1.5 overflow-x-auto pb-1 min-h-[96px]">
+          <div className="flex items-end justify-center gap-1.5 overflow-x-auto pb-1 min-h-[96px]">
             {sortedAndFilteredHand.map((o) => (
               <div
                 key={o.id}
@@ -819,7 +1069,17 @@ export function FreeformBoard({ t, state }: { t: TableConn; state: TableState })
         </div>
       ))}
 
-      {/* Hand drag floating projection */}
+      {/* Floating draggable counter badge projection */}
+      {draggingCounter && (
+        <div
+          className="pointer-events-none fixed z-50 flex items-center justify-center bg-black/90 border border-table-accent px-2 py-1 rounded text-xs font-bold text-white shadow-2xl"
+          style={{ left: counterDragPos.x + 12, top: counterDragPos.y + 12 }}
+        >
+          ➕ {draggingCounter}
+        </div>
+      )}
+
+      {/* Hand / Token drag floating projection */}
       {handDrag && (
         <div className="pointer-events-none fixed z-50" style={{ left: handDrag.x - (CARD_W * zoom) / 2, top: handDrag.y - (CARD_H * zoom) / 2, width: CARD_W * zoom }}>
           <CardImage id={handDrag.cardId} name={handDrag.name} className="rounded-md shadow-2xl ring-2 ring-table-accent/60" />
@@ -828,17 +1088,19 @@ export function FreeformBoard({ t, state }: { t: TableConn; state: TableState })
 
       {menu && <FreeformCardMenu menu={menu} state={state} you={you} t={t} onClose={() => setMenu(null)} />}
       
-      {tokenOpen && you !== null && (
-        <TokenPicker
-          onClose={() => setTokenOpen(false)}
-          onPick={(tk) => {
-            const num = (v: string | null) => (v ? parseInt(v.replace(/[^0-9-]/g, ""), 10) || undefined : undefined);
-            t.send({ type: "create_token", seat: you, name: tk.name, cardId: tk.id, oracleId: null, power: num(tk.power), toughness: num(tk.toughness) });
-            setTokenOpen(false);
+      {/* Floating Library Stack context menu */}
+      {libraryMenu && (
+        <LibraryContextMenu
+          menu={libraryMenu}
+          t={t}
+          onClose={() => setLibraryMenu(null)}
+          onBrowse={() => {
+            setBrowse({ zoneId: `library:${libraryMenu.seat}`, title: "Your Library" });
+            setLibraryMenu(null);
           }}
         />
       )}
-      
+
       {browse && (
         <ZoneBrowserModal
           title={browse.title}
@@ -852,11 +1114,83 @@ export function FreeformBoard({ t, state }: { t: TableConn; state: TableState })
       
       <RollOverlay roll={state.lastRoll} />
       
-      {/* Zoomed Hover Preview (Bottom Left tooltip) */}
+      {/* Selection detail overlay */}
       {hover && (
         <div className="pointer-events-none fixed bottom-28 left-4 z-40">
           <img src={`/api/cards/${hover.id}/image`} alt={hover.name} className="w-56 rounded-lg shadow-2xl card-aspect border-2 border-table-accent/40 bg-black" />
         </div>
+      )}
+    </div>
+  );
+}
+
+// ---- Visual stack representing library / graveyard / exile ----
+function CardStackDeck({
+  count,
+  faceUpCardId,
+  label,
+  onClick,
+  onRightClick,
+  onPointerDown,
+}: {
+  count: number;
+  faceUpCardId?: string | null;
+  label: string;
+  onClick?: () => void;
+  onRightClick?: (e: React.MouseEvent) => void;
+  onPointerDown?: (e: React.PointerEvent) => void;
+}) {
+  const layers = Math.min(12, Math.ceil(count / 4));
+  return (
+    <div
+      className="relative cursor-pointer select-none"
+      style={{ width: 108, height: 150 }}
+      onClick={onClick}
+      onContextMenu={onRightClick}
+      onPointerDown={onPointerDown}
+      title={`${label} (${count} cards) - click to interact, right click library for options`}
+    >
+      {count === 0 ? (
+        <div className="w-full h-full rounded-md border-2 border-dashed border-table-border/30 flex items-center justify-center text-[10px] text-table-muted bg-black/10">
+          empty
+        </div>
+      ) : (
+        <>
+          {Array.from({ length: layers }).map((_, idx) => {
+            const shift = idx * 0.9;
+            return (
+              <div
+                key={idx}
+                className="absolute rounded-md border border-black/50 bg-[#0f172a] shadow"
+                style={{
+                  left: -shift,
+                  top: -shift,
+                  width: 108,
+                  height: 150,
+                  zIndex: idx,
+                }}
+              />
+            );
+          })}
+          <div
+            className="absolute rounded-md"
+            style={{
+              left: -layers * 0.9,
+              top: -layers * 0.9,
+              width: 108,
+              height: 150,
+              zIndex: layers,
+            }}
+          >
+            <CardImage id={faceUpCardId ?? null} name={faceUpCardId ? "Card" : "Back"} className="rounded-md shadow-card" />
+            <span className="absolute -right-1.5 -top-1.5 z-10 flex h-5 min-w-5 items-center justify-center rounded-full border border-black/50 bg-table-accent px-1 text-[9px] font-bold text-black shadow-lg">
+              {count}
+            </span>
+            <div className="absolute inset-x-0 bottom-1 bg-black/75 py-0.5 text-center text-[9px] font-semibold text-table-muted uppercase tracking-wider rounded-b">
+              {label}
+            </div>
+          </div>
+        </>
       )}
     </div>
   );
@@ -868,6 +1202,26 @@ function PileButton({ label, count, onClick }: { label: string; count: number; o
       <span>{label}</span>
       <span className="tabular-nums text-table-accentSoft font-semibold">{count}</span>
     </button>
+  );
+}
+
+// ---- floating Library Context Menu ----
+function LibraryContextMenu({ menu, t, onClose, onBrowse }: { menu: { seat: number; x: number; y: number }; t: TableConn; onClose: () => void; onBrowse: () => void }) {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const h = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) onClose(); };
+    window.addEventListener("mousedown", h);
+    return () => window.removeEventListener("mousedown", h);
+  }, [onClose]);
+  const act = (fn: () => void) => () => { fn(); onClose(); };
+  return (
+    <div ref={ref} className="panel fixed z-50 w-48 overflow-hidden py-1" style={{ left: menu.x, top: menu.y }}>
+      <div className="truncate border-b border-table-border px-3 py-1 text-xs text-table-muted font-bold">Library Options</div>
+      <button className="block w-full px-3 py-1.5 text-left text-sm hover:bg-table-panel2" onClick={act(() => t.send({ type: "draw", seat: menu.seat, count: 1 }))}>Draw 1 Card</button>
+      <button className="block w-full px-3 py-1.5 text-left text-sm hover:bg-table-panel2" onClick={act(() => t.send({ type: "draw", seat: menu.seat, count: 7 }))}>Draw 7 Cards</button>
+      <button className="block w-full px-3 py-1.5 text-left text-sm hover:bg-table-panel2" onClick={act(() => t.send({ type: "shuffle", seat: menu.seat }))}>Shuffle Library</button>
+      <button className="block w-full px-3 py-1.5 text-left text-sm hover:bg-table-panel2" onClick={act(onBrowse)}>Browse Library</button>
+    </div>
   );
 }
 
