@@ -26,6 +26,7 @@ export interface TableConn {
   leaveSeat: () => void;
   start: () => void;
   undo: () => void;
+  respondUndo: (approve: boolean) => void;
   chat: (text: string) => void;
 }
 
@@ -111,6 +112,7 @@ export function useTable(tableId: string): TableConn {
     leaveSeat: () => raw({ type: "leave_seat" }),
     start: () => raw({ type: "start_game" }),
     undo: () => raw({ type: "undo" }),
+    respondUndo: (approve: boolean) => raw({ type: "undo_response", approve }),
     chat: (text) => raw({ type: "chat", text }),
   };
 }

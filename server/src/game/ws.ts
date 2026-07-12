@@ -155,7 +155,16 @@ async function handle(conn: Conn, msg: ClientMessage): Promise<void> {
     }
     case "undo": {
       if (!conn.table) return;
-      conn.table.undo();
+      const seat = conn.table.seatForUser(conn.userId);
+      if (seat === null) return;
+      conn.table.requestUndo(seat);
+      return;
+    }
+    case "undo_response": {
+      if (!conn.table) return;
+      const seat = conn.table.seatForUser(conn.userId);
+      if (seat === null) return;
+      conn.table.respondUndo(seat, msg.approve);
       return;
     }
     case "chat": {

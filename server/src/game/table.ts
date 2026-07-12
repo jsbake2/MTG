@@ -261,11 +261,39 @@ export class Table {
   undo(): boolean {
     if (!this.state || this.history.length === 0) return false;
     this.state = this.history.pop()!;
+    this.state.pendingUndo = null;
     checkStateBased(this.state, this.cardIndex);
     this.state.revision += 1;
     appendGameLog({ ts: Date.now(), kind: "undo", tableId: this.id, turn: this.state.turnNumber, revision: this.state.revision });
     this.notify();
     return true;
+  }
+
+  // Undo is a request: any OTHER seated player must approve it. With no opponents
+  // seated (solo/testing) it just undoes.
+  requestUndo(seat: number): void {
+    if (!this.state || this.history.length === 0) return;
+    const others = this.state.players.filter((p) => p.seat !== seat && p.userId && !p.hasConceded && !p.hasLost);
+    if (others.length === 0) {
+      this.undo();
+      return;
+    }
+    this.state.pendingUndo = { requesterSeat: seat };
+    const name = this.state.players.find((p) => p.seat === seat)?.name ?? "A player";
+    log(this.state, { seat, kind: "system", text: `${name} requests an undo — waiting for approval.` });
+    this.notify();
+  }
+
+  respondUndo(seat: number, approve: boolean): void {
+    if (!this.state || !this.state.pendingUndo) return;
+    if (this.state.pendingUndo.requesterSeat === seat) return; // can't approve your own
+    if (approve) {
+      this.undo(); // clears pendingUndo + notifies
+      return;
+    }
+    this.state.pendingUndo = null;
+    log(this.state, { seat, kind: "system", text: `Undo request denied.` });
+    this.notify();
   }
 
   // Redacted state for a viewer: opponents' hands and everyone's libraries are

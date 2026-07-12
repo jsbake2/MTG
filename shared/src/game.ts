@@ -184,6 +184,9 @@ export interface TableState {
   lastRoll: RollResult | null;
   // Epoch ms when the current turn began (for the shared turn timer).
   turnStartedAt: number;
+  // A pending undo awaiting an opponent's approval (null when none). The requester
+  // waits; any other seated player approves or denies.
+  pendingUndo: { requesterSeat: number } | null;
 }
 
 // ---- Actions (client -> engine) ----------------------------------------
@@ -248,7 +251,8 @@ export type ClientMessage =
   | { type: "leave_seat" }
   | { type: "start_game" }
   | { type: "action"; action: GameAction; clientRev?: number }
-  | { type: "undo" }
+  | { type: "undo" } // now a request — the server holds it for opponent approval
+  | { type: "undo_response"; approve: boolean }
   | { type: "chat"; text: string }
   | { type: "ping" };
 

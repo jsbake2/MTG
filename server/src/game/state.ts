@@ -146,6 +146,7 @@ export function buildInitialState(opts: {
     passStreak: 0,
     lastRoll: null,
     turnStartedAt: Date.now(),
+    pendingUndo: null,
   };
   recountHiddenZones(state);
   return state;

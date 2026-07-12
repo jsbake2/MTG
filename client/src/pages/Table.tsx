@@ -12,6 +12,7 @@ import { useSettings } from "@/store/settings";
 import { playRoll, playTurnChime, playWarning, unlockAudio } from "@/lib/sound";
 import { MANA_HEX, MANA_FG } from "@/lib/mana";
 import { FreeformBoard } from "@/pages/FreeformBoard";
+import { UndoPrompt } from "@/components/UndoPrompt";
 
 const STEP_LABELS: Record<string, string> = {
   untap: "Untap",
@@ -31,7 +32,13 @@ const STEP_LABELS: Record<string, string> = {
 export function TablePage() {
   const { id = "" } = useParams();
   const t = useTable(id);
-  if (t.state) return t.state.mode === "freeform" ? <FreeformBoard t={t} state={t.state} /> : <GameBoard t={t} state={t.state} />;
+  if (t.state)
+    return (
+      <>
+        <UndoPrompt state={t.state} you={t.you} t={t} />
+        {t.state.mode === "freeform" ? <FreeformBoard t={t} state={t.state} /> : <GameBoard t={t} state={t.state} />}
+      </>
+    );
   return <Lobby t={t} />;
 }
 
