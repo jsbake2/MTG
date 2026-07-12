@@ -3,6 +3,7 @@ import { Link, useLocation, useParams } from "react-router-dom";
 import type { Ability, CardDetailResponse, Deck, EffectMode, GameObject, PlayerState, RollResult, TableState, ZoneId } from "@mtg/shared";
 import { TURN_STEPS, compileEffects, parseAbilities } from "@mtg/shared";
 import { api } from "@/api/client";
+import { useReportIssue } from "@/store/reportIssue";
 import { useAuth } from "@/store/auth";
 import { constructionMatches, useLegalDeckIds } from "@/lib/deckLegality";
 import { useTable, type TableConn } from "@/game/useTable";
@@ -1698,6 +1699,8 @@ function CardMenu({
           <Item label="→ Library (bottom)" onClick={() => move("library", false)} />
         </>
       )}
+      <div className="my-1 border-t border-table-border" />
+      <Item label="🐞 Report issue" onClick={() => useReportIssue.getState().openReport({ cardId: o.cardId, oracleId: o.oracleId, cardName: o.name })} />
     </div>
   );
 }

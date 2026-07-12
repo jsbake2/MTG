@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import type { GameObject, PlayerState, TableState, Card } from "@mtg/shared";
 import type { TableConn } from "@/game/useTable";
+import { useReportIssue } from "@/store/reportIssue";
 import { CardImage } from "@/components/CardTile";
 import { Avatar } from "@/components/Avatar";
 import { useSettings } from "@/store/settings";
@@ -1371,6 +1372,8 @@ function FreeformCardMenu({ menu, state, you, t, onClose }: { menu: { id: string
       <Item label="→ Exile" onClick={() => move("exile")} />
       <Item label="→ Library (top)" onClick={() => move("library", true)} />
       <Item label="→ Library (bottom)" onClick={() => move("library", false)} />
+      <div className="my-1 border-t border-table-border" />
+      <Item label="🐞 Report issue" onClick={() => useReportIssue.getState().openReport({ cardId: o.cardId, oracleId: o.oracleId, cardName: o.name })} />
     </div>
   );
 }
