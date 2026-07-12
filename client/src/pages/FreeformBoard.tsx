@@ -431,11 +431,13 @@ export function FreeformBoard({ t, state }: { t: TableConn; state: TableState })
                 {[4, 6, 8, 10, 12, 20].map((sides) => (
                   <button
                     key={sides}
-                    className="btn-ghost !py-1 text-xs font-semibold flex flex-col items-center justify-center border border-table-border/40 bg-table-panel2/30 hover:border-table-accent/40 rounded"
+                    className="btn-ghost !p-1 text-xs font-semibold flex flex-col items-center justify-center border border-table-border/45 bg-table-panel2/30 hover:border-table-accent/40 rounded h-[72px]"
                     onClick={() => triggerTumbleRoll(sides)}
+                    title={`Roll d${sides}`}
                   >
-                    <span className="text-[10px] text-table-muted">d</span>
-                    <span className="text-sm text-table-ink">{sides}</span>
+                    <div className="w-10 h-10 mb-0.5 pointer-events-none">
+                      <DiceGraphic sides={sides} result={sides} />
+                    </div>
                   </button>
                 ))}
               </div>
@@ -801,7 +803,7 @@ export function FreeformBoard({ t, state }: { t: TableConn; state: TableState })
       {activeRolls.map((roll) => (
         <div
           key={roll.id}
-          className="pointer-events-none fixed left-1/2 top-1/3 z-50 dice-tumble flex h-16 w-16 items-center justify-center rounded-full bg-slate-950 border-2 border-table-accent text-lg font-bold text-white shadow-2xl"
+          className="pointer-events-none fixed left-1/2 top-1/3 z-50 dice-tumble flex h-16 w-16 items-center justify-center shadow-2xl"
           style={{
             ["--dx-start-x" as any]: `${roll.startX}px`,
             ["--dx-start-y" as any]: `${roll.startY}px`,
@@ -813,10 +815,7 @@ export function FreeformBoard({ t, state }: { t: TableConn; state: TableState })
             ["--dx-end-y" as any]: `${roll.endY}px`,
           }}
         >
-          <div className="flex flex-col items-center justify-center leading-none">
-            <span className="text-[9px] uppercase tracking-wider text-table-muted">d{roll.sides}</span>
-            <span className="text-xl font-display text-table-accentSoft">{roll.result}</span>
-          </div>
+          <DiceGraphic sides={roll.sides} result={roll.result} />
         </div>
       ))}
 
@@ -932,4 +931,93 @@ function Notepad({ tableId, onClose }: { tableId: string; onClose: () => void })
       />
     </div>
   );
+}
+
+// ---- Dice Graphic Polyhedral Shapes ----
+function DiceGraphic({ sides, result }: { sides: number; result: number }) {
+  if (sides === 4) {
+    return (
+      <svg width="64" height="64" viewBox="0 0 64 64" className="w-full h-full text-table-accentSoft filter drop-shadow-[0_2px_8px_rgba(var(--c-accent),0.25)]">
+        <polygon points="32,6 5,55 59,55" fill="#0f172a" stroke="currentColor" strokeWidth="2.5" strokeLinejoin="round" />
+        <line x1="32" y1="36" x2="32" y2="6" stroke="currentColor" strokeWidth="1.2" opacity="0.6" />
+        <line x1="32" y1="36" x2="5" y2="55" stroke="currentColor" strokeWidth="1.2" opacity="0.6" />
+        <line x1="32" y1="36" x2="59" y2="55" stroke="currentColor" strokeWidth="1.2" opacity="0.6" />
+        <text x="32" y="47" textAnchor="middle" fill="#fff" fontSize="15" fontWeight="bold" fontFamily="sans-serif">
+          {result}
+        </text>
+      </svg>
+    );
+  }
+  if (sides === 6) {
+    return (
+      <svg width="64" height="64" viewBox="0 0 64 64" className="w-full h-full text-table-accentSoft filter drop-shadow-[0_2px_8px_rgba(var(--c-accent),0.25)]">
+        <rect x="8" y="8" width="48" height="48" rx="6" fill="#0f172a" stroke="currentColor" strokeWidth="2.5" strokeLinejoin="round" />
+        <text x="32" y="39" textAnchor="middle" fill="#fff" fontSize="20" fontWeight="bold" fontFamily="sans-serif">
+          {result}
+        </text>
+      </svg>
+    );
+  }
+  if (sides === 8) {
+    return (
+      <svg width="64" height="64" viewBox="0 0 64 64" className="w-full h-full text-table-accentSoft filter drop-shadow-[0_2px_8px_rgba(var(--c-accent),0.25)]">
+        <polygon points="32,4 60,32 32,60 4,32" fill="#0f172a" stroke="currentColor" strokeWidth="2.5" strokeLinejoin="round" />
+        <line x1="4" y1="32" x2="60" y2="32" stroke="currentColor" strokeWidth="1.5" opacity="0.6" />
+        <line x1="32" y1="4" x2="32" y2="60" stroke="currentColor" strokeWidth="1" opacity="0.4" />
+        <text x="32" y="38" textAnchor="middle" fill="#fff" fontSize="18" fontWeight="bold" fontFamily="sans-serif">
+          {result}
+        </text>
+      </svg>
+    );
+  }
+  if (sides === 10) {
+    return (
+      <svg width="64" height="64" viewBox="0 0 64 64" className="w-full h-full text-table-accentSoft filter drop-shadow-[0_2px_8px_rgba(var(--c-accent),0.25)]">
+        <polygon points="32,4 58,26 48,56 32,60 16,56 6,26" fill="#0f172a" stroke="currentColor" strokeWidth="2.5" strokeLinejoin="round" />
+        <line x1="32" y1="34" x2="32" y2="4" stroke="currentColor" strokeWidth="1.2" opacity="0.6" />
+        <line x1="32" y1="34" x2="58" y2="26" stroke="currentColor" strokeWidth="1.2" opacity="0.6" />
+        <line x1="32" y1="34" x2="48" y2="56" stroke="currentColor" strokeWidth="1.2" opacity="0.6" />
+        <line x1="32" y1="34" x2="16" y2="56" stroke="currentColor" strokeWidth="1.2" opacity="0.6" />
+        <line x1="32" y1="34" x2="6" y2="26" stroke="currentColor" strokeWidth="1.2" opacity="0.6" />
+        <text x="32" y="44" textAnchor="middle" fill="#fff" fontSize="16" fontWeight="bold" fontFamily="sans-serif">
+          {result}
+        </text>
+      </svg>
+    );
+  }
+  if (sides === 12) {
+    return (
+      <svg width="64" height="64" viewBox="0 0 64 64" className="w-full h-full text-table-accentSoft filter drop-shadow-[0_2px_8px_rgba(var(--c-accent),0.25)]">
+        <polygon points="32,4 58,23 48,56 16,56 6,23" fill="#0f172a" stroke="currentColor" strokeWidth="2.5" strokeLinejoin="round" />
+        <polygon points="32,20 44,28 39,44 25,44 20,28" fill="none" stroke="currentColor" strokeWidth="1" opacity="0.7" />
+        <line x1="32" y1="4" x2="32" y2="20" stroke="currentColor" strokeWidth="1" opacity="0.6" />
+        <line x1="58" y1="23" x2="44" y2="28" stroke="currentColor" strokeWidth="1" opacity="0.6" />
+        <line x1="48" y1="56" x2="39" y2="44" stroke="currentColor" strokeWidth="1" opacity="0.6" />
+        <line x1="16" y1="56" x2="25" y2="44" stroke="currentColor" strokeWidth="1" opacity="0.6" />
+        <line x1="6" y1="23" x2="20" y2="28" stroke="currentColor" strokeWidth="1" opacity="0.6" />
+        <text x="32" y="38" textAnchor="middle" fill="#fff" fontSize="15" fontWeight="bold" fontFamily="sans-serif">
+          {result}
+        </text>
+      </svg>
+    );
+  }
+  if (sides === 20) {
+    return (
+      <svg width="64" height="64" viewBox="0 0 64 64" className="w-full h-full text-table-accentSoft filter drop-shadow-[0_2px_8px_rgba(var(--c-accent),0.25)]">
+        <polygon points="32,4 58,19 58,49 32,60 6,49 6,19" fill="#0f172a" stroke="currentColor" strokeWidth="2.5" strokeLinejoin="round" />
+        <polygon points="32,20 48,42 16,42" fill="none" stroke="currentColor" strokeWidth="1.2" opacity="0.7" />
+        <line x1="32" y1="4" x2="32" y2="20" stroke="currentColor" strokeWidth="1" opacity="0.6" />
+        <line x1="6" y1="19" x2="16" y2="42" stroke="currentColor" strokeWidth="1" opacity="0.6" />
+        <line x1="58" y1="19" x2="48" y2="42" stroke="currentColor" strokeWidth="1" opacity="0.6" />
+        <line x1="6" y1="49" x2="16" y2="42" stroke="currentColor" strokeWidth="1" opacity="0.6" />
+        <line x1="58" y1="49" x2="48" y2="42" stroke="currentColor" strokeWidth="1" opacity="0.6" />
+        <line x1="32" y1="60" x2="16" y2="42" stroke="currentColor" strokeWidth="1" opacity="0.6" />
+        <line x1="32" y1="60" x2="48" y2="42" stroke="currentColor" strokeWidth="1" opacity="0.6" />
+        <text x="32" y="38" textAnchor="middle" fill="#fff" fontSize="14" fontWeight="bold" fontFamily="sans-serif">
+          {result}
+        </text>
+      </svg>
+    );
+  }
+  return null;
 }
