@@ -6,6 +6,8 @@ import { useSettings } from "@/store/settings";
 import { unlockAudio } from "@/lib/sound";
 import { Avatar } from "@/components/Avatar";
 import { AvatarPicker } from "@/components/AvatarPicker";
+import { Rulebook, RulebookFab } from "@/components/Rulebook";
+import { useRulebook } from "@/store/rulebook";
 import { Login } from "@/pages/Login";
 import { Browse } from "@/pages/Browse";
 import { Decks } from "@/pages/Decks";
@@ -14,6 +16,9 @@ import { Play } from "@/pages/Play";
 import { TablePage } from "@/pages/Table";
 import { Leaderboard } from "@/pages/Leaderboard";
 import { Admin } from "@/pages/Admin";
+import { Rulings } from "@/pages/Rulings";
+import { Issues } from "@/pages/Issues";
+import { ReportIssue, ReportIssueFab } from "@/components/ReportIssue";
 
 function NavBar() {
   const { user, logout } = useAuth();
@@ -41,6 +46,16 @@ function NavBar() {
         {user?.isAdmin && (
           <NavLink to="/admin" className={linkClass}>
             Admin
+          </NavLink>
+        )}
+        {user?.isAdmin && (
+          <NavLink to="/rulings" className={linkClass}>
+            Rulings
+          </NavLink>
+        )}
+        {user?.isAdmin && (
+          <NavLink to="/issues" className={linkClass}>
+            Issues
           </NavLink>
         )}
       </nav>
@@ -73,6 +88,9 @@ function NavBar() {
             {user?.displayName}
             {user?.isAdmin ? " · admin" : ""}
           </span>
+        </button>
+        <button className="rounded-md px-2 py-1 hover:bg-table-panel2" title="Rulebook" onClick={() => useRulebook.getState().setOpen(true)}>
+          📖
         </button>
         <button className="btn-ghost" onClick={() => logout()}>
           Sign out
@@ -115,9 +133,15 @@ export function App() {
           <Route path="/leaderboard" element={<Leaderboard />} />
           <Route path="/table/:id" element={<TablePage />} />
           {user.isAdmin && <Route path="/admin" element={<Admin />} />}
+          {user.isAdmin && <Route path="/rulings" element={<Rulings />} />}
+          {user.isAdmin && <Route path="/issues" element={<Issues />} />}
           <Route path="*" element={<Navigate to="/browse" replace />} />
         </Routes>
       </main>
+      <RulebookFab />
+      <Rulebook />
+      <ReportIssueFab />
+      <ReportIssue />
     </div>
   );
 }

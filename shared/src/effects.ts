@@ -397,3 +397,73 @@ function targetLabel(op: string, kind: TargetKind): string {
   const verb: Record<string, string> = { damage: "deal damage to", destroy: "destroy", exile: "exile", bounce: "return", counter: "counter", tap: "tap", untap: "untap", plus_counter: "counter up", pump: "pump", grant: "buff", gain_control: "gain control of", draw: "draw for" };
   return `Choose ${kind === "any" ? "any target" : `target ${kind}`} to ${verb[op] ?? op}`;
 }
+
+// ---------------------------------------------------------------------------
+// STATIC CONTINUOUS EFFECTS (CR 613, layers 6 & 7). Unlike the one-shot ops
+// above, these are ongoing effects a PERMANENT produces while on the battlefield:
+//   - Aura/Equipment grants:  "Enchanted/Equipped creature gets +2/+1 and has trample"
+//   - Anthems:                "Creatures you control get +1/+1"
+// The engine folds these into a creature's effective P/T (layer 7d) and keyword
+// set (layer 6). Only additive +N/+N and keyword grants are modeled here; set-P/T
+// and restriction clauses (Pacifism, etc.) fall back to manual for now.
+// ---------------------------------------------------------------------------
+export interface StaticEffect {
+  scope: "attached" | "anthem";
+  power: number;
+  toughness: number;
+  keywords: string[];
+  // Combat restrictions granted to the affected creature(s) (e.g. Pacifism).
+  cantAttack?: boolean;
+  cantBlock?: boolean;
+  // Anthem-only: which creatures it buffs.
+  controller?: "you" | "opponents" | "all";
+  othersOnly?: boolean; // "other creatures you control" — excludes the source itself
+  tokensOnly?: boolean; // "creature tokens you control get ..." (Intangible Virtue)
+}
+
+function parseKeywords(phrase: string | undefined): string[] {
+  if (!phrase) return [];
+  const p = phrase.toLowerCase();
+  return KEYWORDS.filter((k) => new RegExp(`\\b${k}\\b`).test(p));
+}
+
+// Compile the static continuous effects a permanent contributes. Returns [] for
+// anything not a recognized static grant (the common case).
+export function compileStatic(oracleText: string | null, cardName: string): StaticEffect[] {
+  if (!oracleText) return [];
+  const out: StaticEffect[] = [];
+  for (let raw of normalize(oracleText, cardName).split(/[.\n]/)) {
+    const clause = raw.trim().toLowerCase();
+    if (!clause || /until end of turn/.test(clause)) continue; // that's a one-shot pump, not static
+
+    // Aura / Equipment restriction: "enchanted|equipped creature can't attack/block" (Pacifism)
+    let m = clause.match(/(?:enchanted|equipped) creature can't (attack or block|attack|block)/);
+    if (m) { const w = m[1]!; out.push({ scope: "attached", power: 0, toughness: 0, keywords: [], cantAttack: /attack/.test(w), cantBlock: /block/.test(w) }); continue; }
+
+    // Aura / Equipment: "enchanted|equipped creature gets +X/+Y[ and has KW]"
+    m = clause.match(/(?:enchanted|equipped) creature gets ([+-]\d+)\/([+-]\d+)(?:\s+and (?:has|gains?) ([a-z, ]+?))?$/);
+    if (m) { out.push({ scope: "attached", power: parseInt(m[1]!, 10), toughness: parseInt(m[2]!, 10), keywords: parseKeywords(m[3]) }); continue; }
+    // Aura / Equipment keyword-only: "enchanted|equipped creature has|gains KW"
+    m = clause.match(/(?:enchanted|equipped) creature (?:has|gains?) ([a-z, ]+?)$/);
+    if (m) { const kw = parseKeywords(m[1]); if (kw.length) out.push({ scope: "attached", power: 0, toughness: 0, keywords: kw }); continue; }
+
+    // Anthem: "[other] creatures [you control|your opponents control|] get +X/+Y[ and have KW]"
+    m = clause.match(/(other )?creatures( you control| your opponents control| an opponent controls)? get ([+-]\d+)\/([+-]\d+)(?:\s+and (?:have|has|gains?) ([a-z, ]+?))?$/);
+    if (m) {
+      const scopeText = (m[2] || "").trim();
+      const controller: StaticEffect["controller"] = /opponent/.test(scopeText) ? "opponents" : /you control/.test(scopeText) ? "you" : "all";
+      out.push({ scope: "anthem", power: parseInt(m[3]!, 10), toughness: parseInt(m[4]!, 10), keywords: parseKeywords(m[5]), controller, othersOnly: !!m[1] });
+      continue;
+    }
+    // Anthem keyword-only: "creatures you control have KW"
+    m = clause.match(/(other )?creatures( you control| your opponents control)? (?:have|gains?) ([a-z, ]+?)$/);
+    if (m) {
+      const kw = parseKeywords(m[3]);
+      if (!kw.length) continue;
+      const scopeText = (m[2] || "").trim();
+      const controller: StaticEffect["controller"] = /opponent/.test(scopeText) ? "opponents" : /you control/.test(scopeText) ? "you" : "all";
+      out.push({ scope: "anthem", power: 0, toughness: 0, keywords: kw, controller, othersOnly: !!m[1] });
+    }
+  }
+  return out;
+}

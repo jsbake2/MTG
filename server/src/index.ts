@@ -13,6 +13,8 @@ import { cardsRouter } from "./cards/routes.js";
 import { decksRouter } from "./decks/routes.js";
 import { tablesRouter } from "./game/routes.js";
 import { adminRouter } from "./admin/routes.js";
+import { rulingsRouter } from "./rulings/routes.js";
+import { issuesRouter } from "./issues/routes.js";
 import { getLeaderboard } from "./game/results.js";
 import { attachWebSocket } from "./game/ws.js";
 import { seedStarterDecks } from "./seed/starterDecks.js";
@@ -46,6 +48,8 @@ async function main() {
   app.use("/api/decks", decksRouter);
   app.use("/api/tables", tablesRouter);
   app.use("/api/admin", adminRouter);
+  app.use("/api/rulings", rulingsRouter);
+  app.use("/api/issues", issuesRouter);
   app.get("/api/leaderboard", requireAuth, async (_req, res) => {
     res.json({ leaderboard: await getLeaderboard() });
   });

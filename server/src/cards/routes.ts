@@ -1,6 +1,6 @@
 import { Router } from "express";
 import type { CardDetailResponse, SearchRequest } from "@mtg/shared";
-import { getCardById, getImportMeta, getPrintings, listSets, searchCards, searchTokens } from "./repo.js";
+import { getCardById, getImportMeta, getPrintings, listSets, searchCards, searchTokens, tokenArts } from "./repo.js";
 import { getCardArt, getCardImage, getCardBack } from "./images.js";
 import { getDecksContainingCard } from "../decks/repo.js";
 
@@ -8,6 +8,13 @@ export const cardsRouter = Router();
 
 cardsRouter.get("/tokens", async (req, res) => {
   res.json({ tokens: await searchTokens(String(req.query.q ?? "")) });
+});
+
+// Alternate art printings of a token (by oracle_id) so the player can choose one.
+cardsRouter.get("/tokens/arts", async (req, res) => {
+  const oracleId = String(req.query.oracleId ?? "");
+  if (!/^[0-9a-f-]{36}$/i.test(oracleId)) return res.status(400).json({ error: "valid oracleId required" });
+  res.json({ arts: await tokenArts(oracleId) });
 });
 
 cardsRouter.get("/sets", async (_req, res) => {

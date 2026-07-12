@@ -14,7 +14,6 @@ import {
 import { getFormat, compileEffects, compileEtbEffects, compileTriggers, parseAbilities, type EffectOp, type EffectWho, type MassFilter, type TriggerEvent } from "@mtg/shared";
 import { KEYWORD_ACTIONS } from "./rules.js";
 import {
-  effectivePT,
   libraryOrdered,
   log,
   nextLogId,
@@ -22,6 +21,8 @@ import {
   objectsIn,
   recountHiddenZones,
 } from "./state.js";
+import { derivePT, staticKeywordsFor, combatFlagsFor, controlsLandType } from "./continuous.js";
+import { entersTappedUnconditional, entersTappedConditional } from "./replacements.js";
 
 export interface CardInfo {
   typeLine: string;
@@ -56,18 +57,20 @@ function isCreature(ctx: CardIndex, o: GameObject): boolean {
 function isLand(ctx: CardIndex, o: GameObject): boolean {
   return hasType(ctx, o, "Land");
 }
-function hasKeyword(ctx: CardIndex, o: GameObject, kw: string): boolean {
+function hasKeyword(state: TableState, ctx: CardIndex, o: GameObject, kw: string): boolean {
   const k = kw.toLowerCase();
   if (o.grantedKeywords?.some((x) => x.toLowerCase() === k)) return true; // until-end-of-turn grants
+  // Static grants from auras/equipment/anthems (CR 613 layer 6).
+  if (o.zone === "battlefield" && staticKeywordsFor(state, ctx, o).some((x) => x.toLowerCase() === k)) return true;
   const ci = info(ctx, o);
   if (!ci) return false;
   return ci.keywords.some((x) => x.toLowerCase() === k) || (ci.oracleText ?? "").toLowerCase().includes(k);
 }
-function isInstantSpeed(ctx: CardIndex, o: GameObject): boolean {
+function isInstantSpeed(state: TableState, ctx: CardIndex, o: GameObject): boolean {
   const ci = info(ctx, o);
   if (!ci) return true; // unknown/token — don't block
   if (ci.cardTypes.includes("Instant")) return true;
-  return hasKeyword(ctx, o, "flash");
+  return hasKeyword(state, ctx, o, "flash");
 }
 function isPermanentSpell(ctx: CardIndex, o: GameObject): boolean {
   const ci = info(ctx, o);
@@ -120,8 +123,8 @@ export function checkStateBased(state: TableState, ctx: CardIndex): void {
   for (const o of objectsIn(state, "battlefield")) {
     if (!isCreature(ctx, o)) continue;
     const ci = info(ctx, o);
-    const { toughness } = effectivePT(state, o, ci ?? undefined);
-    const indestructible = hasKeyword(ctx, o, "indestructible");
+    const { toughness } = derivePT(state, ctx, o, ci ?? undefined);
+    const indestructible = hasKeyword(state, ctx, o, "indestructible");
     const lethalDamage = o.damage > 0 && o.damage >= toughness;
     const deathtouchKill = o.deathtouched && o.damage > 0;
     if (toughness <= 0 || ((lethalDamage || deathtouchKill) && !indestructible)) {
@@ -167,7 +170,14 @@ function moveObject(
     o.controllerSeat = toSeat;
     o.x = opts.x ?? o.x;
     o.y = opts.y ?? o.y;
-    if (isCreature(ctx, o)) o.summoningSick = !hasKeyword(ctx, o, "haste");
+    if (isCreature(ctx, o)) o.summoningSick = !hasKeyword(state, ctx, o, "haste");
+    // Replacement effect (CR 614.1c): enters-tapped.
+    if (fromZone !== "battlefield") {
+      const etbText = info(ctx, o)?.oracleText ?? null;
+      if (entersTappedUnconditional(etbText)) o.tapped = true;
+      else if (entersTappedConditional(etbText))
+        log(state, { seat: o.controllerSeat, kind: "system", text: `${o.name} may enter tapped — tap it manually if its condition applies.` });
+    }
   } else {
     o.controllerSeat = o.ownerSeat;
   }
@@ -336,7 +346,7 @@ function resolveWho(
 
 // Route a permanent/spell to a zone using the rules table (destroy/exile/etc.).
 function routeZone(state: TableState, ctx: CardIndex, o: GameObject, action: keyof typeof KEYWORD_ACTIONS): void {
-  if (action === "destroy" && hasKeyword(ctx, o, "indestructible")) return;
+  if (action === "destroy" && hasKeyword(state, ctx, o, "indestructible")) return;
   const rule = KEYWORD_ACTIONS[action];
   moveObject(state, ctx, o, rule.dest, rule.toOwner ? o.ownerSeat : o.controllerSeat, { toTop: rule.toTop });
 }
@@ -737,7 +747,7 @@ function dispatch(state: TableState, ctx: CardIndex, seat: number, action: GameA
       }
       const prio = enforce(state, seat === state.prioritySeat, "You do not have priority.");
       if (prio) return prio;
-      const instant = isInstantSpeed(ctx, o);
+      const instant = isInstantSpeed(state, ctx, o);
       if (!instant) {
         const timing = enforce(state, seat === state.activeSeat && isMainPhase(state) && state.stackOrder.length === 0, `${o.name} can only be cast on your main phase with an empty stack (it isn't an instant).`);
         if (timing) return timing;
@@ -768,7 +778,7 @@ function dispatch(state: TableState, ctx: CardIndex, seat: number, action: GameA
         const tapCheck = enforce(state, !o.tapped, `${o.name} is already tapped.`);
         if (tapCheck) return tapCheck;
         if (isCreature(ctx, o)) {
-          const sick = enforce(state, !o.summoningSick || hasKeyword(ctx, o, "haste"), `${o.name} has summoning sickness.`);
+          const sick = enforce(state, !o.summoningSick || hasKeyword(state, ctx, o, "haste"), `${o.name} has summoning sickness.`);
           if (sick) return sick;
         }
         o.tapped = true;
@@ -863,10 +873,18 @@ function dispatch(state: TableState, ctx: CardIndex, seat: number, action: GameA
       if (check2) return check2;
       const check3 = enforce(state, !o.tapped, `${o.name} is tapped and can't attack.`);
       if (check3) return check3;
-      const check4 = enforce(state, !o.summoningSick || hasKeyword(ctx, o, "haste"), `${o.name} has summoning sickness.`);
+      const check4 = enforce(state, !o.summoningSick || hasKeyword(state, ctx, o, "haste"), `${o.name} has summoning sickness.`);
       if (check4) return check4;
+      const aflags = combatFlagsFor(state, ctx, o);
+      const check5 = enforce(state, !aflags.cantAttack, `${o.name} can't attack.`);
+      if (check5) return check5;
+      if (aflags.attackUnlessDefenderLand) {
+        const need = aflags.attackUnlessDefenderLand;
+        const c = enforce(state, controlsLandType(state, ctx, action.defendingSeat, need), `${o.name} can't attack unless the defending player controls a ${need}.`);
+        if (c) return c;
+      }
       o.attacking = action.defendingSeat;
-      if (!hasKeyword(ctx, o, "vigilance")) o.tapped = true;
+      if (!hasKeyword(state, ctx, o, "vigilance")) o.tapped = true;
       log(state, { seat, kind: "combat", text: `${o.name} attacks ${playerBySeat(state, action.defendingSeat)?.name}.` });
       runTriggers(state, ctx, o, "attack");
       return null;
@@ -879,14 +897,25 @@ function dispatch(state: TableState, ctx: CardIndex, seat: number, action: GameA
       if (c1) return c1;
       const c2 = enforce(state, !blocker.tapped, `${blocker.name} is tapped and can't block.`);
       if (c2) return c2;
+      const bFlags = combatFlagsFor(state, ctx, blocker);
+      const aFlags = combatFlagsFor(state, ctx, attacker);
+      const c2b = enforce(state, !bFlags.cantBlock, `${blocker.name} can't block.`);
+      if (c2b) return c2b;
       const c3 = enforce(state, attacker.attacking !== null, `${attacker.name} isn't attacking.`);
       if (c3) return c3;
       const c4 = enforce(
         state,
-        !hasKeyword(ctx, attacker, "flying") || hasKeyword(ctx, blocker, "flying") || hasKeyword(ctx, blocker, "reach"),
+        !hasKeyword(state, ctx, attacker, "flying") || hasKeyword(state, ctx, blocker, "flying") || hasKeyword(state, ctx, blocker, "reach"),
         `${blocker.name} can't block ${attacker.name} — it has flying.`,
       );
       if (c4) return c4;
+      const c5 = enforce(state, !aFlags.cantBeBlocked, `${attacker.name} can't be blocked.`);
+      if (c5) return c5;
+      const c6 = enforce(state, !bFlags.blockOnlyFlying || hasKeyword(state, ctx, attacker, "flying"), `${blocker.name} can only block creatures with flying.`);
+      if (c6) return c6;
+      const walk = aFlags.landwalk.find((lt) => controlsLandType(state, ctx, blocker.controllerSeat, lt));
+      const c7 = enforce(state, !walk, `${attacker.name} has ${walk}walk — it can't be blocked while you control a ${walk}.`);
+      if (c7) return c7;
       blocker.blocking = action.attackerId;
       log(state, { seat, kind: "combat", text: `${blocker.name} blocks ${attacker.name}.` });
       return null;
@@ -920,7 +949,7 @@ function dispatch(state: TableState, ctx: CardIndex, seat: number, action: GameA
       if (!o) return { ok: false, error: "Card not found" };
       const rule = KEYWORD_ACTIONS[action.action];
       // Destroy is prevented by indestructible; sacrifice/exile are not.
-      if (action.action === "destroy" && hasKeyword(ctx, o, "indestructible")) {
+      if (action.action === "destroy" && hasKeyword(state, ctx, o, "indestructible")) {
         log(state, { seat, kind: "action", text: `${o.name} is indestructible — not destroyed.` });
         return null;
       }
@@ -1012,10 +1041,10 @@ function cryptoRandomId(): string {
 }
 
 function pow(state: TableState, ctx: CardIndex, o: GameObject): number {
-  return effectivePT(state, o, info(ctx, o) ?? undefined).power;
+  return derivePT(state, ctx, o, info(ctx, o) ?? undefined).power;
 }
 function tou(state: TableState, ctx: CardIndex, o: GameObject): number {
-  return effectivePT(state, o, info(ctx, o) ?? undefined).toughness;
+  return derivePT(state, ctx, o, info(ctx, o) ?? undefined).toughness;
 }
 function toxicAmount(ctx: CardIndex, o: GameObject): number {
   const m = (info(ctx, o)?.oracleText ?? "").match(/toxic (\d+)/i);
@@ -1024,15 +1053,15 @@ function toxicAmount(ctx: CardIndex, o: GameObject): number {
 function dealToCreature(state: TableState, ctx: CardIndex, source: GameObject, target: GameObject, amount: number): void {
   if (amount <= 0) return;
   // Infect deals its combat damage to creatures as -1/-1 counters.
-  if (hasKeyword(ctx, source, "infect")) {
+  if (hasKeyword(state, ctx, source, "infect")) {
     const c = target.counters.find((x) => x.type === "-1/-1");
     if (c) c.count += amount;
     else target.counters.push({ type: "-1/-1", count: amount });
   } else {
     target.damage += amount;
   }
-  if (hasKeyword(ctx, source, "deathtouch")) target.deathtouched = true;
-  if (hasKeyword(ctx, source, "lifelink")) {
+  if (hasKeyword(state, ctx, source, "deathtouch")) target.deathtouched = true;
+  if (hasKeyword(state, ctx, source, "lifelink")) {
     const c = playerBySeat(state, source.controllerSeat);
     if (c) c.life += amount;
   }
@@ -1042,7 +1071,7 @@ function dealToPlayer(state: TableState, ctx: CardIndex, source: GameObject, sea
   const p = playerBySeat(state, seat);
   if (p) {
     // Infect deals damage to players as poison counters instead of life loss.
-    if (hasKeyword(ctx, source, "infect")) {
+    if (hasKeyword(state, ctx, source, "infect")) {
       p.poison += amount;
     } else {
       p.life -= amount;
@@ -1052,7 +1081,7 @@ function dealToPlayer(state: TableState, ctx: CardIndex, source: GameObject, sea
       if (tox > 0) p.poison += tox;
     }
   }
-  if (hasKeyword(ctx, source, "lifelink")) {
+  if (hasKeyword(state, ctx, source, "lifelink")) {
     const c = playerBySeat(state, source.controllerSeat);
     if (c) c.life += amount;
   }
@@ -1069,7 +1098,7 @@ function resolveCombat(state: TableState, ctx: CardIndex): void {
   if (attackers.length === 0) return;
   // Menace: a creature with menace can't be blocked by exactly one creature.
   for (const atk of attackers) {
-    if (!hasKeyword(ctx, atk, "menace")) continue;
+    if (!hasKeyword(state, ctx, atk, "menace")) continue;
     const bs = objectsIn(state, "battlefield").filter((o) => o.blocking === atk.id);
     if (bs.length === 1) {
       bs[0]!.blocking = null;
@@ -1081,8 +1110,8 @@ function resolveCombat(state: TableState, ctx: CardIndex): void {
   );
 
   const dealsInStep = (o: GameObject, step: "first" | "regular"): boolean => {
-    const fs = hasKeyword(ctx, o, "first strike");
-    const ds = hasKeyword(ctx, o, "double strike");
+    const fs = hasKeyword(state, ctx, o, "first strike");
+    const ds = hasKeyword(state, ctx, o, "double strike");
     return step === "first" ? fs || ds : !fs || ds;
   };
 
@@ -1090,7 +1119,7 @@ function resolveCombat(state: TableState, ctx: CardIndex): void {
     // Only run the first-strike step if someone actually has (double) first strike.
     if (step === "first") {
       const anyFS = objectsIn(state, "battlefield").some(
-        (o) => (o.attacking !== null || o.blocking !== null) && (hasKeyword(ctx, o, "first strike") || hasKeyword(ctx, o, "double strike")),
+        (o) => (o.attacking !== null || o.blocking !== null) && (hasKeyword(state, ctx, o, "first strike") || hasKeyword(state, ctx, o, "double strike")),
       );
       if (!anyFS) continue;
     }
@@ -1102,19 +1131,19 @@ function resolveCombat(state: TableState, ctx: CardIndex): void {
       if (blockers.length === 0) {
         if (!blockedIds.has(atk.id)) {
           dealToPlayer(state, ctx, atk, atk.attacking!, power);
-        } else if (hasKeyword(ctx, atk, "trample")) {
+        } else if (hasKeyword(state, ctx, atk, "trample")) {
           // Blockers all died; trample the rest through.
           dealToPlayer(state, ctx, atk, atk.attacking!, power);
         }
       } else {
         let remaining = power;
         for (const b of blockers) {
-          const lethal = hasKeyword(ctx, atk, "deathtouch") ? 1 : Math.max(0, tou(state, ctx, b) - b.damage);
+          const lethal = hasKeyword(state, ctx, atk, "deathtouch") ? 1 : Math.max(0, tou(state, ctx, b) - b.damage);
           const assign = Math.min(remaining, lethal > 0 ? lethal : remaining);
           dealToCreature(state, ctx, atk, b, assign);
           remaining -= assign;
         }
-        if (remaining > 0 && hasKeyword(ctx, atk, "trample")) dealToPlayer(state, ctx, atk, atk.attacking!, remaining);
+        if (remaining > 0 && hasKeyword(state, ctx, atk, "trample")) dealToPlayer(state, ctx, atk, atk.attacking!, remaining);
       }
     }
     // Blockers deal damage back to their attacker.

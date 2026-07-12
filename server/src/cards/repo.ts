@@ -341,12 +341,33 @@ export async function searchTokens(q: string): Promise<TokenCard[]> {
   ).rows;
   return rows.map((r) => ({
     id: r.id,
+    oracleId: r.oracle_id ?? r.id,
     name: r.name,
     typeLine: r.type_line,
     power: r.power,
     toughness: r.toughness,
     colors: r.colors,
     imageUrl: imgPath(r.id, !!r.image_normal),
+  }));
+}
+
+// All distinct-art printings of a token, so the player can choose which art to
+// bring into the game. Keyed by oracle_id (groups printings of the same token).
+export async function tokenArts(oracleId: string): Promise<Array<{ id: string; imageUrl: string | null; setCode: string; setName: string }>> {
+  const rows = (
+    await query<CardDbRow>(
+      `SELECT DISTINCT ON (coalesce(image_normal, id::text)) ${FULL_COLS} FROM cards
+       WHERE oracle_id = $1 AND layout IN ('token','double_faced_token','emblem')
+       ORDER BY coalesce(image_normal, id::text), released_at DESC NULLS LAST
+       LIMIT 40`,
+      [oracleId],
+    )
+  ).rows;
+  return rows.map((r) => ({
+    id: r.id,
+    imageUrl: imgPath(r.id, !!r.image_normal),
+    setCode: r.set_code,
+    setName: r.set_name,
   }));
 }
 

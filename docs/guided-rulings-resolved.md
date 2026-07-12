@@ -1,0 +1,236 @@
+# Guided-rules — resolved rulings (owner-decided)
+
+_Generated from the rule_rulings table. The authoritative spec for how the guided engine should implement each mechanic. Verify wording vs docs/comprehensive-rules.txt when coding._
+
+## Owner decisions (87)
+
+- **“Activate only as a sorcery”** — The ability can only be activated during your own turn, in a main phase, with an empty stack (sorcery timing). Block it at instant/flash timing. [owner ruling]
+- **“Add one mana of any color”** — Tap for one mana; the player chooses which single color (W/U/B/R/G) to produce. [owner ruling]
+- **Additional cost: sacrifice** — When casting, the player must sacrifice the required permanent as part of the cost; the spell can't be cast without it.
+- **Basic mana ability “{T}: Add {C}/{G}/…”** — Tap to add exactly the printed mana to your pool. An empty diamond {C} = one colorless mana. [owner ruling]
+- **“Add {X} or {Y}” (choose color)** — Tap and choose which ONE of the listed mana types to add. [owner ruling]
+- **Affinity** — Affinity for X: this spell costs {1} less to cast for each X you control (e.g. each artifact).
+  - _note:_ This is one good example of why tags are so important. If you are properly tagging then you will have the "each X you control" easily handled. For instance I see that one of these says for each clown, you shuld have things tagged clown. Same as any other type that a creature has... 
+- **“Attacks each combat if able”** — This creature must be declared as an attacker each combat if it's able to.
+- **“Can block only creatures with flying”** — This creature can only be declared as a blocker against attackers that have flying.
+- **Bushido N** — Bushido N: whenever this creature blocks or becomes blocked, it gets +N/+N until end of turn.
+- **“Can't be blocked” / evasion** — This creature can't be blocked by any creature; its combat damage goes to the defending player/planeswalker unimpeded.
+  - _note:_ The answer i selected but there are additional things added... like what cant block them or what can block them... you gotta make a set of rules for these
+- **“Can't be countered”** — Counter effects can't counter this spell; the engine disallows countering it.
+- **“Can't be regenerated”** — Regeneration shields can't save the affected creatures; destruction proceeds and they go to the graveyard.
+- **“Can't block”** — Prevent this creature from being declared as a blocker.
+- **“Choose a Background”** — This legendary creature can be paired with a Background enchantment as a second commander when building a Commander deck.
+  - _note:_ I have never played commander but I want to and for that reason I am not really qualified to answer this... Please read around and research for this answer.
+- **Copy spell — “choose new targets”** — The effect creates a copy of the spell on the stack; you may choose new legal targets for the copy, otherwise it keeps the same targets. [owner ruling]
+- **“Choose one —” (modal)** — The caster picks exactly ONE listed mode when casting; only that mode's effect (and its targets) happens. [owner ruling]
+  - _note:_ sometimes it may say choose X things and not just one but this is the answer
+- **“Choose one or both —”** — The caster chooses one or both listed modes; each chosen mode happens, with targets picked per chosen mode.
+- **“Choose two —”** — The caster picks exactly two of the listed modes; each chosen mode happens with its own targets.
+- **{TK}{TK}{TK}{TK} — 8/4** — Whatever set of cards these come from, lets not allow them in our guided play, only in manual. Its really not something anyone likes or wants to deal with.
+- **Any player may activate this ability.** — Either you or any opponent can use this ability. Most cards are only for the owner but this one can be used by all.
+- **At the beginning of each upkeep, if a player cast two or more spells last turn, transform ** — Just as it says, if you do not cast anything for a whole turn, then the next run this creature transforms. On the lower right of the card where Hinterland Hermit says 2/1 for its power/toughness, there is another set of power/toughness above this value that it morphs to. It stil has all other properties, just a new power/toughness rating. 
+- **At the beginning of each upkeep, if no spells were cast last turn, transform this creature** — Just as it says, if you do not cast anything for a whole turn, then the next run this creature transforms. On the lower right of the card where Hinterland Hermit says 2/1 for its power/toughness, there is another set of power/toughness above this value that it morphs to. It stil has all other properties, just a new power/toughness rating. 
+- **Bestow {1}{W}** — If you pay the bestow cost instead of the normal card cost it comes into play as an enchant creature aura instead of a creature and teh Enchanted creature gets ... stuff applies to enchanged creature. 
+- **Jeska, Thrice Reborn can be your commander.** — More commander stuff that I do not understand. Please do the research for me on this one.
+- **Choose one.** — Same as the other choose one... this part of the card lets you pick from a list. 
+- **Disguise {3}{G/U}{G/U}** — You pay the disguise cost, put a 2/2 creature with ward 2 on the battlefield (card goes facedown on battlefield). Then you can pay the disguise cost again to turn it face up. Disguise can be cast as an instant when turning back up. Other contitions may apply i.e. Unyielding Gatekeeper says you must exile a card when its turned back up. Since the 2/2 creature with ward 2 is effectively this creature in disguise, it goes away when you cast disguise to turn face-up.
+- **Doctor's companion** — Read commander rules please.
+- **Exile Teferi's Protection.** — This means the card exiles after casting instead of going into graveyard as normal sorcery or instant spells do.
+- **Flying, ward {2}** — This creature has flying
+This creature has ward X (already defined earlier)
+- **III — Exile this Saga, then return it to the battlefield transformed under your control.** — Saga's progress as turns start. When you return transformed you return as a creature with the same name as the card and power/toughness are listed in bottom left of card, Okiba Reckoner Raid is 2/2 for example.
+- **LEVEL 3+** — These are creature levels... at leavels 1 and 2 it has this power/toughness... or wahtever teh range is.
+- **Plot {3}{U}** — This lets you cast a card for its plot cost as a sorcery and exile the card. You can then return it to the field later for the same plot cost, putting it into play. Has to be another turn, you cannot plot and return on same turn. 
+- **cl-protection-from-black** — Please read the rules around this. Basically though they cannot take combat damage from said color. This does not give them deathtouch, just cannot be damaged by said color.
+- **Suspend 5—{W}** — Suspend lets you pay the suspend cost instead of the actual card cost. After the suspend counter reaches 0 (remove one at the start of your turn) then it casts for free. 
+- **Unearth {5}{B}{R}** — Unearth lets you take this card back from the graveyard if its in there. It has a cost listed and it only stays unearthed for this turn, then it exiles. It also comes back from the graveyard having haste. This can only be cast on your turn as a sorcery. 
+- **Until the end of your next turn, you may play that card.** — This has you exile a card from the top of your draw pile and also lets you play it until end of your next turn for its cost.
+- **When this Aura enters, tap enchanted creature.** — This is useful to tap an opponents creature preventing them from using tapped abilities and preventing them from blocking. Some of these actually prevent untapping the affected creature also. 
+- **cl-when-this-creature-enters-you-get** — These all create energy counters which most of them also have a way to utilize. Separate system to track on the board, energy counters.
+- **You choose a nonland card from it.** — Look at oponents hand and force them to get rid of a card (graveyard) and it cannot be land.
+- **You control enchanted creature.** — This is used to enchant an opponents creature, you can use it as your own as long as this enchantment is on it and its alive. If it dies, it goes back to thier graveyeard and this enchantment goes to your graveyeard.
+- **You have no maximum hand size.** — Generally you cannot hold more than the max amount of cards, these let you hold with no maximum. Research max hand size and allow this to override.
+- **Crew (Vehicles)** — Crew N: tap any number of untapped creatures you control with total power ≥ N; the Vehicle becomes an artifact creature until end of turn. Usable any time you have priority. [owner ruling — please confirm]
+- **Cumulative upkeep** — At the beginning of your upkeep put an age counter on it, then pay the cost for EACH age counter or sacrifice it.
+- **Cycling** — Cycling is an activated ability usable any time you could cast an instant: pay the cycling cost and discard this card from your hand, then draw a card. [owner ruling]
+- **Daybound / Nightbound (day & night)** — Track a day/night state for the game. Daybound/nightbound permanents are their front (day) or back (night) face depending on that state, which flips based on how many spells were cast the previous turn.
+  - _note:_ This answer + we don't need to track this unless someones deck actually has day/night stuff.
+- **Delayed exile (end step)** — Delayed trigger: at the beginning of the next end step, exile this permanent.
+- **Delayed sacrifice (end step)** — Create a delayed trigger: at the beginning of the next end step, sacrifice this permanent.
+- **Targeted discard (reveal → discard)** — After the reveal/choice, the chosen card is put from that player's hand into their graveyard.
+- **Enchant creature (Auras)** — The Aura attaches to a creature already on the battlefield. The creature's own enter effects happen first, THEN the Aura applies — if the Aura drops its toughness to 0 or otherwise kills it, it dies. The Aura goes to the graveyard when the creature dies, unless its text says otherwise. [owner ruling]
+- **“Doesn't untap” (Aura lock)** — While enchanted, skip this permanent during its controller's untap step (it stays tapped).
+- **Enters with +1/+1 counters** — As it enters the battlefield, put the stated number of +1/+1 counters on it (X = the value paid or the stated condition).
+- **Equip (Equipment)** — Equipment enters unattached. Pay the equip cost at sorcery speed to attach it to a creature you control; it grants its bonus while attached. It STAYS on the battlefield when that creature dies and can be re-equipped to another creature later. Only leaves if its own text says so. [owner ruling]
+  - _note:_ the cards are way too small on this page for me to view (rulings page) - double size and give more example cards where possible
+- **ETB “choose one” (modal enter)** — On entering, its controller chooses one listed mode; that mode happens as a triggered ability.
+- **Flashback** — While this card is in your graveyard you may cast it by paying the flashback cost instead of its mana cost; then exile it as it leaves the stack.
+- **Grants haste (until end of turn)** — Grant haste for the turn: the creature can attack and use {T} abilities despite summoning sickness; clear at cleanup.
+- **“If you do, discard a card”** — This is linked to an optional action above it: if you took that action, then discard a card.
+- **Exile-and-play (impulse draw)** — Exile the card(s); you may play or cast them this turn (until end of turn). Any still exiled at end of turn stay exiled.
+- **Kicker** — Optional additional cost paid as you cast: the player may choose to pay the kicker; if paid, the kicked bonus effect happens.
+- **Land enters tapped** — The land enters tapped and can't be tapped for mana until it untaps on your next turn, unless the card gives more detail. [owner ruling]
+- **Landwalk (Swampwalk, Islandwalk, …)** — This creature can't be blocked as long as the defending player controls a land of the named type.
+- **Level up (Levelers)** — Level up {cost}: pay at sorcery speed to put a level counter on it; its P/T and abilities change as it crosses the printed level thresholds.
+  - _note:_ Also note that you cannot level up with summoning sickness.
+- **Living weapon / auto-attach Equipment** — When the Equipment enters, attach it to the stated creature (or, for Living weapon, create a 0/0 black Phyrexian Germ token and attach it). It stays on the battlefield if the creature dies.
+  - _note:_ It may not always remain after creature death, there are cases where the card says it destroys with creature....
+- **Madness** — When you discard this card, you may exile it instead and then cast it for its madness cost; if you choose not to, put it into your graveyard.
+- **Animated / creature-lands (“It's still a land”)** — Activating the ability turns the land into a creature with the listed P/T (until end of turn or as stated) while it REMAINS a land; it can still be tapped for mana and, if not summoning-sick, can attack.
+- **Speed / “Start your engines!” / Max speed** — ‘Start your engines!’ sets your speed to 1 if you had none. Your speed goes up (max 4) the first time each turn an opponent loses life or one of your creatures attacks; ‘max speed’ abilities are active while your speed is 4. Track a per-player speed value.
+  - _note:_ We need to visibly display speed on the tabletop for both modes of play... we need to add a speed tracker that is in the sidebox for manual mode and automatically added whenever a card is present on the battlefield with speed functionality. If both players have speed then add one for both. Look into how mtga does this as its very clean there and write it up.
+- **Mill** — Put the top N cards of the affected player's library into their graveyard.
+- **Morph** — You may cast it face down as a 2/2 for {3}; at any time you may pay the morph cost to turn it face up with its real characteristics.
+  - _note:_ we will need a token or some text to show what it enters the game as
+- **Ninjutsu** — Ninjutsu {cost}: during the declare-blockers step, return an unblocked attacker you control to your hand and put this Ninja onto the battlefield tapped and attacking in its place, for the ninjutsu cost.
+- **“Only once each turn”** — Track uses per turn; the ability can trigger/activate only once per turn, then is unavailable until your next turn.
+- **Proliferate** — Choose any number of permanents and/or players that have a counter, and give each another counter of a kind it already has.
+- **Firebreathing (activated pump)** — Pay the listed cost to give the creature +X/+Y until end of turn; repeatable as long as you can pay. [owner ruling]
+- **“Put the rest on the bottom … in a random order”** — Shuffle the cards you looked at but didn't keep and put them on the BOTTOM of your library. [owner ruling]
+- **“Put the rest on the bottom … in any order”** — Put the leftover looked-at cards on the bottom of your library in any order you choose.
+- **Reanimation (graveyard → battlefield)** — Move the targeted creature card from the graveyard onto the battlefield under your control; it enters as a new object.
+- **Re-cast with a new target** — If the card says you may, re-cast the spell choosing a new target when it resolves/triggers. [owner ruling]
+- **Regenerate** — Return it from the graveyard to the battlefield.
+  - _note:_ when conditions are met
+- **“Reveals their hand”** — The affected player reveals all cards in their hand to everyone (information only); nothing is removed.
+  - _note:_ If the card says something is removed then the person casting this would take the action and remove the card.
+- **Saddle N (Mounts)** — Saddle N: tap any number of other untapped creatures you control with total power ≥ N to saddle this Mount at sorcery speed; its ‘saddled’ bonus applies this turn.
+- **Scry** — Look at the top N cards of your library; put any number on the bottom and the rest back on top in any order.
+- **Shuffle (after search)** — Shuffle the affected library so its order becomes random.
+- **Surveil** — Look at the top N cards of your library; put any number of them into your graveyard and the rest back on top in any order.
+- **“Activate only during your upkeep”** — The ability can only be activated during your upkeep step.
+- **“Activate only during your turn”** — The ability can only be activated during your own turn (any step where you have priority).
+- **Look at the top of your library** — You may look at the top card of your library at any time (revealed to you only); other abilities may let you play it from there.
+- **Toxic N** — Toxic N: when this creature deals combat damage to a player, that player also gets N poison counters (10 poison = that player loses).
+- **Untap a permanent** — Untap the referenced permanent (set it from tapped to untapped).
+- **Ward** — When this permanent becomes the target of a spell or ability an opponent controls, counter that spell/ability unless its controller pays the ward cost.
+  - _note:_ The cost for ward goes to the attacker. My creature has ward 2, if they want to target my creature, tehy must pay an additional 2 on top of whatever they are doing.
+
+## Auto-proposed by Claude — pending owner review (63)
+
+- **Adapt N** — If this creature has no +1/+1 counters on it, put N +1/+1 counters on it.
+  - _note:_ [auto-proposed by Claude from the MTG rules — please verify]
+- **Additional cost: discard a card** — As you cast this spell you must discard the stated card(s) as part of the cost; you can't cast it without doing so.
+  - _note:_ [auto-proposed by Claude from the MTG rules — please verify]
+- **Annihilator N** — Whenever this creature attacks, the defending player sacrifices N permanents (before blockers).
+  - _note:_ [auto-proposed by Claude from the MTG rules — please verify]
+- **Backup N** — When this enters, put N +1/+1 counters on a target creature; if it's another creature, it also gains this creature's other keyword abilities until end of turn.
+  - _note:_ [auto-proposed by Claude from the MTG rules — please verify]
+- **Basic landcycling** — Pay the cost and discard this card from your hand to search your library for a basic land card, reveal it, put it into your hand, then shuffle.
+  - _note:_ [auto-proposed by Claude from the MTG rules — please verify]
+- **Blitz** — You may cast this for its blitz cost; it gains haste and 'when this dies, draw a card', and you sacrifice it at the beginning of the next end step.
+  - _note:_ [auto-proposed by Claude from the MTG rules — please verify]
+- **Bloodthirst N** — If an opponent was dealt damage this turn, this creature enters with N +1/+1 counters on it.
+  - _note:_ [auto-proposed by Claude from the MTG rules — please verify]
+- **Bolster N** — Choose the creature you control with the least toughness (you choose among ties) and put N +1/+1 counters on it.
+  - _note:_ [auto-proposed by Claude from the MTG rules — please verify]
+- **Buyback** — Pay the extra buyback cost as you cast this spell; if you do, return it to your hand instead of the graveyard as it resolves.
+  - _note:_ [auto-proposed by Claude from the MTG rules — please verify]
+- **Casualty N** — As you cast this spell, you may sacrifice a creature with power N or greater; if you do, copy the spell (choosing new targets for the copy if you wish).
+  - _note:_ [auto-proposed by Claude from the MTG rules — please verify]
+- **Choose new targets for the copies** — For each copy created, you may choose new legal targets; otherwise each copy keeps the original targets.
+  - _note:_ [auto-proposed by Claude from the MTG rules — please verify]
+- **“Choose one or more —”** — The caster chooses one or more of the listed modes; each chosen mode happens with its own targets.
+  - _note:_ [auto-proposed by Claude from the MTG rules — please verify]
+- **Choose the same mode more than once** — When choosing this spell's modes, you're allowed to choose the same listed mode multiple times.
+  - _note:_ [auto-proposed by Claude from the MTG rules — please verify]
+- **“Choose three —”** — The caster picks exactly three of the listed modes; each chosen mode happens with its own targets.
+  - _note:_ [auto-proposed by Claude from the MTG rules — please verify]
+- **Clash** — You and an opponent each reveal the top card of your library, then each may put that card on the bottom. You 'win the clash' if your revealed card has a higher mana value.
+  - _note:_ [auto-proposed by Claude from the MTG rules — please verify]
+- **Cast/copy without paying its mana cost** — Create a copy (or cast the referenced card) without paying its mana cost; you still choose targets/modes as normal.
+  - _note:_ [auto-proposed by Claude from the MTG rules — please verify]
+- **Dash** — You may cast this for its dash cost; it enters with haste and you return it to your hand at the beginning of the next end step.
+  - _note:_ [auto-proposed by Claude from the MTG rules — please verify]
+- **Devour N** — As this enters, you may sacrifice any number of creatures; it enters with N +1/+1 counters for each creature sacrificed this way.
+  - _note:_ [auto-proposed by Claude from the MTG rules — please verify]
+- **Target player discards N cards** — The affected player(s) discard the stated number of cards from their hand (that player chooses which, unless the card says 'at random' or 'you choose').
+  - _note:_ [auto-proposed by Claude from the MTG rules — please verify]
+- **Disturb** — You may cast this card transformed (its back face) from your graveyard for its disturb cost. If it would leave the battlefield, exile it instead.
+  - _note:_ [auto-proposed by Claude from the MTG rules — please verify]
+- **Dredge N** — If this card is in your graveyard, instead of drawing a card you may mill N cards; if you do, return this card from your graveyard to your hand.
+  - _note:_ [auto-proposed by Claude from the MTG rules — please verify]
+- **Echo** — At the beginning of your first upkeep after this entered, sacrifice it unless you pay its echo cost.
+  - _note:_ [auto-proposed by Claude from the MTG rules — please verify]
+- **Encore** — Exile this from your graveyard and pay its encore cost: for each opponent, create a token copy that attacks that opponent this turn, then sacrifice the tokens at end of turn.
+  - _note:_ [auto-proposed by Claude from the MTG rules — please verify]
+- **Energy counters {E}** — Energy {E} is a per-player resource: 'you get {E}' adds energy counters to your pool; abilities that cost {E} spend them. Track an energy total per player (needs an on-board counter).
+  - _note:_ [auto-proposed by Claude from the MTG rules — please verify]
+- **Enters with -1/-1 counters** — As this enters the battlefield, put the stated number of -1/-1 counters on it.
+  - _note:_ [auto-proposed by Claude from the MTG rules — please verify]
+- **Entwine** — This is a modal spell: pay the entwine cost in addition to its mana cost to choose ALL of its modes instead of the stated number.
+  - _note:_ [auto-proposed by Claude from the MTG rules — please verify]
+- **Evoke** — You may cast this for its evoke cost; if you do, sacrifice it when it enters (you still get its enter-the-battlefield trigger).
+  - _note:_ [auto-proposed by Claude from the MTG rules — please verify]
+- **“Exile it instead” (of dying / hitting the graveyard)** — Replacement effect: if the referenced object would go to the graveyard (or die), exile it instead.
+  - _note:_ [auto-proposed by Claude from the MTG rules — please verify]
+- **Explore** — Reveal the top card of your library. If it's a land, put it into your hand. Otherwise put a +1/+1 counter on the exploring creature, then you may leave the card on top or put it into your graveyard.
+  - _note:_ [auto-proposed by Claude from the MTG rules — please verify]
+- **Additional combat phase** — After this combat phase, there is an additional combat phase (followed by an additional main phase).
+  - _note:_ [auto-proposed by Claude from the MTG rules — please verify]
+- **Play an additional land** — You may play the stated number of additional lands on each of your turns.
+  - _note:_ [auto-proposed by Claude from the MTG rules — please verify]
+- **Take an extra turn** — You take an extra turn after this one. (Guard against loops in guided mode.)
+  - _note:_ [auto-proposed by Claude from the MTG rules — please verify]
+- **Fabricate N** — When this enters, either put N +1/+1 counters on it, or create N 1/1 colorless Servo artifact creature tokens.
+  - _note:_ [auto-proposed by Claude from the MTG rules — please verify]
+- **Fading N** — This enters with N fade counters. At the beginning of your upkeep remove one; if you can't, sacrifice it.
+  - _note:_ [auto-proposed by Claude from the MTG rules — please verify]
+- **Doesn't untap next untap step** — The affected permanents stay tapped through their controller's next untap step (they skip untapping once).
+  - _note:_ [auto-proposed by Claude from the MTG rules — please verify]
+- **Foretell** — During your turn you may pay {2} to exile this card from your hand face down. On a later turn you may cast it for its foretell cost.
+  - _note:_ [auto-proposed by Claude from the MTG rules — please verify]
+- **Gains a keyword until end of turn** — Grant the listed keyword ability to the affected creature until end of turn (cleared at cleanup).
+  - _note:_ [auto-proposed by Claude from the MTG rules — please verify]
+- **Graft N** — This enters with N +1/+1 counters. Whenever another creature enters, you may move a +1/+1 counter from this onto it.
+  - _note:_ [auto-proposed by Claude from the MTG rules — please verify]
+- **Hideaway N** — When this enters, look at the top N cards of your library, exile one face down, and put the rest on the bottom. A later condition lets you play that exiled card for free.
+  - _note:_ [auto-proposed by Claude from the MTG rules — please verify]
+- **Learn** — You may draw a card and then discard a card. (In sets that support Lesson sideboards you could instead fetch a Lesson; here, use draw-then-discard.)
+  - _note:_ [auto-proposed by Claude from the MTG rules — please verify]
+- **“Look at the top N cards of your library”** — Look at the top N cards of your library (revealed to you only), then follow the card's instructions for which to keep and where the rest go.
+  - _note:_ [auto-proposed by Claude from the MTG rules — please verify]
+- **Create a Treasure / Food / Clue / Blood token** — Create the named artifact token with its standard rules text — Treasure: {T}, Sacrifice: add one mana of any color. Food: {2}, {T}, Sacrifice: gain 3 life. Clue: {2}, Sacrifice: draw a card. Blood: {1}, {T}, discard a card, Sacrifice: draw a card.
+  - _note:_ [auto-proposed by Claude from the MTG rules — please verify]
+- **Megamorph** — Like morph: cast face down as a 2/2 for {3}. Turn it face up any time for its megamorph cost; when you do, put a +1/+1 counter on it.
+  - _note:_ [auto-proposed by Claude from the MTG rules — please verify]
+- **Modular N** — This enters with N +1/+1 counters. When it dies, you may put its +1/+1 counters on a target artifact creature.
+  - _note:_ [auto-proposed by Claude from the MTG rules — please verify]
+- **The monarch** — Track a single 'monarch' among players. The monarch draws a card at the beginning of their end step. Whenever a creature deals combat damage to the monarch, that creature's controller becomes the monarch.
+  - _note:_ [auto-proposed by Claude from the MTG rules — please verify]
+- **Monstrosity N** — If this creature isn't monstrous, put N +1/+1 counters on it and it becomes monstrous (this happens only once).
+  - _note:_ [auto-proposed by Claude from the MTG rules — please verify]
+- **Mutate** — You may cast this for its mutate cost, merging it with a target non-Human creature you own (over or under). The merged permanent has the top card's P/T and name plus all abilities of the pile. (Complex — fall back to manual stacking if needed.)
+  - _note:_ [auto-proposed by Claude from the MTG rules — please verify]
+- **May choose not to untap** — During your untap step you may choose to leave this permanent tapped (don't untap it) — usually to keep a 'while tapped' effect going.
+  - _note:_ [auto-proposed by Claude from the MTG rules — please verify]
+- **Offspring** — You may pay the extra offspring cost as you cast this creature; if you do, when it enters also create a 1/1 token copy of it.
+  - _note:_ [auto-proposed by Claude from the MTG rules — please verify]
+- **Prevent combat damage (Fog)** — Prevent the specified damage that would be dealt this turn (a prevention shield / Fog).
+  - _note:_ [auto-proposed by Claude from the MTG rules — please verify]
+- **Prevent the next N damage** — Set up a shield that prevents the next N damage that would be dealt to the chosen target this turn.
+  - _note:_ [auto-proposed by Claude from the MTG rules — please verify]
+- **Protection from [color/quality]** — Protection from X means the permanent can't be Damaged by, Enchanted/Equipped by, Blocked by, or Targeted by anything that is X (the 'DEBT' rule). It does NOT gain deathtouch or become unblockable.
+  - _note:_ [auto-proposed by Claude from the MTG rules — please verify]
+- **Prototype** — You may cast this for its prototype cost as an artifact with the listed color and smaller P/T; otherwise it's cast normally with its printed stats.
+  - _note:_ [auto-proposed by Claude from the MTG rules — please verify]
+- **Reconfigure** — Pay the reconfigure cost at sorcery speed to attach or unattach this from a creature you control. While attached it's an Equipment (not a creature).
+  - _note:_ [auto-proposed by Claude from the MTG rules — please verify]
+- **Renown N** — When this deals combat damage to a player, if it isn't renowned, put N +1/+1 counters on it and it becomes renowned (happens only once).
+  - _note:_ [auto-proposed by Claude from the MTG rules — please verify]
+- **Return to the battlefield at the next end step** — Exile now and return it to the battlefield under its owner's control at the beginning of the next end step (it enters as a new object, re-triggering enter effects).
+  - _note:_ [auto-proposed by Claude from the MTG rules — please verify]
+- **Play with the top card revealed / play from top** — Your library's top card is played with it revealed; you may play lands and cast spells from the top of your library as its other abilities allow.
+  - _note:_ [auto-proposed by Claude from the MTG rules — please verify]
+- **“Can't attack unless defending player controls [land]”** — This creature can't be declared as an attacker unless the defending player controls the named land type.
+  - _note:_ [auto-proposed by Claude from the MTG rules — please verify]
+- **Soulshift N** — When this creature dies, you may return target Spirit card with mana value N or less from your graveyard to your hand.
+  - _note:_ [auto-proposed by Claude from the MTG rules — please verify]
+- **Specialize** — Pay the specialize cost and discard a card of the chosen color to turn this into its matching color back face. (Uncommon mechanic — fall back to manual if unclear.)
+  - _note:_ [auto-proposed by Claude from the MTG rules — please verify]
+- **Splice onto Arcane** — As you cast an Arcane spell, you may reveal this card from your hand and pay its splice cost to add this card's text to that spell.
+  - _note:_ [auto-proposed by Claude from the MTG rules — please verify]
+- **Transmute** — Pay the transmute cost and discard this card (sorcery speed) to search your library for a card with the same mana value, reveal it, put it into your hand, then shuffle.
+  - _note:_ [auto-proposed by Claude from the MTG rules — please verify]
+- **Vanishing N** — This enters with N time counters. Remove one at the beginning of your upkeep; when the last is removed, sacrifice it.
+  - _note:_ [auto-proposed by Claude from the MTG rules — please verify]

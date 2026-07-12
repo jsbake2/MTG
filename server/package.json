@@ -9,6 +9,7 @@
     "build": "tsc -p tsconfig.json && node -e \"require('fs').cpSync('src/db/migrations','dist/db/migrations',{recursive:true})\"",
     "start": "node dist/index.js",
     "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "node --import tsx --test 'src/**/*.test.ts'",
     "import:cards": "tsx src/import/cli.ts",
     "db:migrate": "tsx src/db/migrate.ts"
   },

@@ -3,6 +3,7 @@ import type { CardDetailResponse } from "@mtg/shared";
 import { api } from "@/api/client";
 import { CardImage } from "@/components/CardTile";
 import { ManaCost } from "@/components/ManaCost";
+import { useReportIssue } from "@/store/reportIssue";
 
 const LEGAL_FORMATS = ["standard", "pioneer", "modern", "pauper", "legacy", "vintage", "commander"];
 
@@ -108,6 +109,13 @@ export function CardDetailModal({
                     + Add to deck
                   </button>
                 )}
+                <button
+                  className="btn-ghost"
+                  title="Report a rules issue with this card"
+                  onClick={() => useReportIssue.getState().openReport({ cardId: data.card.id, oracleId: data.card.oracleId, cardName: data.card.name })}
+                >
+                  🐞 Report issue
+                </button>
                 <button className="btn-ghost" onClick={onClose}>
                   Close
                 </button>
