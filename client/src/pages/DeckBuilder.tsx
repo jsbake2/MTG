@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import type { CardSummary, DeckDetail, DeckTag, DeckValidation, FormatDef } from "@mtg/shared";
 import { api } from "@/api/client";
-import { CardImage } from "@/components/CardTile";
+import { CardImage, CardTile } from "@/components/CardTile";
 import { CardDetailModal } from "@/components/CardDetailModal";
 import { ArtPicker } from "@/components/ArtPicker";
 import { ManaCost } from "@/components/ManaCost";
@@ -278,17 +278,22 @@ export function DeckBuilder() {
               </div>
               <div className="grid grid-cols-3 gap-1.5 sm:grid-cols-4 lg:grid-cols-4">
                 {group.cards.map((c) => (
-                  <div key={c.id} className="group relative" onMouseEnter={() => setPreview(c)}>
-                    <button onClick={() => addCard(c)} className="block w-full" title={`Add ${c.name}`}>
-                      <CardImage id={c.id} name={c.name} />
-                    </button>
-                    <button
-                      className="absolute right-1 top-1 hidden rounded bg-black/70 px-1.5 text-xs text-table-ink group-hover:block"
-                      onClick={() => setDetailId(c.id)}
-                    >
-                      i
-                    </button>
-                  </div>
+                  <CardTile
+                    key={c.id}
+                    card={c}
+                    onClick={() => addCard(c)}
+                    overlay={
+                      <button
+                        className="absolute right-1 top-1 hidden rounded bg-black/70 px-1.5 text-xs text-table-ink group-hover:block"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setDetailId(c.id);
+                        }}
+                      >
+                        i
+                      </button>
+                    }
+                  />
                 ))}
               </div>
             </div>
@@ -373,6 +378,7 @@ export function DeckBuilder() {
                   onInfo={setDetailId}
                   onMove={(cid) => moveBoard(cid, "commander", "main")}
                   onArt={(cid) => setArtPickerFor({ cardId: cid, board: "commander" })}
+                  onHover={setPreview}
                   moveLabel="→ main"
                 />
               )}
@@ -392,6 +398,7 @@ export function DeckBuilder() {
                       onInfo={setDetailId}
                       onMove={format?.requiresCommander ? (cid) => moveBoard(cid, "main", "commander") : undefined}
                       onArt={(cid) => setArtPickerFor({ cardId: cid, board: "main" })}
+                      onHover={setPreview}
                       moveLabel="set commander"
                     />
                   ))
@@ -611,6 +618,7 @@ function BoardSection({
   onInfo,
   onMove,
   onArt,
+  onHover,
   moveLabel,
 }: {
   title: string;
@@ -620,6 +628,7 @@ function BoardSection({
   onInfo: (id: string) => void;
   onMove?: (cardId: string) => void;
   onArt?: (cardId: string) => void;
+  onHover?: (c: CardSummary | null) => void;
   moveLabel?: string;
 }) {
   return (
@@ -629,7 +638,7 @@ function BoardSection({
         {entries.map((e) => {
           const c = cache[e.cardId];
           return (
-            <div key={e.cardId} className="flex items-center gap-2 px-2 py-1 text-sm hover:bg-table-panel2/50">
+            <div key={e.cardId} className="flex items-center gap-2 px-2 py-1 text-sm hover:bg-table-panel2/50" onMouseEnter={() => c && onHover?.(c)}>
               <div className="flex items-center gap-1">
                 <button className="btn-ghost h-6 w-6 !px-0" onClick={() => onQty(e.cardId, e.quantity - 1)}>
                   −

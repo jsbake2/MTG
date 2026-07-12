@@ -1,9 +1,20 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import type { CreateTableRequest, Deck, FormatDef, TableSummary } from "@mtg/shared";
 import { api } from "@/api/client";
 import { useAuth } from "@/store/auth";
 import { useLegalDeckIds } from "@/lib/deckLegality";
+
+// e.g. "Friday 7AM Standard game" — day of week + hour + game type.
+function generatedTableName(formatName: string, mode: "guided" | "freeform"): string {
+  const d = new Date();
+  const day = d.toLocaleDateString(undefined, { weekday: "long" });
+  let h = d.getHours();
+  const ampm = h < 12 ? "AM" : "PM";
+  h = h % 12 || 12;
+  const type = mode === "freeform" ? "Tabletop" : formatName;
+  return `${day} ${h}${ampm} ${type} game`;
+}
 
 export function Play() {
   const [tables, setTables] = useState<TableSummary[]>([]);
@@ -11,7 +22,8 @@ export function Play() {
   const [decks, setDecks] = useState<Deck[]>([]);
   const [precons, setPrecons] = useState<Deck[]>([]);
   const [deckId, setDeckId] = useState<string>("");
-  const [form, setForm] = useState<CreateTableRequest>({ name: "", formatId: "commander", maxPlayers: 4, enforcement: "relaxed", mode: "guided" });
+  const [form, setForm] = useState<CreateTableRequest>({ name: "", formatId: "standard", maxPlayers: 4, enforcement: "relaxed", mode: "guided" });
+  const nameEdited = useRef(false);
   const nav = useNavigate();
   const { user } = useAuth();
 
@@ -49,6 +61,12 @@ export function Play() {
     if (deckId && ![...myDecks, ...preconDecks].some((d) => d.id === deckId)) setDeckId("");
   }, [form.formatId, legalIds]);
 
+  // Auto-name the table (until the host types their own name).
+  const formatName = formats.find((f) => f.id === form.formatId)?.name ?? form.formatId;
+  useEffect(() => {
+    if (!nameEdited.current) setForm((f) => ({ ...f, name: generatedTableName(formatName, f.mode) }));
+  }, [formatName, form.mode]);
+
   async function create() {
     const r = await api.post<{ table: TableSummary }>("/api/tables", {
       ...form,
@@ -73,7 +91,7 @@ export function Play() {
         <div className="flex flex-wrap items-end gap-2">
           <label className="flex flex-col text-xs text-table-muted">
             Name
-            <input className="input mt-1" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Friday night game" />
+            <input className="input mt-1" value={form.name} onChange={(e) => { nameEdited.current = true; setForm({ ...form, name: e.target.value }); }} placeholder="Friday night game" />
           </label>
           <label className="flex flex-col text-xs text-table-muted">
             Format (legality)

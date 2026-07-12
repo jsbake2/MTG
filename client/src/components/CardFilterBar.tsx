@@ -38,7 +38,7 @@ export function CardFilterBar({ onQuery, opts, setOpts, interpreted, queryError,
   const [cmcMax, setCmcMax] = useState("");
   const [cardType, setCardType] = useState("");
   const [keyword, setKeyword] = useState("");
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, setExpanded] = useState(true);
 
   // Compose the text box + filter controls into one query string.
   const effective = useMemo(() => {

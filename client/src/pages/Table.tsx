@@ -174,25 +174,40 @@ function Lobby({ t }: { t: TableConn }) {
             You have no legal <b>{lobby.formatId}</b> decks. Build/fix one in the Deck Builder for this format, or start a House table for casual play. You can still sit as a spectator.
           </div>
         )}
-        <div className="grid grid-cols-2 gap-2">
-          {Array.from({ length: lobby.maxPlayers }, (_, i) => {
-            const occupant = seatByIndex(i);
-            const mine = lobby.you === i;
-            return (
-              <button
-                key={i}
-                className={`rounded-md border p-3 text-left text-sm ${mine ? "border-table-accent bg-table-accent/10" : "border-table-border bg-table-panel2"}`}
-                onClick={() => t.takeSeat(i, deckId)}
-              >
-                <div className="text-xs text-table-muted">Seat {i + 1}</div>
-                <div className="flex items-center gap-2">
-                  {occupant && <Avatar cardId={occupant.avatarCardId} name={occupant.name} size={28} />}
-                  <span className="font-semibold">{occupant ? occupant.name : "— empty —"}</span>
-                </div>
-              </button>
-            );
-          })}
-        </div>
+        {/* You can't take a seat without a deck that's legal for this format —
+            no grabbing a seat you can't fill. House format is exempt. */}
+        {(() => {
+          const canSit = allowedFormat === "house" || !!deckId;
+          return (
+            <>
+              <div className="grid grid-cols-2 gap-2">
+                {Array.from({ length: lobby.maxPlayers }, (_, i) => {
+                  const occupant = seatByIndex(i);
+                  const mine = lobby.you === i;
+                  const blocked = !canSit && !mine && !occupant;
+                  return (
+                    <button
+                      key={i}
+                      disabled={blocked}
+                      title={blocked ? `Pick a legal ${lobby.formatId} deck above before taking a seat.` : undefined}
+                      className={`rounded-md border p-3 text-left text-sm ${mine ? "border-table-accent bg-table-accent/10" : "border-table-border bg-table-panel2"} ${blocked ? "cursor-not-allowed opacity-40" : ""}`}
+                      onClick={() => canSit || mine ? t.takeSeat(i, deckId) : undefined}
+                    >
+                      <div className="text-xs text-table-muted">Seat {i + 1}</div>
+                      <div className="flex items-center gap-2">
+                        {occupant && <Avatar cardId={occupant.avatarCardId} name={occupant.name} size={28} />}
+                        <span className="font-semibold">{occupant ? occupant.name : "— empty —"}</span>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+              {!canSit && (
+                <div className="mt-2 text-xs text-amber-300">Select a legal {lobby.formatId} deck above to take a seat (you can still watch as a spectator).</div>
+              )}
+            </>
+          );
+        })()}
         <div className="mt-4 flex items-center gap-2">
           {lobby.you !== null && (
             <button className="btn-ghost" onClick={() => t.leaveSeat()}>
