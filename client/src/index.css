@@ -183,13 +183,14 @@ body {
 }
 /* Manual tabletop: a large green felt playmat with a faint grid to snap against. */
 .freeform-felt {
-  background-color: #0c1512;
+  background-color: #090c10;
   background-image:
-    radial-gradient(circle at 50% 40%, rgba(35, 60, 48, 0.55), rgba(6, 12, 10, 0.9)),
-    linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
-  background-size: 100% 100%, 48px 48px, 48px 48px;
-  box-shadow: inset 0 0 120px rgba(0, 0, 0, 0.85);
+    radial-gradient(circle at 50% 50%, rgba(20, 26, 38, 0.8), #030406),
+    linear-gradient(rgba(227, 200, 110, 0.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(227, 200, 110, 0.02) 1px, transparent 1px);
+  background-size: 100% 100%, 24px 24px, 24px 24px;
+  box-shadow: inset 0 0 120px rgba(0, 0, 0, 0.95);
+  position: relative;
 }
 
 /* Each player's battlefield: a subtle felt slab so zones read as real surfaces. */
@@ -309,4 +310,43 @@ body {
 }
 .animate-fade-in {
   animation: fadeIn 0.12s cubic-bezier(0, 0, 0.2, 1) forwards;
+}
+
+/* ---- Dice Spin & Tumble Animations ---- */
+@keyframes dice-roll-tumble {
+  0% {
+    transform: translate(var(--dx-start-x, 0px), var(--dx-start-y, 0px)) rotate(0deg) scale(0.3);
+    opacity: 0.1;
+  }
+  15% {
+    opacity: 1;
+  }
+  50% {
+    transform: translate(var(--dx-mid-x, 50px), var(--dx-mid-y, -100px)) rotate(720deg) scale(1.4);
+  }
+  85% {
+    transform: translate(var(--dx-bounce-x, 100px), var(--dx-bounce-y, 50px)) rotate(1080deg) scale(0.9);
+  }
+  100% {
+    transform: translate(var(--dx-end-x, 120px), var(--dx-end-y, 80px)) rotate(1440deg) scale(1);
+    opacity: 1;
+  }
+}
+
+.dice-tumble {
+  animation: dice-roll-tumble 1.4s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+}
+
+/* Tabletop canvas zoom/pan styling */
+.tabletop-canvas {
+  transform-origin: 0 0;
+  transition: transform 0.05s ease-out;
+}
+
+/* Overlapping stack layouts */
+.stack-overlap-horizontal > *:not(:first-child) {
+  margin-left: -76px; /* overlapping cards horizontally */
+}
+.stack-overlap-vertical > *:not(:first-child) {
+  margin-top: -110px; /* overlapping cards vertically */
 }

@@ -1,21 +1,17 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import type { GameObject, PlayerState, TableState } from "@mtg/shared";
+import type { GameObject, PlayerState, TableState, Card } from "@mtg/shared";
 import type { TableConn } from "@/game/useTable";
 import { CardImage } from "@/components/CardTile";
 import { Avatar } from "@/components/Avatar";
 import { useSettings } from "@/store/settings";
-import { DiceRoller, RollOverlay, TokenPicker, ZoneBrowserModal } from "@/pages/Table";
+import { RollOverlay, TokenPicker, ZoneBrowserModal } from "@/pages/Table";
+import { api } from "@/api/client";
+import { playRoll } from "@/lib/sound";
 
-// Purely-manual virtual tabletop. No automation: players drag cards anywhere, tap,
-// add counters, track life, make tokens, and take notes — like an in-person game.
-// Everything rides on the same GameActions the engine already supports (move_card
-// with x/y, tap, add_counter, flip, adjust_life, create_token, keyword_action…).
-
-const GRID = 12; // snap granularity
+const GRID = 24; // standard MTG Arena snap size
 const snap = (n: number) => Math.round(n / GRID) * GRID;
 
-// A drag can carry a whole stack (all ids at one position move together).
 interface DragState {
   ids: string[];
   offsetX: number;
@@ -30,6 +26,20 @@ interface Pile {
   x: number;
   y: number;
   cards: GameObject[]; // bottom -> top
+}
+
+interface ActiveRollAnimation {
+  id: string;
+  sides: number;
+  result: number;
+  startX: number;
+  startY: number;
+  midX: number;
+  midY: number;
+  bounceX: number;
+  bounceY: number;
+  endX: number;
+  endY: number;
 }
 
 export function FreeformBoard({ t, state }: { t: TableConn; state: TableState }) {
@@ -48,9 +58,34 @@ export function FreeformBoard({ t, state }: { t: TableConn; state: TableState })
   const [notesOpen, setNotesOpen] = useState(false);
   const [chatText, setChatText] = useState("");
 
-  // FIXED mat card size — positions (x/y) are shared between players, so the card
-  // size must be identical on every screen or the board looks different for each
-  // player. The scalable size lives on the hand instead (that's personal/local).
+  // Tabletop canvas pan & zoom
+  const [zoom, setZoom] = useState(1.0);
+  const [panX, setPanX] = useState(0);
+  const [panY, setPanY] = useState(0);
+  const [isPanning, setIsPanning] = useState(false);
+  const panStart = useRef({ x: 0, y: 0, panX: 0, panY: 0 });
+
+  // Grid snap setting
+  const [snapEnabled, setSnapEnabled] = useState(true);
+
+  // Toolbox panel
+  const [toolboxOpen, setToolboxOpen] = useState(true);
+  const [activeCounterTool, setActiveCounterTool] = useState<string | null>(null);
+
+  // Collapsible Right Sidebar
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [sidebarTab, setSidebarTab] = useState<"chat" | "logs">("chat");
+
+  // Hovered card details cache
+  const [cardCache, setCardCache] = useState<Record<string, Card>>({});
+  const [hoveredBoardCardId, setHoveredBoardCardId] = useState<string | null>(null);
+
+  // Stacking direction configuration
+  const [stackDirection, setStackDirection] = useState<"auto" | "horizontal" | "vertical">("auto");
+
+  // Active rolls tray
+  const [activeRolls, setActiveRolls] = useState<ActiveRollAnimation[]>([]);
+
   const CARD_W = 108;
   const CARD_H = Math.round((CARD_W * 88) / 63);
 
@@ -65,8 +100,7 @@ export function FreeformBoard({ t, state }: { t: TableConn; state: TableState })
 
   const myHand = you !== null ? ((t.hands[you] ?? []).map((id) => state.objects[id]).filter(Boolean) as GameObject[]) : [];
 
-  // Smart stacking: permanents sharing a position (same seat + x + y) render as one
-  // pile with a count. Dropping a card onto another snaps them together.
+  // Smart stacking: permanents sharing a position (same seat + x + y) render as one pile
   const piles = useMemo<Pile[]>(() => {
     const map = new Map<string, Pile>();
     const order: string[] = [];
@@ -90,20 +124,124 @@ export function FreeformBoard({ t, state }: { t: TableConn; state: TableState })
   const env = useRef({ piles, CARD_W, CARD_H, you });
   env.current = { piles, CARD_W, CARD_H, you };
 
+  // Fetch card details for caching
+  useEffect(() => {
+    const cardIds = Array.from(
+      new Set(
+        Object.values(state.objects)
+          .map((o) => o.cardId)
+          .filter((id) => id && !cardCache[id]) as string[]
+      )
+    );
+    if (cardIds.length === 0) return;
+    Promise.all(
+      cardIds.map((id) =>
+        api.get<{ card: Card }>(`/api/cards/${id}`).then((r) => r.card)
+      )
+    ).then((cards) => {
+      setCardCache((prev) => {
+        const next = { ...prev };
+        for (const c of cards) {
+          if (c) next[c.id] = c;
+        }
+        return next;
+      });
+    });
+  }, [state.objects]);
+
+  // Dice roll tumble sequence
+  const triggerTumbleRoll = (sides: number) => {
+    playRoll();
+    const result = Math.floor(Math.random() * sides) + 1;
+    const startX = Math.random() * 80 - 40;
+    const startY = Math.random() * 80 - 40;
+    const midX = Math.random() * 260 - 130;
+    const midY = -Math.random() * 150 - 80;
+    const bounceX = Math.random() * 320 - 160;
+    const bounceY = Math.random() * 80 + 60;
+    const endX = Math.random() * 160 - 80;
+    const endY = Math.random() * 160 - 80;
+
+    const newRoll: ActiveRollAnimation = {
+      id: Math.random().toString(),
+      sides,
+      result,
+      startX,
+      startY,
+      midX,
+      midY,
+      bounceX,
+      bounceY,
+      endX,
+      endY,
+    };
+
+    setActiveRolls((prev) => [...prev, newRoll]);
+
+    t.send({
+      type: "roll",
+      seat: you ?? 0,
+      sides,
+      count: 1,
+      label: `rolled a d${sides} (result: ${result})`,
+    });
+
+    setTimeout(() => {
+      setActiveRolls((prev) => prev.filter((r) => r.id !== newRoll.id));
+    }, 4500);
+  };
+
+  // Coordinates on mat corrected for zoom
   function matPoint(e: { clientX: number; clientY: number }): { x: number; y: number } {
     const r = matRef.current?.getBoundingClientRect();
-    return { x: e.clientX - (r?.left ?? 0), y: e.clientY - (r?.top ?? 0) };
+    return {
+      x: (e.clientX - (r?.left ?? 0)) / zoom,
+      y: (e.clientY - (r?.top ?? 0)) / zoom,
+    };
   }
-  // Start dragging one card or a whole pile. originX/Y = the group's current spot.
+
+  // Pan Backdrop Handlers
+  const handleWheel = (e: React.WheelEvent) => {
+    e.preventDefault();
+    const factor = e.deltaY < 0 ? 1.06 : 0.94;
+    setZoom((z) => Math.min(2.5, Math.max(0.4, z * factor)));
+  };
+
+  const handlePointerDown = (e: React.PointerEvent) => {
+    if (e.target !== e.currentTarget && !(e.target as HTMLElement).classList.contains("freeform-felt")) return;
+    setIsPanning(true);
+    panStart.current = { x: e.clientX, y: e.clientY, panX, panY };
+    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+  };
+
+  const handlePointerMove = (e: React.PointerEvent) => {
+    if (!isPanning) return;
+    const dx = e.clientX - panStart.current.x;
+    const dy = e.clientY - panStart.current.y;
+    setPanX(panStart.current.panX + dx);
+    setPanY(panStart.current.panY + dy);
+  };
+
+  const handlePointerUp = () => {
+    setIsPanning(false);
+  };
+
+  // Dragging cards
   function startDrag(ids: string[], originX: number, originY: number, e: React.PointerEvent) {
     if (you === null) return;
     e.preventDefault();
     e.stopPropagation();
     (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
+    
+    const invert = you === 1;
+    const actualOriginX = invert ? (1200 - originX - CARD_W) : originX;
+    const actualOriginY = invert ? (800 - originY - CARD_H) : originY;
+
     const p = matPoint(e);
     setExpanded(null);
-    setDrag({ ids, offsetX: p.x - originX, offsetY: p.y - originY, x: originX, y: originY });
+    setDrag({ ids, offsetX: p.x - actualOriginX, offsetY: p.y - actualOriginY, x: actualOriginX, y: actualOriginY });
   }
+
   useEffect(() => {
     if (!drag) return;
     const move = (e: PointerEvent) => {
@@ -114,9 +252,10 @@ export function FreeformBoard({ t, state }: { t: TableConn; state: TableState })
       setDrag((d) => {
         if (d) {
           const { piles: pl, CARD_W: cw, CARD_H: ch, you: me } = env.current;
-          let tx = Math.max(0, snap(d.x));
-          let ty = Math.max(0, snap(d.y));
-          // Snap onto a nearby pile (not one we're dragging) → stack them.
+          let tx = Math.max(0, snapEnabled ? snap(d.x) : Math.round(d.x));
+          let ty = Math.max(0, snapEnabled ? snap(d.y) : Math.round(d.y));
+
+          // Snap onto nearby pile
           for (const target of pl) {
             if (target.cards.some((c) => d.ids.includes(c.id))) continue;
             if (Math.abs(target.x - d.x) < cw * 0.6 && Math.abs(target.y - d.y) < ch * 0.5) {
@@ -125,7 +264,12 @@ export function FreeformBoard({ t, state }: { t: TableConn; state: TableState })
               break;
             }
           }
-          for (const id of d.ids) t.send({ type: "move_card", objectId: id, toZone: "battlefield", toSeat: me ?? undefined, x: tx, y: ty });
+
+          const invert = me === 1;
+          const finalX = invert ? (1200 - tx - cw) : tx;
+          const finalY = invert ? (800 - ty - ch) : ty;
+
+          for (const id of d.ids) t.send({ type: "move_card", objectId: id, toZone: "battlefield", toSeat: me ?? undefined, x: finalX, y: finalY });
         }
         return null;
       });
@@ -136,23 +280,34 @@ export function FreeformBoard({ t, state }: { t: TableConn; state: TableState })
       window.removeEventListener("pointermove", move);
       window.removeEventListener("pointerup", up);
     };
-  }, [drag]);
+  }, [drag, snapEnabled]);
 
-  // Play a card from hand onto your side of the mat (cascade so they don't stack).
+  // Hand cascade
   function playFromHand(o: GameObject) {
     const mine = Object.values(state.objects).filter((b) => b.zone === "battlefield" && b.controllerSeat === you).length;
-    const x = 80 + (mine % 8) * Math.round(CARD_W * 1.1);
-    const y = 380 + Math.floor(mine / 8) * 44;
+    const invert = you === 1;
+    const baseCol = mine % 8;
+    const baseRow = Math.floor(mine / 8);
+
+    let x = 80 + baseCol * Math.round(CARD_W * 1.1);
+    let y = 480 + baseRow * 44;
+
+    if (invert) {
+      x = 80 + baseCol * Math.round(CARD_W * 1.1);
+      y = 120 + baseRow * 44;
+    }
+
     t.send({ type: "move_card", objectId: o.id, toZone: "battlefield", toSeat: you ?? undefined, x, y });
   }
 
-  // Drag a card out of your hand and drop it anywhere on the mat.
+  // Hand drag
   function onHandPointerDown(o: GameObject, e: React.PointerEvent) {
     if (you === null) return;
     e.preventDefault();
     (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
     setHandDrag({ id: o.id, cardId: o.cardId, name: o.name, x: e.clientX, y: e.clientY });
   }
+
   useEffect(() => {
     if (!handDrag) return;
     const move = (e: PointerEvent) => setHandDrag((d) => (d ? { ...d, x: e.clientX, y: e.clientY } : d));
@@ -162,12 +317,20 @@ export function FreeformBoard({ t, state }: { t: TableConn; state: TableState })
           const r = matRef.current?.getBoundingClientRect();
           const overMat = r && e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom;
           if (overMat && r) {
-            const x = Math.max(0, snap(e.clientX - r.left - CARD_W / 2));
-            const y = Math.max(0, snap(e.clientY - r.top - CARD_H / 2));
-            t.send({ type: "move_card", objectId: d.id, toZone: "battlefield", toSeat: you, x, y });
+            const renderDropX = (e.clientX - r.left - (CARD_W * zoom) / 2) / zoom;
+            const renderDropY = (e.clientY - r.top - (CARD_H * zoom) / 2) / zoom;
+
+            const tx = Math.max(0, snapEnabled ? snap(renderDropX) : Math.round(renderDropX));
+            const ty = Math.max(0, snapEnabled ? snap(renderDropY) : Math.round(renderDropY));
+
+            const invert = you === 1;
+            const finalX = invert ? (1200 - tx - CARD_W) : tx;
+            const finalY = invert ? (800 - ty - CARD_H) : ty;
+
+            t.send({ type: "move_card", objectId: d.id, toZone: "battlefield", toSeat: you, x: finalX, y: finalY });
           } else {
             const o = state.objects[d.id];
-            if (o) playFromHand(o); // released off the mat → default cascade spot
+            if (o) playFromHand(o);
           }
         }
         return null;
@@ -179,27 +342,70 @@ export function FreeformBoard({ t, state }: { t: TableConn; state: TableState })
       window.removeEventListener("pointermove", move);
       window.removeEventListener("pointerup", up);
     };
-  }, [handDrag, you]);
+  }, [handDrag, you, zoom, snapEnabled]);
+
+  // Hand sort and filters
+  const [handSort, setHandSort] = useState<"name" | "cmc" | "color" | "type">("name");
+  const [handFilter, setHandFilter] = useState<"all" | "land" | "nonland">("all");
+  const [handQuery, setHandQuery] = useState("");
+
+  const sortedAndFilteredHand = useMemo(() => {
+    let list = [...myHand];
+    if (handQuery.trim()) {
+      const q = handQuery.toLowerCase();
+      list = list.filter((o) => o.name.toLowerCase().includes(q));
+    }
+    if (handFilter === "land") {
+      list = list.filter((o) => o.cardTypes?.includes("Land"));
+    } else if (handFilter === "nonland") {
+      list = list.filter((o) => !o.cardTypes?.includes("Land"));
+    }
+
+    list.sort((a, b) => {
+      if (handSort === "cmc") {
+        const cmcA = a.cardId ? cardCache[a.cardId]?.cmc ?? 0 : 0;
+        const cmcB = b.cardId ? cardCache[b.cardId]?.cmc ?? 0 : 0;
+        return cmcA - cmcB;
+      }
+      if (handSort === "color") {
+        const colA = a.cardId ? (cardCache[a.cardId]?.colors ?? []).join("") : "";
+        const colB = b.cardId ? (cardCache[b.cardId]?.colors ?? []).join("") : "";
+        return colA.localeCompare(colB);
+      }
+      if (handSort === "type") {
+        const typeA = a.cardId ? (cardCache[a.cardId]?.typeLine ?? "") : "";
+        const typeB = b.cardId ? (cardCache[b.cardId]?.typeLine ?? "") : "";
+        return typeA.localeCompare(typeB);
+      }
+      return a.name.localeCompare(b.name);
+    });
+
+    return list;
+  }, [myHand, handQuery, handFilter, handSort, cardCache]);
+
+  const opponentPlayer = state.players.find((p) => p.seat !== you) ?? null;
 
   return (
-    <div className="flex h-full min-h-0 flex-col bg-table-bg">
+    <div className="flex h-full min-h-0 flex-col bg-[#07090c] text-white">
       {/* Top bar */}
-      <div className="flex shrink-0 items-center gap-2 border-b border-table-border bg-table-panel px-3 py-1.5 text-sm">
-        <Link to="/play" className="text-table-muted hover:text-table-ink">← Leave</Link>
-        <span className={`h-2 w-2 rounded-full ${t.connected ? "bg-green-400" : "bg-red-500"}`} />
-        <span className="font-display text-table-accentSoft">{state.name}</span>
-        <span className="chip">🃏 Tabletop (manual)</span>
+      <div className="flex shrink-0 items-center gap-2 border-b border-table-border bg-[#0b0f19] px-3 py-1.5 text-sm z-30">
+        <Link to="/play" className="text-table-muted hover:text-table-ink font-semibold">← Leave</Link>
+        <span className={`h-2.5 w-2.5 rounded-full ${t.connected ? "bg-green-400 shadow-pulse" : "bg-red-500"}`} />
+        <span className="font-display text-table-accentSoft font-semibold">{state.name}</span>
+        <span className="chip bg-table-accent/15 border-table-accent/30 text-table-accentSoft">🃏 Manual Sandbox</span>
+
+        <button className={`btn-ghost !py-1 text-xs ml-4 ${toolboxOpen ? "text-table-accentSoft bg-table-accent/10 border-table-accent/30" : ""}`} onClick={() => setToolboxOpen(!toolboxOpen)}>🛠 Toolbox</button>
+        <button className={`btn-ghost !py-1 text-xs ${!sidebarCollapsed ? "text-table-accentSoft bg-table-accent/10 border-table-accent/30" : ""}`} onClick={() => setSidebarCollapsed(!sidebarCollapsed)}>💬 Chat/Log</button>
+
+        <label className="flex items-center gap-1.5 text-xs text-table-muted ml-4 cursor-pointer select-none">
+          <input type="checkbox" checked={snapEnabled} onChange={(e) => setSnapEnabled(e.target.checked)} className="rounded border-table-border accent-table-accent bg-table-panel" />
+          Snap grid (24px)
+        </label>
+
         {state.status === "finished" && (
-          <span className="rounded bg-table-accent px-2 py-0.5 text-black">{state.players.find((p) => p.seat === state.winnerSeat)?.name} wins!</span>
+          <span className="rounded bg-table-accent px-2 py-0.5 text-black font-semibold ml-2">{state.players.find((p) => p.seat === state.winnerSeat)?.name} wins!</span>
         )}
-        <div className="ml-auto flex items-center gap-1">
-          {me && <LifeWidget p={me} t={t} you={you!} />}
-          {opponents.map((p) => (
-            <LifeWidget key={p.seat} p={p} t={t} you={you} compact />
-          ))}
-          <button className="btn-ghost !py-1" onClick={() => setTokenOpen(true)}>＋ Token</button>
-          {you !== null && <DiceRoller t={t} seat={you} />}
-          {you !== null && <button className="btn-ghost !py-1" onClick={() => t.send({ type: "draw", seat: you, count: 1 })}>🃏 Draw</button>}
+        <div className="ml-auto flex items-center gap-1.5">
           <button className={`btn-ghost !py-1 ${notesOpen ? "text-table-accentSoft" : ""}`} onClick={() => setNotesOpen((v) => !v)}>📝 Notes</button>
           <button className="btn-ghost !py-1" onClick={() => t.undo()}>Undo</button>
           {you !== null && state.status !== "finished" && (
@@ -210,61 +416,264 @@ export function FreeformBoard({ t, state }: { t: TableConn; state: TableState })
         </div>
       </div>
 
-      <div className="flex min-h-0 flex-1">
-        {/* The mat */}
-        <div className="relative min-h-0 flex-1 overflow-auto">
-          <div ref={matRef} className="freeform-felt relative" style={{ minWidth: 1200, minHeight: 760, height: "100%" }} onClick={() => setExpanded(null)}>
-            {/* subtle midline between your side and the opponents' */}
-            <div className="pointer-events-none absolute inset-x-0 top-1/2 h-px -translate-y-1/2 bg-table-accent/25" />
+      <div className="flex min-h-0 flex-1 relative">
+        {/* Left Toolbox */}
+        <div className={`shrink-0 flex flex-col border-r border-table-border bg-[#0b0f19] transition-all duration-300 z-20 ${toolboxOpen ? "w-56" : "w-0 overflow-hidden"}`}>
+          <div className="border-b border-table-border p-3 flex items-center justify-between">
+            <span className="font-semibold text-table-accentSoft">🛠 Toolbox</span>
+            <button className="text-table-muted hover:text-table-ink" onClick={() => setToolboxOpen(false)}>✕</button>
+          </div>
+          <div className="flex-1 min-h-0 overflow-y-auto p-3 space-y-4">
+            {/* Dice Tray */}
+            <div>
+              <div className="text-[10px] font-semibold uppercase tracking-wider text-table-muted mb-2">Dice Tray</div>
+              <div className="grid grid-cols-3 gap-1.5">
+                {[4, 6, 8, 10, 12, 20].map((sides) => (
+                  <button
+                    key={sides}
+                    className="btn-ghost !py-1 text-xs font-semibold flex flex-col items-center justify-center border border-table-border/40 bg-table-panel2/30 hover:border-table-accent/40 rounded"
+                    onClick={() => triggerTumbleRoll(sides)}
+                  >
+                    <span className="text-[10px] text-table-muted">d</span>
+                    <span className="text-sm text-table-ink">{sides}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+            {/* Token Quick Spawn */}
+            <div>
+              <div className="text-[10px] font-semibold uppercase tracking-wider text-table-muted mb-2">Spawn Tokens</div>
+              <div className="flex flex-col gap-1">
+                {[
+                  { name: "Soldier", power: 1, toughness: 1, desc: "1/1 white Soldier" },
+                  { name: "Zombie", power: 2, toughness: 2, desc: "2/2 black Zombie" },
+                  { name: "Goblin", power: 1, toughness: 1, desc: "1/1 red Goblin" },
+                  { name: "Vampire", power: 1, toughness: 1, desc: "1/1 black Vampire" },
+                  { name: "Spirit", power: 1, toughness: 1, desc: "1/1 white Spirit" },
+                  { name: "Beast", power: 3, toughness: 3, desc: "3/3 green Beast" },
+                  { name: "Treasure", power: 0, toughness: 0, desc: "Treasure artifact" },
+                  { name: "Clue", power: 0, toughness: 0, desc: "Clue artifact" },
+                  { name: "Food", power: 0, toughness: 0, desc: "Food artifact" },
+                ].map((tk) => (
+                  <button
+                    key={tk.name}
+                    className="btn-ghost !py-1 text-left text-xs border border-table-border/40 hover:border-table-accent/40 rounded w-full"
+                    onClick={() => {
+                      if (you === null) return;
+                      t.send({
+                        type: "create_token",
+                        seat: you,
+                        name: tk.name,
+                        power: tk.power || undefined,
+                        toughness: tk.toughness || undefined,
+                        colors: tk.name === "Soldier" ? ["W"] : tk.name === "Zombie" ? ["B"] : tk.name === "Goblin" ? ["R"] : tk.name === "Spirit" ? ["W"] : tk.name === "Beast" ? ["G"] : [],
+                      });
+                    }}
+                  >
+                    <div className="font-semibold text-table-accentSoft">{tk.name}</div>
+                    <div className="text-[9px] text-table-muted">{tk.desc}</div>
+                  </button>
+                ))}
+              </div>
+            </div>
+            {/* Counters Box */}
+            <div>
+              <div className="text-[10px] font-semibold uppercase tracking-wider text-table-muted mb-2">Counters Box</div>
+              <div className="text-[10px] text-table-muted mb-2">Click counter type below, then click any card on the battlefield to apply:</div>
+              <div className="flex flex-col gap-1">
+                {[
+                  { type: "+1/+1", label: "+1/+1 Counter", color: "text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/5" },
+                  { type: "-1/-1", label: "-1/-1 Counter", color: "text-rose-400 border-rose-500/30 hover:bg-rose-500/5" },
+                  { type: "charge", label: "Charge Counter", color: "text-amber-400 border-amber-500/30 hover:bg-amber-500/5" },
+                  { type: "loyalty", label: "Loyalty Counter", color: "text-sky-400 border-sky-500/30 hover:bg-sky-500/5" },
+                ].map((c) => (
+                  <button
+                    key={c.type}
+                    className={`btn-ghost !py-1 text-xs text-left border rounded ${c.color} ${activeCounterTool === c.type ? "ring-2 ring-table-accent bg-table-accent/15" : ""}`}
+                    onClick={() => setActiveCounterTool(activeCounterTool === c.type ? null : c.type)}
+                  >
+                    {c.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
 
+        {/* The mat viewport */}
+        <div className="relative min-h-0 flex-1 overflow-hidden" onWheel={handleWheel}>
+          {/* Zoom & Pan floating controls */}
+          <div className="absolute left-4 top-4 z-20 flex flex-col gap-1 bg-black/60 p-1.5 rounded-lg border border-table-border/40 backdrop-blur-sm">
+            <button className="btn-ghost !p-1.5 font-bold hover:text-table-accentSoft" onClick={() => setZoom((z) => Math.min(2.5, z + 0.1))} title="Zoom In">＋</button>
+            <button className="btn-ghost !p-1.5 font-bold hover:text-table-accentSoft" onClick={() => setZoom((z) => Math.max(0.4, z - 0.1))} title="Zoom Out">－</button>
+            <button className="btn-ghost !p-1 text-[9px] hover:text-table-accentSoft uppercase tracking-wider font-semibold" onClick={() => { setZoom(1.0); setPanX(0); setPanY(0); }} title="Reset View">Reset</button>
+          </div>
+
+          {/* Opponents HUD (Top center) */}
+          <div className="absolute top-4 left-1/2 -translate-x-1/2 z-20 flex gap-6 pointer-events-auto">
+            {opponents.map((opp) => (
+              <div key={opp.seat} className="flex items-center gap-2.5 bg-[#0b0f19]/90 border border-table-border/60 px-3 py-1.5 rounded-full shadow-2xl backdrop-blur-sm">
+                <Avatar cardId={opp.avatarCardId} name={opp.name} size={36} ring={state.activeSeat === opp.seat} />
+                <div className="flex flex-col">
+                  <span className="text-[10px] text-table-muted font-bold truncate max-w-[80px]">{opp.name}</span>
+                  <div className="flex items-center gap-1">
+                    <button className="text-table-muted hover:text-white text-xs px-1 font-bold" onClick={() => t.send({ type: "adjust_life", seat: opp.seat, delta: -1 })}>−</button>
+                    <span className={`text-sm font-display font-bold text-white px-1 ${opp.life <= 5 ? "text-red-400 animate-pulse" : "text-table-accentSoft"}`}>
+                      {opp.life}
+                    </span>
+                    <button className="text-table-muted hover:text-white text-xs px-1 font-bold" onClick={() => t.send({ type: "adjust_life", seat: opp.seat, delta: 1 })}>+</button>
+                  </div>
+                </div>
+                {opp.poison > 0 && <span className="text-[9px] font-bold text-green-300 border border-green-500/30 bg-green-500/10 px-1.5 py-0.5 rounded-full">☠{opp.poison}</span>}
+              </div>
+            ))}
+            {opponents.length === 0 && (
+              <div className="text-[10px] text-table-muted bg-black/60 px-3 py-1 rounded-full border border-table-border/40">Spectating / waiting for players…</div>
+            )}
+          </div>
+
+          {/* Bottom player HUD (You, Bottom left overlay) */}
+          {me && (
+            <div className="absolute bottom-4 left-4 z-20 flex items-center gap-2.5 bg-[#0b0f19]/95 border border-table-border/60 px-3.5 py-2 rounded-full shadow-2xl backdrop-blur-sm">
+              <Avatar cardId={me.avatarCardId} name={me.name} size={42} ring={state.activeSeat === me.seat} />
+              <div className="flex flex-col">
+                <span className="text-[10px] text-table-accentSoft font-bold truncate max-w-[100px]">{me.name} (You)</span>
+                <div className="flex items-center gap-1.5">
+                  <button className="text-table-muted hover:text-white text-xs px-1 font-bold" onClick={() => t.send({ type: "adjust_life", seat: me.seat, delta: -1 })}>−</button>
+                  <span className={`text-base font-display font-bold text-white px-1 ${me.life <= 5 ? "text-red-400 animate-pulse" : "text-table-accent"}`}>
+                    {me.life}
+                  </span>
+                  <button className="text-table-muted hover:text-white text-xs px-1 font-bold" onClick={() => t.send({ type: "adjust_life", seat: me.seat, delta: 1 })}>+</button>
+                </div>
+              </div>
+              {me.poison > 0 && <span className="text-[9px] font-bold text-green-300 border border-green-500/30 bg-green-500/10 px-1.5 py-0.5 rounded-full">☠{me.poison}</span>}
+            </div>
+          )}
+
+          {/* Canvas container */}
+          <div
+            ref={matRef}
+            className="freeform-felt relative tabletop-canvas"
+            style={{
+              minWidth: 1200,
+              minHeight: 800,
+              height: "100%",
+              transform: `translate(${panX}px, ${panY}px) scale(${zoom})`,
+              cursor: isPanning ? "grabbing" : "grab",
+            }}
+            onPointerDown={handlePointerDown}
+            onPointerMove={handlePointerMove}
+            onPointerUp={handlePointerUp}
+            onClick={() => setExpanded(null)}
+          >
+            {/* midline separating zones */}
+            <div className="pointer-events-none absolute inset-x-0 top-1/2 h-[2px] -translate-y-1/2 bg-table-accent/15 border-b border-table-accent/5" />
+
+            {/* Smart fanned out overlap stacks */}
             {piles.map((pile) => {
               const dragging = !!drag && pile.cards.some((c) => drag.ids.includes(c.id));
-              const x = dragging ? drag!.x : pile.x;
-              const y = dragging ? drag!.y : pile.y;
-              const mine = you !== null && pile.seat === you;
-              const top = pile.cards[pile.cards.length - 1]!;
+              
+              const invert = you === 1;
+              const x = dragging ? drag!.x : (invert ? (1200 - pile.x - CARD_W) : pile.x);
+              const y = dragging ? drag!.y : (invert ? (800 - pile.y - CARD_H) : pile.y);
+              
               const count = pile.cards.length;
-              const isExpanded = expanded === pile.key && count > 1 && !dragging;
+
               return (
                 <div
                   key={pile.key}
-                  className={`absolute ${mine ? "cursor-grab active:cursor-grabbing" : "cursor-pointer"} ${dragging ? "z-30" : isExpanded ? "z-20" : ""}`}
-                  style={{ left: x, top: y, width: CARD_W, transition: dragging ? "none" : "left 0.08s, top 0.08s" }}
-                  onPointerDown={(e) => mine && startDrag(pile.cards.map((c) => c.id), pile.x, pile.y, e)}
-                  onClick={(e) => { e.stopPropagation(); if (count === 1) setMenu({ id: top.id, x: e.clientX, y: e.clientY }); else setExpanded(isExpanded ? null : pile.key); }}
-                  onMouseEnter={() => { if (count > 1) setExpanded(pile.key); if (top.cardId && !top.faceDown) setHover({ id: top.cardId, name: top.name }); }}
-                  onMouseLeave={() => setHover(null)}
+                  className={`absolute ${dragging ? "z-30 pointer-events-none" : ""}`}
+                  style={{
+                    left: x,
+                    top: y,
+                    width: CARD_W,
+                    height: CARD_H,
+                    transition: dragging ? "none" : "left 0.08s, top 0.08s",
+                  }}
                 >
-                  {/* depth shadows for a stack */}
-                  {count > 1 && <div className="absolute rounded-md bg-black/40 shadow-card" style={{ width: CARD_W, height: CARD_H, left: 5, top: 5 }} />}
-                  {count > 2 && <div className="absolute rounded-md bg-black/30 shadow-card" style={{ width: CARD_W, height: CARD_H, left: 2.5, top: 2.5 }} />}
-                  <CardFace o={top} w={CARD_W} h={CARD_H} />
+                  {pile.cards.map((c, idx) => {
+                    const isHovered = hoveredBoardCardId === c.id;
+                    const isLand = c.cardTypes?.includes("Land") ?? false;
+                    
+                    // Determine fanning offsets: Horizontal for lands, vertical for others
+                    const useHorizontal = stackDirection === "horizontal" || (stackDirection === "auto" && isLand);
+                    const offsetX = useHorizontal ? 20 : 0;
+                    const offsetY = useHorizontal ? 0 : 24;
+                    
+                    const cardX = idx * offsetX;
+                    const cardY = idx * offsetY;
+
+                    const isMine = you !== null && c.controllerSeat === you;
+                    
+                    // Base rotations
+                    let rotate = isMine ? "0deg" : "180deg";
+                    if (c.tapped) {
+                      rotate = isMine ? "90deg" : "270deg";
+                    }
+
+                    // Hover flips readability orientation to rightside up and zooms
+                    if (isHovered) {
+                      rotate = c.tapped ? "90deg" : "0deg";
+                    }
+
+                    return (
+                      <div
+                        key={c.id}
+                        className={`absolute rounded-md transition-all duration-150 ${isMine ? "cursor-grab active:cursor-grabbing" : "cursor-pointer"} ${isHovered ? "z-50 scale-125 shadow-2xl ring-2 ring-table-accent/60" : "shadow-md"}`}
+                        style={{
+                          left: cardX,
+                          top: cardY,
+                          width: CARD_W,
+                          height: CARD_H,
+                          transform: `rotate(${rotate})`,
+                        }}
+                        onPointerDown={(e) => {
+                          e.stopPropagation();
+                          if (isMine) {
+                            startDrag([c.id], pile.x + cardX, pile.y + cardY, e);
+                          }
+                        }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (activeCounterTool) {
+                            t.send({ type: "add_counter", objectId: c.id, counterType: activeCounterTool, delta: 1 });
+                            setActiveCounterTool(null);
+                          } else {
+                            setMenu({ id: c.id, x: e.clientX, y: e.clientY });
+                          }
+                        }}
+                        onMouseEnter={() => {
+                          setHoveredBoardCardId(c.id);
+                          if (c.cardId && !c.faceDown) {
+                            setHover({ id: c.cardId, name: c.name });
+                          }
+                        }}
+                        onMouseLeave={() => {
+                          setHoveredBoardCardId(null);
+                          setHover(null);
+                        }}
+                      >
+                        <CardImage id={c.faceDown ? null : c.cardId} name={c.faceDown ? "Card" : c.name} className="rounded-md" />
+                        
+                        {/* Counters indicator overlay */}
+                        {c.counters.length > 0 && (
+                          <div className="absolute -bottom-1 left-0 flex flex-wrap gap-0.5 z-10 pointer-events-none">
+                            {c.counters.map((cnt) => (
+                              <span key={cnt.type} className="rounded bg-black/90 px-1 text-[9px] font-bold text-white ring-1 ring-white/25 leading-none py-0.5">
+                                {cnt.type} {cnt.count}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                        
+                        {c.isCommander && <span className="absolute left-0 top-0 rounded bg-table-accent px-1 text-[9px] text-black font-semibold z-10 pointer-events-none">CMD</span>}
+                      </div>
+                    );
+                  })}
                   {count > 1 && (
-                    <span className="absolute -right-1.5 -top-1.5 z-10 flex h-6 min-w-6 items-center justify-center rounded-full border border-black/50 bg-table-accent px-1 text-xs font-bold text-black shadow">
+                    <span className="absolute -right-2.5 -top-2.5 z-20 flex h-5 min-w-5 items-center justify-center rounded-full border border-black/50 bg-table-accent px-1 text-[10px] font-bold text-black shadow-lg">
                       ×{count}
                     </span>
-                  )}
-
-                  {/* Hover/click to fan the stack out into a readable row. */}
-                  {isExpanded && (
-                    <div
-                      className="absolute z-40 flex gap-1 rounded-lg border border-table-border bg-table-panel/95 p-1.5 shadow-panel"
-                      style={{ left: 0, top: -(CARD_H * 0.62), transform: "translateY(-8px)" }}
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      {pile.cards.map((c) => (
-                        <div
-                          key={c.id}
-                          className={`${mine ? "cursor-grab active:cursor-grabbing" : "cursor-pointer"}`}
-                          style={{ width: CARD_W * 0.9 }}
-                          onPointerDown={(e) => mine && startDrag([c.id], pile.x, pile.y, e)}
-                          onClick={(e) => { e.stopPropagation(); setMenu({ id: c.id, x: e.clientX, y: e.clientY }); }}
-                          onMouseEnter={() => c.cardId && !c.faceDown && setHover({ id: c.cardId, name: c.name })}
-                        >
-                          <CardFace o={c} w={CARD_W * 0.9} h={CARD_H * 0.9} />
-                        </div>
-                      ))}
-                    </div>
                   )}
                 </div>
               );
@@ -272,10 +681,27 @@ export function FreeformBoard({ t, state }: { t: TableConn; state: TableState })
           </div>
         </div>
 
-        {/* Right rail: zones + log */}
-        <div className="hidden w-52 shrink-0 flex-col border-l border-table-border bg-table-panel md:flex">
+        {/* Collapsible right sidebar (chat + logs) */}
+        <div className={`shrink-0 flex flex-col border-l border-table-border bg-[#0b0f19] transition-all duration-300 relative z-20 ${sidebarCollapsed ? "w-0 overflow-hidden" : "w-60"}`}>
+          {/* Header tabs */}
+          <div className="flex border-b border-table-border text-xs font-semibold bg-table-panel2/50 shrink-0">
+            <button
+              className={`flex-1 py-2 text-center border-b-2 transition-all ${sidebarTab === "chat" ? "border-table-accent text-table-accentSoft" : "border-transparent text-table-muted hover:text-table-ink"}`}
+              onClick={() => setSidebarTab("chat")}
+            >
+              💬 Chat
+            </button>
+            <button
+              className={`flex-1 py-2 text-center border-b-2 transition-all ${sidebarTab === "logs" ? "border-table-accent text-table-accentSoft" : "border-transparent text-table-muted hover:text-table-ink"}`}
+              onClick={() => setSidebarTab("logs")}
+            >
+              📜 Log
+            </button>
+          </div>
+
+          {/* Zones Quick Bar */}
           {you !== null && (
-            <div className="grid grid-cols-2 gap-1 border-b border-table-border p-2 text-xs">
+            <div className="grid grid-cols-2 gap-1 border-b border-table-border p-2 text-[10px] bg-table-panel2/20 shrink-0">
               <PileButton label="Library" count={(objectsByZone[`library:${you}`] ?? []).length} onClick={() => setBrowse({ zoneId: `library:${you}`, title: "Your Library" })} />
               <button className="chip" onClick={() => t.send({ type: "draw", seat: you, count: 1 })}>Draw</button>
               <PileButton label="Graveyard" count={(objectsByZone[`graveyard:${you}`] ?? []).length} onClick={() => setBrowse({ zoneId: `graveyard:${you}`, title: "Your Graveyard" })} />
@@ -284,38 +710,79 @@ export function FreeformBoard({ t, state }: { t: TableConn; state: TableState })
               <button className="chip" onClick={() => t.send({ type: "untap_all", seat: you })}>Untap all</button>
             </div>
           )}
-          <div className="min-h-0 flex-1 overflow-y-auto p-2 text-xs">
-            {state.log.slice(-120).map((l) => (
-              <div key={l.id} className="mb-0.5 leading-snug text-table-muted">{l.text}</div>
-            ))}
+
+          {/* Tab content */}
+          <div className="min-h-0 flex-1 overflow-y-auto p-2.5 text-xs">
+            {sidebarTab === "logs" ? (
+              // System Log
+              <div className="space-y-1.5">
+                {state.log.slice(-120).map((l) => (
+                  <div key={l.id} className="leading-snug text-table-muted border-b border-table-border/10 pb-0.5">{l.text}</div>
+                ))}
+              </div>
+            ) : (
+              // Chat conversation
+              <div className="space-y-1.5">
+                {state.log.filter(l => l.text.includes(":") || l.text.includes("says") || l.text.toLowerCase().includes("chat") || l.text.toLowerCase().includes("rolled")).slice(-120).map((l) => (
+                  <div key={l.id} className="leading-snug text-table-ink bg-black/20 p-1.5 rounded border border-table-border/30">{l.text}</div>
+                ))}
+                {state.log.filter(l => l.text.includes(":") || l.text.includes("says") || l.text.toLowerCase().includes("chat") || l.text.toLowerCase().includes("rolled")).length === 0 && (
+                  <div className="text-center text-table-muted/60 mt-12 py-4">— No messages yet —</div>
+                )}
+              </div>
+            )}
           </div>
-          <form
-            className="flex gap-1 border-t border-table-border p-2"
-            onSubmit={(e) => { e.preventDefault(); if (chatText.trim()) t.chat(chatText.trim()); setChatText(""); }}
-          >
-            <input className="input flex-1 !py-1" placeholder="Say something…" value={chatText} onChange={(e) => setChatText(e.target.value)} />
-            <button className="btn-ghost">Send</button>
-          </form>
+
+          {/* Chat send footer */}
+          {sidebarTab === "chat" && (
+            <form
+              className="flex gap-1 border-t border-table-border p-2 bg-[#0b0f19] shrink-0"
+              onSubmit={(e) => { e.preventDefault(); if (chatText.trim()) t.chat(chatText.trim()); setChatText(""); }}
+            >
+              <input className="input flex-1 !py-1 text-xs" placeholder="Say something…" value={chatText} onChange={(e) => setChatText(e.target.value)} />
+              <button className="btn-primary !px-2.5 !py-1 text-xs">Send</button>
+            </form>
+          )}
         </div>
       </div>
 
-      {/* Your hand — drag cards onto the table, or click to play. Card size here is
-          personal (local) and doesn't affect anyone else's view. */}
+      {/* Your hand */}
       {you !== null && (
-        <div className="shrink-0 border-t border-table-border bg-table-panel px-3 py-2">
-          <div className="mb-1 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wide text-table-muted">
-            <span>Your hand ({myHand.length}) — drag onto the table, or click</span>
+        <div className="shrink-0 border-t border-table-border bg-[#0b0f19] px-3 py-2 z-20">
+          <div className="mb-1.5 flex flex-wrap items-center gap-3 text-[11px] font-semibold uppercase tracking-wide text-table-muted">
+            <span>Your hand ({myHand.length})</span>
+            
+            <input
+              className="input !py-0.5 text-xs w-32 lowercase font-normal"
+              placeholder="filter hand…"
+              value={handQuery}
+              onChange={(e) => setHandQuery(e.target.value)}
+            />
+            
+            <select className="input !py-0.5 text-xs capitalize font-normal" value={handFilter} onChange={(e) => setHandFilter(e.target.value as any)}>
+              <option value="all">all cards</option>
+              <option value="land">lands</option>
+              <option value="nonland">spells</option>
+            </select>
+
+            <select className="input !py-0.5 text-xs capitalize font-normal" value={handSort} onChange={(e) => setHandSort(e.target.value as any)}>
+              <option value="name">sort by name</option>
+              <option value="cmc">sort by cost</option>
+              <option value="color">sort by color</option>
+              <option value="type">sort by type</option>
+            </select>
+            
             <button className="chip normal-case" onClick={() => you !== null && t.send({ type: "draw", seat: you, count: 1 })}>🃏 Draw</button>
-            <label className="ml-auto flex items-center gap-1 normal-case" title="Hand card size (only affects your screen)">
-              🔍
-              <input type="range" min={80} max={240} step={6} value={handCardWidth} onChange={(e) => setHandCardWidth(Number(e.target.value))} className="w-28 accent-table-accent" />
+            <label className="ml-auto flex items-center gap-1 normal-case font-semibold" title="Hand card size">
+              🔍 Size
+              <input type="range" min={80} max={240} step={6} value={handCardWidth} onChange={(e) => setHandCardWidth(Number(e.target.value))} className="w-24 accent-table-accent" />
             </label>
           </div>
-          <div className="flex items-end gap-1.5 overflow-x-auto pb-1">
-            {myHand.map((o) => (
+          <div className="flex items-end gap-1.5 overflow-x-auto pb-1 min-h-[96px]">
+            {sortedAndFilteredHand.map((o) => (
               <div
                 key={o.id}
-                className="shrink-0 cursor-grab touch-none transition-transform hover:-translate-y-1.5 active:cursor-grabbing"
+                className="shrink-0 cursor-grab touch-none transition-transform hover:-translate-y-2.5 active:cursor-grabbing"
                 style={{ width: handCardWidth, opacity: handDrag?.id === o.id ? 0.4 : 1 }}
                 onPointerDown={(e) => onHandPointerDown(o, e)}
                 onMouseEnter={() => o.cardId && setHover({ id: o.cardId, name: o.name })}
@@ -329,14 +796,39 @@ export function FreeformBoard({ t, state }: { t: TableConn; state: TableState })
           </div>
         </div>
       )}
-      {/* Floating card that follows the cursor while dragging from hand. */}
+
+      {/* Floating active dice roll animations */}
+      {activeRolls.map((roll) => (
+        <div
+          key={roll.id}
+          className="pointer-events-none fixed left-1/2 top-1/3 z-50 dice-tumble flex h-16 w-16 items-center justify-center rounded-full bg-slate-950 border-2 border-table-accent text-lg font-bold text-white shadow-2xl"
+          style={{
+            ["--dx-start-x" as any]: `${roll.startX}px`,
+            ["--dx-start-y" as any]: `${roll.startY}px`,
+            ["--dx-mid-x" as any]: `${roll.midX}px`,
+            ["--dx-mid-y" as any]: `${roll.midY}px`,
+            ["--dx-bounce-x" as any]: `${roll.bounceX}px`,
+            ["--dx-bounce-y" as any]: `${roll.bounceY}px`,
+            ["--dx-end-x" as any]: `${roll.endX}px`,
+            ["--dx-end-y" as any]: `${roll.endY}px`,
+          }}
+        >
+          <div className="flex flex-col items-center justify-center leading-none">
+            <span className="text-[9px] uppercase tracking-wider text-table-muted">d{roll.sides}</span>
+            <span className="text-xl font-display text-table-accentSoft">{roll.result}</span>
+          </div>
+        </div>
+      ))}
+
+      {/* Hand drag floating projection */}
       {handDrag && (
-        <div className="pointer-events-none fixed z-50" style={{ left: handDrag.x - CARD_W / 2, top: handDrag.y - CARD_H / 2, width: CARD_W }}>
+        <div className="pointer-events-none fixed z-50" style={{ left: handDrag.x - (CARD_W * zoom) / 2, top: handDrag.y - (CARD_H * zoom) / 2, width: CARD_W * zoom }}>
           <CardImage id={handDrag.cardId} name={handDrag.name} className="rounded-md shadow-2xl ring-2 ring-table-accent/60" />
         </div>
       )}
 
       {menu && <FreeformCardMenu menu={menu} state={state} you={you} t={t} onClose={() => setMenu(null)} />}
+      
       {tokenOpen && you !== null && (
         <TokenPicker
           onClose={() => setTokenOpen(false)}
@@ -347,6 +839,7 @@ export function FreeformBoard({ t, state }: { t: TableConn; state: TableState })
           }}
         />
       )}
+      
       {browse && (
         <ZoneBrowserModal
           title={browse.title}
@@ -355,58 +848,26 @@ export function FreeformBoard({ t, state }: { t: TableConn; state: TableState })
           onSelect={(o) => { setBrowse(null); setMenu({ id: o.id, x: window.innerWidth / 2, y: window.innerHeight / 2 }); }}
         />
       )}
+      
       {notesOpen && <Notepad tableId={state.id} onClose={() => setNotesOpen(false)} />}
+      
       <RollOverlay roll={state.lastRoll} />
+      
+      {/* Zoomed Hover Preview (Bottom Left tooltip) */}
       {hover && (
         <div className="pointer-events-none fixed bottom-28 left-4 z-40">
-          <img src={`/api/cards/${hover.id}/image`} alt={hover.name} className="w-52 rounded-lg shadow-2xl card-aspect" />
+          <img src={`/api/cards/${hover.id}/image`} alt={hover.name} className="w-56 rounded-lg shadow-2xl card-aspect border-2 border-table-accent/40 bg-black" />
         </div>
       )}
-    </div>
-  );
-}
-
-// A single card face on the mat: tap rotation, counters, commander badge.
-function CardFace({ o, w, h }: { o: GameObject; w: number; h: number }) {
-  return (
-    <div className="relative origin-center" style={{ width: w, height: h, transform: o.tapped ? "rotate(90deg)" : "none", transition: "transform 0.12s" }}>
-      <CardImage id={o.faceDown ? null : o.cardId} name={o.faceDown ? "Card" : o.name} className="rounded-md shadow-card" />
-      {o.counters.length > 0 && (
-        <div className="absolute -bottom-1 left-0 flex flex-wrap gap-0.5">
-          {o.counters.map((c) => (
-            <span key={c.type} className="rounded bg-black/85 px-1 text-[10px] font-bold text-white ring-1 ring-white/30">
-              {c.type} {c.count}
-            </span>
-          ))}
-        </div>
-      )}
-      {o.isCommander && <span className="absolute left-0 top-0 rounded bg-table-accent px-1 text-[9px] text-black">CMD</span>}
-    </div>
-  );
-}
-
-// ---- life ----------------------------------------------------------------
-function LifeWidget({ p, t, you, compact }: { p: PlayerState; t: TableConn; you: number | null; compact?: boolean }) {
-  const canEdit = you === p.seat;
-  return (
-    <div className="flex items-center gap-1 rounded-lg bg-table-panel2 px-1.5 py-0.5">
-      <Avatar cardId={p.avatarCardId} name={p.name} size={compact ? 22 : 28} />
-      {!compact && <span className="text-xs text-table-muted">{p.name}</span>}
-      <button className="btn-ghost h-6 w-6 !px-0" onClick={() => t.send({ type: "adjust_life", seat: p.seat, delta: -1 })}>−</button>
-      <span className={`life-diamond text-sm font-bold text-white ${p.life <= 5 ? "border-red-500" : ""}`} style={{ width: 34, height: 34 }}>
-        <span>{p.life}</span>
-      </span>
-      <button className="btn-ghost h-6 w-6 !px-0" onClick={() => t.send({ type: "adjust_life", seat: p.seat, delta: 1 })}>+</button>
-      {canEdit && p.poison > 0 && <span className="chip text-green-300">☠{p.poison}</span>}
     </div>
   );
 }
 
 function PileButton({ label, count, onClick }: { label: string; count: number; onClick: () => void }) {
   return (
-    <button className="chip flex items-center justify-between hover:border-table-accent" onClick={onClick}>
+    <button className="chip flex items-center justify-between hover:border-table-accent w-full" onClick={onClick}>
       <span>{label}</span>
-      <span className="tabular-nums text-table-accentSoft">{count}</span>
+      <span className="tabular-nums text-table-accentSoft font-semibold">{count}</span>
     </button>
   );
 }
@@ -425,12 +886,12 @@ function FreeformCardMenu({ menu, state, you, t, onClose }: { menu: { id: string
   const act = (fn: () => void) => () => { fn(); onClose(); };
   const move = (zone: GameObject["zone"], toTop?: boolean) => t.send({ type: "move_card", objectId: o.id, toZone: zone, toSeat: o.ownerSeat, toTop });
   const Item = ({ label, onClick, danger }: { label: string; onClick: () => void; danger?: boolean }) => (
-    <button className={`block w-full px-3 py-1.5 text-left text-sm hover:bg-table-panel2 ${danger ? "text-red-300" : ""}`} onClick={act(onClick)}>{label}</button>
+    <button className={`block w-full px-3 py-1.5 text-left text-sm hover:bg-table-panel2 ${danger ? "text-red-300 font-semibold" : ""}`} onClick={act(onClick)}>{label}</button>
   );
   const style: React.CSSProperties = { left: Math.min(menu.x, window.innerWidth - 210), top: Math.min(menu.y, window.innerHeight - 340) };
   return (
     <div ref={ref} className="panel fixed z-50 w-52 overflow-hidden py-1" style={style}>
-      <div className="truncate border-b border-table-border px-3 py-1 text-xs text-table-muted">{o.name}{!mine && <span className="ml-1 text-amber-300/80">· opponent's</span>}</div>
+      <div className="truncate border-b border-table-border px-3 py-1 text-xs text-table-muted font-bold">{o.name}{!mine && <span className="ml-1 text-amber-300/80">· opponent's</span>}</div>
       <Item label={o.tapped ? "Untap" : "Tap"} onClick={() => t.send({ type: "tap", objectId: o.id, tapped: !o.tapped })} />
       <Item label="Flip face down/up" onClick={() => t.send({ type: "flip", objectId: o.id, faceDown: !o.faceDown })} />
       <div className="my-1 border-t border-table-border" />
@@ -448,7 +909,7 @@ function FreeformCardMenu({ menu, state, you, t, onClose }: { menu: { id: string
   );
 }
 
-// ---- per-player notepad (local, persists per table) -----------------------
+// ---- notepad ------------------------
 function Notepad({ tableId, onClose }: { tableId: string; onClose: () => void }) {
   const key = `mtg-notes-${tableId}`;
   const [text, setText] = useState(() => localStorage.getItem(key) ?? "");
