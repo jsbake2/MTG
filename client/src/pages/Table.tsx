@@ -247,6 +247,80 @@ function GameBoard({ t, state }: { t: TableConn; state: TableState }) {
   const [handSort, setHandSort] = useState<"none" | "cmc" | "type" | "color" | "name">("none");
   const [handFilter, setHandFilter] = useState("");
   const [handMeta, setHandMeta] = useState<Record<string, { cmc: number; cardTypes: string[]; colors: string[] }>>({});
+  const [flyingCards, setFlyingCards] = useState<{ id: string; cardId: string | null; startX: number; startY: number }[]>([]);
+  const prevLibCount = useRef<number>(-1);
+  const [libraryMenu, setLibraryMenu] = useState<{ seat: number; x: number; y: number } | null>(null);
+
+  useEffect(() => {
+    if (you === null || !me) return;
+    const count = me.libraryCount;
+    if (prevLibCount.current !== -1 && count < prevLibCount.current) {
+      const el = document.getElementById("my-library-stack");
+      const rect = el?.getBoundingClientRect();
+      const parentEl = el?.closest(".mtg-table");
+      const parentRect = parentEl?.getBoundingClientRect();
+      
+      let startX = 1000;
+      let startY = 600;
+      
+      if (rect && parentRect) {
+        startX = rect.left - parentRect.left;
+        startY = rect.top - parentRect.top;
+      }
+
+      const newFly = {
+        id: Math.random().toString(),
+        cardId: null,
+        startX,
+        startY,
+      };
+      setFlyingCards((f) => [...f, newFly]);
+      setTimeout(() => {
+        setFlyingCards((f) => f.filter((item) => item.id !== newFly.id));
+      }, 480);
+    }
+    prevLibCount.current = count;
+  }, [me?.libraryCount, you]);
+
+  const [zoom, setZoom] = useState(1.0);
+  const [panX, setPanX] = useState(0);
+  const [panY, setPanY] = useState(0);
+  const [isPanning, setIsPanning] = useState(false);
+  const panStart = useRef({ x: 0, y: 0, panX: 0, panY: 0 });
+  const matRef = useRef<HTMLDivElement>(null);
+
+  function matPoint(e: { clientX: number; clientY: number }): { x: number; y: number } {
+    const r = matRef.current?.getBoundingClientRect();
+    return {
+      x: (e.clientX - (r?.left ?? 0)) / zoom,
+      y: (e.clientY - (r?.top ?? 0)) / zoom,
+    };
+  }
+
+  const handleWheel = (e: React.WheelEvent) => {
+    if (!(e.target as HTMLElement).closest(".mtg-table-felt")) return;
+    const factor = e.deltaY < 0 ? 1.06 : 0.94;
+    setZoom((z) => Math.min(2.0, Math.max(0.6, z * factor)));
+  };
+
+  const handlePointerDown = (e: React.PointerEvent) => {
+    if (e.target !== e.currentTarget && !(e.target as HTMLElement).classList.contains("mtg-table-felt")) return;
+    setIsPanning(true);
+    panStart.current = { x: e.clientX, y: e.clientY, panX, panY };
+    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+  };
+
+  const handlePointerMove = (e: React.PointerEvent) => {
+    if (!isPanning) return;
+    const dx = e.clientX - panStart.current.x;
+    const dy = e.clientY - panStart.current.y;
+    setPanX(panStart.current.panX + dx);
+    setPanY(panStart.current.panY + dy);
+  };
+
+  const handlePointerUp = () => {
+    setIsPanning(false);
+  };
 
   const handleHover = (card: { id: string; name: string } | null, e?: React.MouseEvent) => {
     if (!card || !e) {
@@ -430,56 +504,139 @@ function GameBoard({ t, state }: { t: TableConn; state: TableState }) {
 
       <div className="flex min-h-0 flex-1">
         {/* Main play area */}
-        <div className="mtg-table flex min-h-0 flex-1 flex-col overflow-y-auto p-2">
-          {/* Opponents */}
-          <div className="mb-2 grid gap-2" style={{ gridTemplateColumns: `repeat(${Math.max(1, opponents.length)}, minmax(0, 1fr))` }}>
-            {opponents.map((p) => (
-              <PlayerStrip
-                key={p.seat}
-                p={p}
-                state={state}
-                you={you}
-                t={t}
-                objectsByZone={objectsByZone}
-                onSelect={(s) => (targeting ? addTarget(s.objectId) : setSel(s))}
-                onBrowse={(zoneId, title) => setBrowseZone({ zoneId, title })}
-                onHover={handleHover}
-                targeting={!!targeting}
-                onTargetPlayer={() => addTarget(`seat:${p.seat}`)}
-              />
+        <div className="mtg-table flex min-h-0 flex-1 flex-col overflow-hidden p-2 relative" onWheel={handleWheel}>
+          {/* Zoom / Pan Floating Controls */}
+          <div className="absolute left-4 top-4 z-20 flex flex-col gap-1 bg-black/60 p-1.5 rounded-lg border border-table-border/40 backdrop-blur-sm">
+            <button className="btn-ghost !p-1.5 font-bold hover:text-table-accentSoft" onClick={() => setZoom((z) => Math.min(2.0, z + 0.1))} title="Zoom In">＋</button>
+            <button className="btn-ghost !p-1.5 font-bold hover:text-table-accentSoft" onClick={() => setZoom((z) => Math.max(0.6, z - 0.1))} title="Zoom Out">－</button>
+            <button className="btn-ghost !p-1 text-[9px] hover:text-table-accentSoft uppercase tracking-wider font-semibold" onClick={() => { setZoom(1.0); setPanX(0); setPanY(0); }} title="Reset View">Reset</button>
+          </div>
+
+          <div
+            ref={matRef}
+            className="mtg-table-felt w-full min-h-[900px] flex flex-col justify-start gap-4 p-4 relative"
+            style={{
+              transform: `translate(${panX}px, ${panY}px) scale(${zoom})`,
+              transformOrigin: "0 0",
+              transition: "transform 0.05s ease-out",
+              cursor: isPanning ? "grabbing" : "grab",
+            }}
+            onPointerDown={handlePointerDown}
+            onPointerMove={handlePointerMove}
+            onPointerUp={handlePointerUp}
+          >
+            {/* Opponents */}
+            <div className="mb-2 grid gap-2" style={{ gridTemplateColumns: `repeat(${Math.max(1, opponents.length)}, minmax(0, 1fr))` }}>
+              {opponents.map((p) => (
+                <PlayerStrip
+                  key={p.seat}
+                  p={p}
+                  state={state}
+                  you={you}
+                  t={t}
+                  objectsByZone={objectsByZone}
+                  onSelect={(s) => (targeting ? addTarget(s.objectId) : setSel(s))}
+                  onBrowse={(zoneId, title) => setBrowseZone({ zoneId, title })}
+                  onHover={handleHover}
+                  targeting={!!targeting}
+                  onTargetPlayer={() => addTarget(`seat:${p.seat}`)}
+                />
+              ))}
+            </div>
+
+            {/* Shared stack */}
+            {state.stackOrder.length > 0 && (
+              <div className="mb-2 rounded-lg border border-table-accent/40 bg-table-panel2 p-2">
+                <div className="mb-1 text-xs uppercase tracking-wide text-table-accentSoft">Stack (top last)</div>
+                <div className="flex gap-1 overflow-x-auto">
+                  {state.stackOrder.map((oid) => {
+                    const o = state.objects[oid];
+                    return o ? <MiniCard key={oid} o={o} onClick={(e) => (targeting ? addTarget(oid) : setSel({ objectId: oid, x: e.clientX, y: e.clientY }))} onHover={handleHover} /> : null;
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* The red battle-line between opponents and you (MTG 2015 style). */}
+            <div className="battle-line my-2 shrink-0" />
+
+            {/* My battlefield */}
+            {you !== null && (
+              <div className="relative">
+                {state.prioritySeat === you && (
+                  <div className="absolute right-2 top-2 z-10 animate-pulse rounded bg-table-accent/20 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-table-accentSoft border border-table-accent/40 backdrop-blur-sm">Your Priority</div>
+                )}
+                <div className="flex gap-3">
+                  <div className="flex-1 min-w-0">
+                    <BattlefieldRow
+                      title="Your battlefield"
+                      objects={objectsByZone[`battlefield:${you}`] ?? []}
+                      onSelect={clickObject}
+                      onHover={handleHover}
+                      highlight
+                    />
+                  </div>
+                  <div className="flex shrink-0 items-end gap-1.5 pb-2">
+                    <CardStackDeck
+                      id="my-library-stack"
+                      count={me?.libraryCount ?? 0}
+                      label="Library"
+                      size={96}
+                      onClick={() => t.send({ type: "draw", seat: you, count: 1 })}
+                      onRightClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setLibraryMenu({ seat: you, x: e.clientX, y: e.clientY });
+                      }}
+                    />
+                    <CardStackDeck
+                      count={objectsByZone[`graveyard:${you}`]?.length ?? 0}
+                      faceUpCardId={objectsByZone[`graveyard:${you}`]?.[objectsByZone[`graveyard:${you}`].length - 1]?.cardId}
+                      label="Grave"
+                      size={96}
+                      onClick={() => setBrowseZone({ zoneId: `graveyard:${you}`, title: "Your Graveyard" })}
+                    />
+                    <CardStackDeck
+                      count={objectsByZone[`exile:${you}`]?.length ?? 0}
+                      faceUpCardId={objectsByZone[`exile:${you}`]?.[objectsByZone[`exile:${you}`].length - 1]?.cardId}
+                      label="Exile"
+                      size={96}
+                      onClick={() => setBrowseZone({ zoneId: `exile:${you}`, title: "Your Exile" })}
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Smooth flying card animation projection */}
+            {flyingCards.map((f) => (
+              <div
+                key={f.id}
+                className="absolute z-50 pointer-events-none rounded-md animate-fly-draw"
+                style={{
+                  width: 70,
+                  height: 96,
+                  transformOrigin: "center",
+                  "--fly-start-x": `${f.startX}px`,
+                  "--fly-start-y": `${f.startY}px`,
+                } as any}
+              >
+                <CardImage id={null} name="Card" className="rounded-md shadow-2xl ring-2 ring-table-accent/60 animate-spin-once" />
+              </div>
             ))}
           </div>
 
-          {/* Shared stack */}
-          {state.stackOrder.length > 0 && (
-            <div className="mb-2 rounded-lg border border-table-accent/40 bg-table-panel2 p-2">
-              <div className="mb-1 text-xs uppercase tracking-wide text-table-accentSoft">Stack (top last)</div>
-              <div className="flex gap-1 overflow-x-auto">
-                {state.stackOrder.map((oid) => {
-                  const o = state.objects[oid];
-                  return o ? <MiniCard key={oid} o={o} onClick={(e) => (targeting ? addTarget(oid) : setSel({ objectId: oid, x: e.clientX, y: e.clientY }))} onHover={handleHover} /> : null;
-                })}
-              </div>
-            </div>
-          )}
-
-          {/* The red battle-line between opponents and you (MTG 2015 style). */}
-          <div className="battle-line my-2 shrink-0" />
-
-          {/* My battlefield */}
-          {you !== null && (
-            <div className="relative">
-              {state.prioritySeat === you && (
-                <div className="absolute right-2 top-2 z-10 animate-pulse rounded bg-table-accent/20 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-table-accentSoft border border-table-accent/40 backdrop-blur-sm">Your Priority</div>
-              )}
-              <BattlefieldRow
-                title="Your battlefield"
-                objects={objectsByZone[`battlefield:${you}`] ?? []}
-                onSelect={clickObject}
-                onHover={handleHover}
-                highlight
-              />
-            </div>
+          {/* Floating Library Context Menu overlay */}
+          {libraryMenu && (
+            <LibraryContextMenu
+              menu={libraryMenu}
+              t={t}
+              onClose={() => setLibraryMenu(null)}
+              onBrowse={() => {
+                setBrowseZone({ zoneId: `library:${libraryMenu.seat}`, title: `${libraryMenu.seat === you ? "Your" : "Opponent's"} Library` });
+                setLibraryMenu(null);
+              }}
+            />
           )}
         </div>
 
@@ -816,7 +973,33 @@ function PlayerStrip({
           </button>
         )}
       </div>
-      <BattlefieldRow objects={bf} onSelect={(o, e) => onSelect({ objectId: o.id, x: e.clientX, y: e.clientY })} onHover={onHover} compact />
+      <div className="flex gap-3">
+        <div className="flex-1 min-w-0">
+          <BattlefieldRow objects={bf} onSelect={(o, e) => onSelect({ objectId: o.id, x: e.clientX, y: e.clientY })} onHover={onHover} compact isOpponent={p.seat !== you} />
+        </div>
+        <div className="flex shrink-0 items-end gap-1.5 pb-1">
+          <CardStackDeck
+            count={p.libraryCount}
+            label="Library"
+            size={76}
+            onClick={() => onBrowse(`library:${p.seat}`, `${p.name}'s Library`)}
+          />
+          <CardStackDeck
+            count={gy.length}
+            faceUpCardId={gy[gy.length - 1]?.cardId}
+            label="Grave"
+            size={76}
+            onClick={() => onBrowse(`graveyard:${p.seat}`, `${p.name}'s Graveyard`)}
+          />
+          <CardStackDeck
+            count={ex.length}
+            faceUpCardId={ex[ex.length - 1]?.cardId}
+            label="Exile"
+            size={76}
+            onClick={() => onBrowse(`exile:${p.seat}`, `${p.name}'s Exile`)}
+          />
+        </div>
+      </div>
     </div>
   );
 }
@@ -847,6 +1030,7 @@ function BattlefieldRow({
   onHover,
   highlight,
   compact,
+  isOpponent = false,
 }: {
   title?: string;
   objects: GameObject[];
@@ -854,6 +1038,7 @@ function BattlefieldRow({
   onHover?: (card: { id: string; name: string } | null, e: React.MouseEvent) => void;
   highlight?: boolean;
   compact?: boolean;
+  isOpponent?: boolean;
 }) {
   const isLand = (o: GameObject) => o.cardTypes?.includes("Land") ?? false;
   const lands = stackGroups(objects.filter(isLand));
@@ -868,7 +1053,7 @@ function BattlefieldRow({
       {nonlands.length > 0 && (
         <div className="mb-2 flex flex-wrap items-end gap-1.5">
           {nonlands.map(({ rep, count }) => (
-            <GameCard key={rep.id} o={rep} count={count} onClick={(e) => onSelect(rep, e)} onHover={onHover} size={size} />
+            <GameCard key={rep.id} o={rep} count={count} onClick={(e) => onSelect(rep, e)} onHover={onHover} size={size} isOpponent={isOpponent} />
           ))}
         </div>
       )}
@@ -876,7 +1061,7 @@ function BattlefieldRow({
       {lands.length > 0 && (
         <div className="flex flex-wrap items-end gap-1.5">
           {lands.map(({ rep, count }) => (
-            <GameCard key={rep.id} o={rep} count={count} onClick={(e) => onSelect(rep, e)} onHover={onHover} size={landSize} />
+            <GameCard key={rep.id} o={rep} count={count} onClick={(e) => onSelect(rep, e)} onHover={onHover} size={landSize} isOpponent={isOpponent} />
           ))}
         </div>
       )}
@@ -890,22 +1075,53 @@ function GameCard({
   size,
   onHover,
   count = 1,
+  isOpponent = false,
 }: {
   o: GameObject;
   onClick: (e: React.MouseEvent) => void;
   size: number;
   onHover?: (card: { id: string; name: string } | null, e: React.MouseEvent) => void;
   count?: number;
+  isOpponent?: boolean;
 }) {
+  const [isHovered, setIsHovered] = useState(false);
   const w = size * 0.72;
   const stacked = count > 1;
+
+  let rotateVal = "0deg";
+  let translateVal = "";
+  if (isOpponent && !isHovered) {
+    if (o.tapped) {
+      rotateVal = "270deg";
+      translateVal = `translateY(-${w}px) translateX(-${size}px)`;
+    } else {
+      rotateVal = "180deg";
+      translateVal = `translateY(-${size}px) translateX(-${w}px)`;
+    }
+  } else {
+    if (o.tapped) {
+      rotateVal = "90deg";
+      translateVal = `translateY(-${w}px)`;
+    }
+  }
+
   return (
     <button
       onClick={onClick}
-      onMouseEnter={(e) => o.cardId && onHover?.({ id: o.cardId, name: o.name }, e)}
+      onMouseEnter={(e) => {
+        setIsHovered(true);
+        if (o.cardId) onHover?.({ id: o.cardId, name: o.name }, e);
+      }}
       onMouseMove={(e) => o.cardId && onHover?.({ id: o.cardId, name: o.name }, e)}
-      onMouseLeave={() => onHover?.(null, null as any)}
-      className={`game-card-wrapper relative shrink-0 transition-transform hover:scale-105 hover:z-10 ${o.tapped ? "opacity-85" : ""}`}
+      onMouseLeave={() => {
+        setIsHovered(false);
+        onHover?.(null, null as any);
+      }}
+      className={`game-card-wrapper relative shrink-0 transition-transform ${
+        isHovered
+          ? "scale-125 z-50 shadow-2xl ring-2 ring-table-accent/60"
+          : "hover:scale-105 hover:z-10"
+      } ${o.tapped ? "opacity-85" : ""}`}
       style={{ width: o.tapped ? size : w, height: o.tapped ? w : size }}
       title={stacked ? `${o.name} ×${count}` : o.name}
     >
@@ -918,11 +1134,11 @@ function GameCard({
       )}
       <div
         className="absolute left-0 top-0 origin-top-left transition-transform"
-        style={{ width: w, height: size, transform: o.tapped ? `rotate(90deg) translateY(-${w}px)` : "none" }}
+        style={{ width: w, height: size, transform: rotateVal !== "0deg" || translateVal !== "" ? `rotate(${rotateVal}) ${translateVal}` : "none" }}
       >
         <CardImage
-          id={o.cardId}
-          name={o.name}
+          id={o.faceDown ? null : o.cardId}
+          name={o.faceDown ? "Card" : o.name}
           className={`rounded-md shadow-card ${
             o.attacking !== null
               ? "ring-2 ring-red-500 card-attacking"
@@ -1146,17 +1362,55 @@ function TurnTimer({ startedAt, limit, isMine, sound }: { startedAt: number; lim
 
 // ---- dice ---------------------------------------------------------------
 export function DiceRoller({ t, seat }: { t: TableConn; seat: number }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const h = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false); };
+    window.addEventListener("mousedown", h);
+    return () => window.removeEventListener("mousedown", h);
+  }, []);
+  
   return (
-    <div className="flex items-center gap-0.5">
-      <button className="chip hover:border-table-accent" onClick={() => t.send({ type: "roll", seat, sides: 6, count: 1 })} title="Roll a d6">
-        d6
+    <div ref={ref} className="relative flex items-center">
+      <button
+        className={`chip hover:border-table-accent font-semibold flex items-center gap-1 ${open ? "border-table-accent text-table-accentSoft" : ""}`}
+        onClick={() => setOpen(!open)}
+        title="Dice Roller Tray"
+      >
+        🎲 Dice Tray
       </button>
-      <button className="chip hover:border-table-accent" onClick={() => t.send({ type: "roll", seat, sides: 20, count: 1 })} title="Roll a d20">
-        d20
-      </button>
-      <button className="chip hover:border-table-accent" onClick={() => t.send({ type: "roll", seat, sides: 2, count: 1, label: "coin" })} title="Flip a coin">
-        🪙
-      </button>
+      
+      {open && (
+        <div className="absolute bottom-9 right-0 z-50 p-2.5 rounded-lg border border-table-border bg-[#0b0f19] shadow-2xl flex gap-1.5 min-w-max">
+          {[4, 6, 8, 10, 12, 20].map((sides) => (
+            <button
+              key={sides}
+              className="btn-ghost !p-1 text-xs font-semibold flex flex-col items-center justify-center border border-table-border/40 bg-table-panel2/30 hover:border-table-accent/40 rounded h-14 w-14"
+              onClick={() => {
+                t.send({ type: "roll", seat, sides, count: 1 });
+                setOpen(false);
+              }}
+              title={`Roll d${sides}`}
+            >
+              <div className="w-8 h-8 mb-0.5 pointer-events-none">
+                <DiceGraphic sides={sides} result={sides} />
+              </div>
+              <span className="text-[8px] text-table-muted">d{sides}</span>
+            </button>
+          ))}
+          <button
+            className="btn-ghost !p-1 text-xs font-semibold flex flex-col items-center justify-center border border-table-border/40 bg-table-panel2/30 hover:border-table-accent/40 rounded h-14 w-14"
+            onClick={() => {
+              t.send({ type: "roll", seat, sides: 2, count: 1, label: "coin" });
+              setOpen(false);
+            }}
+            title="Flip a coin"
+          >
+            <div className="text-xl mb-0.5 pointer-events-none">🪙</div>
+            <span className="text-[8px] text-table-muted">coin</span>
+          </button>
+        </div>
+      )}
     </div>
   );
 }
@@ -1182,12 +1436,20 @@ export function RollOverlay({ roll }: { roll: RollResult | null }) {
   const isCoin = current.sides === 2;
   const faceText = isCoin ? (current.values[0] === 1 ? "Heads" : "Tails") : String(current.total);
   return (
-    <div className="pointer-events-none fixed inset-0 z-40 flex items-center justify-center">
+    <div className="pointer-events-none fixed inset-0 z-50 flex items-center justify-center">
       <div className="flex flex-col items-center gap-3">
-        <div className="dice-animate flex h-28 w-28 items-center justify-center rounded-3xl bg-table-accent text-4xl font-black text-black shadow-panel">
-          {isCoin ? "🪙" : faceText}
+        <div className="dice-tumble flex h-24 w-24 items-center justify-center">
+          {isCoin ? (
+            <div className="flex h-20 w-20 items-center justify-center rounded-full bg-amber-500 border-2 border-amber-600 text-3xl font-bold text-black shadow-panel animate-coin-flip">
+              🪙
+            </div>
+          ) : (
+            <DiceGraphic sides={current.sides} result={current.total} />
+          )}
         </div>
-        <div className="max-w-md rounded-lg bg-black/85 px-4 py-2 text-center text-sm text-table-ink shadow-panel">{current.text}</div>
+        <div className="max-w-md rounded-lg bg-black/90 px-4 py-2 text-center text-sm font-semibold text-table-ink shadow-panel border border-table-border/40 backdrop-blur-sm">
+          {isCoin ? `${current.text} (Flipped: ${faceText})` : current.text}
+        </div>
       </div>
     </div>
   );
@@ -1426,6 +1688,191 @@ function CardMenu({
           <Item label="→ Library (bottom)" onClick={() => move("library", false)} />
         </>
       )}
+    </div>
+  );
+}
+
+// ---- Dice Graphic Polyhedral Shapes ----
+function DiceGraphic({ sides, result }: { sides: number; result: number }) {
+  if (sides === 4) {
+    return (
+      <svg width="64" height="64" viewBox="0 0 64 64" className="w-full h-full text-table-accentSoft filter drop-shadow-[0_2px_8px_rgba(var(--c-accent),0.25)]">
+        <polygon points="32,6 5,55 59,55" fill="#0f172a" stroke="currentColor" strokeWidth="2.5" strokeLinejoin="round" />
+        <line x1="32" y1="36" x2="32" y2="6" stroke="currentColor" strokeWidth="1.2" opacity="0.6" />
+        <line x1="32" y1="36" x2="5" y2="55" stroke="currentColor" strokeWidth="1.2" opacity="0.6" />
+        <line x1="32" y1="36" x2="59" y2="55" stroke="currentColor" strokeWidth="1.2" opacity="0.6" />
+        <text x="32" y="47" textAnchor="middle" fill="#fff" fontSize="15" fontWeight="bold" fontFamily="sans-serif">
+          {result}
+        </text>
+      </svg>
+    );
+  }
+  if (sides === 6) {
+    return (
+      <svg width="64" height="64" viewBox="0 0 64 64" className="w-full h-full text-table-accentSoft filter drop-shadow-[0_2px_8px_rgba(var(--c-accent),0.25)]">
+        <rect x="8" y="8" width="48" height="48" rx="6" fill="#0f172a" stroke="currentColor" strokeWidth="2.5" strokeLinejoin="round" />
+        <text x="32" y="39" textAnchor="middle" fill="#fff" fontSize="20" fontWeight="bold" fontFamily="sans-serif">
+          {result}
+        </text>
+      </svg>
+    );
+  }
+  if (sides === 8) {
+    return (
+      <svg width="64" height="64" viewBox="0 0 64 64" className="w-full h-full text-table-accentSoft filter drop-shadow-[0_2px_8px_rgba(var(--c-accent),0.25)]">
+        <polygon points="32,4 60,32 32,60 4,32" fill="#0f172a" stroke="currentColor" strokeWidth="2.5" strokeLinejoin="round" />
+        <line x1="4" y1="32" x2="60" y2="32" stroke="currentColor" strokeWidth="1.5" opacity="0.6" />
+        <line x1="32" y1="4" x2="32" y2="60" stroke="currentColor" strokeWidth="1" opacity="0.4" />
+        <text x="32" y="38" textAnchor="middle" fill="#fff" fontSize="18" fontWeight="bold" fontFamily="sans-serif">
+          {result}
+        </text>
+      </svg>
+    );
+  }
+  if (sides === 10) {
+    return (
+      <svg width="64" height="64" viewBox="0 0 64 64" className="w-full h-full text-table-accentSoft filter drop-shadow-[0_2px_8px_rgba(var(--c-accent),0.25)]">
+        <polygon points="32,4 58,26 48,56 32,60 16,56 6,26" fill="#0f172a" stroke="currentColor" strokeWidth="2.5" strokeLinejoin="round" />
+        <line x1="32" y1="34" x2="32" y2="4" stroke="currentColor" strokeWidth="1.2" opacity="0.6" />
+        <line x1="32" y1="34" x2="58" y2="26" stroke="currentColor" strokeWidth="1.2" opacity="0.6" />
+        <line x1="32" y1="34" x2="48" y2="56" stroke="currentColor" strokeWidth="1.2" opacity="0.6" />
+        <line x1="32" y1="34" x2="16" y2="56" stroke="currentColor" strokeWidth="1.2" opacity="0.6" />
+        <line x1="32" y1="34" x2="6" y2="26" stroke="currentColor" strokeWidth="1.2" opacity="0.6" />
+        <text x="32" y="44" textAnchor="middle" fill="#fff" fontSize="16" fontWeight="bold" fontFamily="sans-serif">
+          {result}
+        </text>
+      </svg>
+    );
+  }
+  if (sides === 12) {
+    return (
+      <svg width="64" height="64" viewBox="0 0 64 64" className="w-full h-full text-table-accentSoft filter drop-shadow-[0_2px_8px_rgba(var(--c-accent),0.25)]">
+        <polygon points="32,4 58,23 48,56 16,56 6,23" fill="#0f172a" stroke="currentColor" strokeWidth="2.5" strokeLinejoin="round" />
+        <polygon points="32,20 44,28 39,44 25,44 20,28" fill="none" stroke="currentColor" strokeWidth="1" opacity="0.7" />
+        <line x1="32" y1="4" x2="32" y2="20" stroke="currentColor" strokeWidth="1" opacity="0.6" />
+        <line x1="58" y1="23" x2="44" y2="28" stroke="currentColor" strokeWidth="1" opacity="0.6" />
+        <line x1="48" y1="56" x2="39" y2="44" stroke="currentColor" strokeWidth="1" opacity="0.6" />
+        <line x1="16" y1="56" x2="25" y2="44" stroke="currentColor" strokeWidth="1" opacity="0.6" />
+        <line x1="6" y1="23" x2="20" y2="28" stroke="currentColor" strokeWidth="1" opacity="0.6" />
+        <text x="32" y="38" textAnchor="middle" fill="#fff" fontSize="15" fontWeight="bold" fontFamily="sans-serif">
+          {result}
+        </text>
+      </svg>
+    );
+  }
+  if (sides === 20) {
+    return (
+      <svg width="64" height="64" viewBox="0 0 64 64" className="w-full h-full text-table-accentSoft filter drop-shadow-[0_2px_8px_rgba(var(--c-accent),0.25)]">
+        <polygon points="32,4 58,19 58,49 32,60 6,49 6,19" fill="#0f172a" stroke="currentColor" strokeWidth="2.5" strokeLinejoin="round" />
+        <polygon points="32,20 48,42 16,42" fill="none" stroke="currentColor" strokeWidth="1.2" opacity="0.7" />
+        <line x1="32" y1="4" x2="32" y2="20" stroke="currentColor" strokeWidth="1" opacity="0.6" />
+        <line x1="6" y1="19" x2="16" y2="42" stroke="currentColor" strokeWidth="1" opacity="0.6" />
+        <line x1="58" y1="19" x2="48" y2="42" stroke="currentColor" strokeWidth="1" opacity="0.6" />
+        <line x1="6" y1="49" x2="16" y2="42" stroke="currentColor" strokeWidth="1" opacity="0.6" />
+        <line x1="58" y1="49" x2="48" y2="42" stroke="currentColor" strokeWidth="1" opacity="0.6" />
+        <line x1="32" y1="60" x2="16" y2="42" stroke="currentColor" strokeWidth="1" opacity="0.6" />
+        <line x1="32" y1="60" x2="48" y2="42" stroke="currentColor" strokeWidth="1" opacity="0.6" />
+        <text x="32" y="38" textAnchor="middle" fill="#fff" fontSize="14" fontWeight="bold" fontFamily="sans-serif">
+          {result}
+        </text>
+      </svg>
+    );
+  }
+  return null;
+}
+
+// ---- Visual stack representing library / graveyard / exile ----
+function CardStackDeck({
+  count,
+  faceUpCardId,
+  label,
+  onClick,
+  onRightClick,
+  size = 96,
+  id,
+}: {
+  count: number;
+  faceUpCardId?: string | null;
+  label: string;
+  onClick?: () => void;
+  onRightClick?: (e: React.MouseEvent) => void;
+  size?: number;
+  id?: string;
+}) {
+  const w = size * 0.72;
+  const layers = Math.min(6, Math.ceil(count / 8));
+  return (
+    <div
+      id={id}
+      className="relative cursor-pointer select-none"
+      style={{ width: w, height: size }}
+      onClick={onClick}
+      onContextMenu={onRightClick}
+      title={`${label} (${count} cards) - click to interact`}
+    >
+      {count === 0 ? (
+        <div className="w-full h-full rounded-md border-2 border-dashed border-table-border/30 flex flex-col items-center justify-center text-center p-1 text-[9px] text-table-muted bg-black/10">
+          <span className="font-semibold uppercase tracking-wider text-[7px] mb-0.5 leading-snug">{label}</span>
+          <span className="text-[7px] opacity-60">empty</span>
+        </div>
+      ) : (
+        <>
+          {Array.from({ length: layers }).map((_, idx) => {
+            const shift = idx * 0.6;
+            return (
+              <div
+                key={idx}
+                className="absolute rounded-md border border-black/50 bg-[#0f172a] shadow"
+                style={{
+                  left: -shift,
+                  top: -shift,
+                  width: w,
+                  height: size,
+                  zIndex: idx,
+                }}
+              />
+            );
+          })}
+          <div
+            className="absolute rounded-md"
+            style={{
+              left: -layers * 0.6,
+              top: -layers * 0.6,
+              width: w,
+              height: size,
+              zIndex: layers,
+            }}
+          >
+            <CardImage id={faceUpCardId ?? null} name={faceUpCardId ? "Card" : "Back"} className="rounded-md shadow-card" />
+            <span className="absolute -right-1 -top-1 z-10 flex h-4 min-w-4 items-center justify-center rounded-full border border-black/50 bg-table-accent px-0.5 text-[8px] font-bold text-black shadow-lg">
+              {count}
+            </span>
+            <div className="absolute inset-x-0 bottom-0.5 bg-black/75 py-0.5 text-center text-[8px] font-semibold text-table-muted uppercase tracking-wider rounded-b">
+              {label}
+            </div>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+// ---- floating Library Context Menu ----
+function LibraryContextMenu({ menu, t, onClose, onBrowse }: { menu: { seat: number; x: number; y: number }; t: TableConn; onClose: () => void; onBrowse: () => void }) {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const h = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) onClose(); };
+    window.addEventListener("mousedown", h);
+    return () => window.removeEventListener("mousedown", h);
+  }, [onClose]);
+  const act = (fn: () => void) => () => { fn(); onClose(); };
+  return (
+    <div ref={ref} className="panel fixed z-50 w-48 overflow-hidden py-1" style={{ left: menu.x, top: menu.y }}>
+      <div className="truncate border-b border-table-border px-3 py-1 text-xs text-table-muted font-bold">Library Options</div>
+      <button className="block w-full px-3 py-1.5 text-left text-sm hover:bg-table-panel2" onClick={act(() => t.send({ type: "draw", seat: menu.seat, count: 1 }))}>Draw 1 Card</button>
+      <button className="block w-full px-3 py-1.5 text-left text-sm hover:bg-table-panel2" onClick={act(() => t.send({ type: "draw", seat: menu.seat, count: 7 }))}>Draw 7 Cards</button>
+      <button className="block w-full px-3 py-1.5 text-left text-sm hover:bg-table-panel2" onClick={act(() => t.send({ type: "shuffle", seat: menu.seat }))}>Shuffle Library</button>
+      <button className="block w-full px-3 py-1.5 text-left text-sm hover:bg-table-panel2" onClick={act(onBrowse)}>Browse Library</button>
     </div>
   );
 }

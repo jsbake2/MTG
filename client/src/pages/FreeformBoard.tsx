@@ -851,16 +851,20 @@ export function FreeformBoard({ t, state }: { t: TableConn; state: TableState })
                         }}
                         onDoubleClick={(e) => {
                           e.stopPropagation();
-                          t.send({ type: "tap", objectId: c.id, tapped: !c.tapped });
+                          if (isMine) {
+                            t.send({ type: "tap", objectId: c.id, tapped: !c.tapped });
+                          }
                         }}
                         onContextMenu={(e) => {
                           e.preventDefault();
                           e.stopPropagation();
-                          setMenu({ id: c.id, x: e.clientX, y: e.clientY });
+                          if (isMine) {
+                            setMenu({ id: c.id, x: e.clientX, y: e.clientY });
+                          }
                         }}
                         onClick={(e) => {
                           e.stopPropagation();
-                          if (activeCounterTool) {
+                          if (activeCounterTool && isMine) {
                             t.send({ type: "add_counter", objectId: c.id, counterType: activeCounterTool, delta: 1 });
                             setActiveCounterTool(null);
                           } else {
@@ -890,18 +894,22 @@ export function FreeformBoard({ t, state }: { t: TableConn; state: TableState })
                                   onClick={(e) => e.stopPropagation()}
                                 >
                                   <span>{cnt.type === "+1/+1" ? "+1/+1" : cnt.type === "-1/-1" ? "-1/-1" : cnt.type}: {cnt.count}</span>
-                                  <button
-                                    className="hover:text-red-400 font-bold px-0.5 text-xs text-table-muted"
-                                    onClick={(e) => { e.stopPropagation(); t.send({ type: "add_counter", objectId: c.id, counterType: cnt.type, delta: -1 }); }}
-                                  >
-                                    −
-                                  </button>
-                                  <button
-                                    className="hover:text-emerald-400 font-bold px-0.5 text-xs text-table-muted"
-                                    onClick={(e) => { e.stopPropagation(); t.send({ type: "add_counter", objectId: c.id, counterType: cnt.type, delta: 1 }); }}
-                                  >
-                                    +
-                                  </button>
+                                  {isMine && (
+                                    <>
+                                      <button
+                                        className="hover:text-red-400 font-bold px-0.5 text-xs text-table-muted"
+                                        onClick={(e) => { e.stopPropagation(); t.send({ type: "add_counter", objectId: c.id, counterType: cnt.type, delta: -1 }); }}
+                                      >
+                                        −
+                                      </button>
+                                      <button
+                                        className="hover:text-emerald-400 font-bold px-0.5 text-xs text-table-muted"
+                                        onClick={(e) => { e.stopPropagation(); t.send({ type: "add_counter", objectId: c.id, counterType: cnt.type, delta: 1 }); }}
+                                      >
+                                        +
+                                      </button>
+                                    </>
+                                  )}
                                 </div>
                               );
                             })}
@@ -955,8 +963,14 @@ export function FreeformBoard({ t, state }: { t: TableConn; state: TableState })
                     <CardStackDeck
                       count={libCards.length}
                       label={`${p.name} (Lib)`}
-                      onPointerDown={(e) => startZoneDrag(seat, "library", e)}
-                      onRightClick={(e) => { e.preventDefault(); e.stopPropagation(); setLibraryMenu({ seat, x: e.clientX, y: e.clientY }); }}
+                      onPointerDown={(e) => { if (seat === you) startZoneDrag(seat, "library", e); }}
+                      onRightClick={(e) => {
+                        if (seat === you) {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setLibraryMenu({ seat, x: e.clientX, y: e.clientY });
+                        }
+                      }}
                     />
                   </div>
 
@@ -966,7 +980,8 @@ export function FreeformBoard({ t, state }: { t: TableConn; state: TableState })
                       count={graveCards.length}
                       faceUpCardId={topGraveCard?.cardId}
                       label={`${p.name} (Grave)`}
-                      onPointerDown={(e) => startZoneDrag(seat, "graveyard", e)}
+                      onPointerDown={(e) => { if (seat === you) startZoneDrag(seat, "graveyard", e); }}
+                      onClick={() => { if (seat !== you) setBrowse({ zoneId: `graveyard:${seat}`, title: `${p.name}'s Graveyard` }); }}
                     />
                   </div>
 
@@ -976,7 +991,8 @@ export function FreeformBoard({ t, state }: { t: TableConn; state: TableState })
                       count={exileCards.length}
                       faceUpCardId={topExileCard?.cardId}
                       label={`${p.name} (Exile)`}
-                      onPointerDown={(e) => startZoneDrag(seat, "exile", e)}
+                      onPointerDown={(e) => { if (seat === you) startZoneDrag(seat, "exile", e); }}
+                      onClick={() => { if (seat !== you) setBrowse({ zoneId: `exile:${seat}`, title: `${p.name}'s Exile` }); }}
                     />
                   </div>
                 </div>
