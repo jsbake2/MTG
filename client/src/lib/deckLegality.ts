@@ -3,12 +3,13 @@ import type { Deck } from "@mtg/shared";
 import { api } from "@/api/client";
 
 // Construction compatibility: which decks even fit a game type's build rules,
-// before we bother checking card legality. Standard-type games take any 60-card
-// constructed deck; Commander takes commander decks; House takes anything.
-export function constructionMatches(gameType: string, deckFormatId: string): boolean {
+// judged by DECK SIZE (not the format label — a "house"-labeled 60-card deck is a
+// valid Standard-construction deck). The ruleset then decides card legality.
+export function constructionMatches(gameType: string, deck: { formatId: string; cardCount: number }): boolean {
   if (gameType === "house") return true;
-  if (gameType === "commander") return deckFormatId === "commander";
-  return deckFormatId !== "commander" && deckFormatId !== "house";
+  if (gameType === "commander") return deck.formatId === "commander" || deck.cardCount >= 98;
+  // Standard-type game: a full 60+ card deck that isn't a Commander deck.
+  return deck.formatId !== "commander" && deck.cardCount >= 60;
 }
 
 // A deck's formatId is only a label. This verifies each construction-compatible

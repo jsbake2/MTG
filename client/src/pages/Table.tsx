@@ -62,8 +62,8 @@ function Lobby({ t }: { t: TableConn }) {
   const allowedFormat = lobby?.formatId ?? "house";
   const ruleset = lobby?.ruleset ?? "standard";
   const enforceBans = lobby?.enforceBans ?? true;
-  const myMatched = decks.filter((d) => constructionMatches(allowedFormat, d.formatId));
-  const preconMatched = precons.filter((d) => constructionMatches(allowedFormat, d.formatId));
+  const myMatched = decks.filter((d) => constructionMatches(allowedFormat, d));
+  const preconMatched = precons.filter((d) => constructionMatches(allowedFormat, d));
   const { legalIds, loading: checkingLegality } = useLegalDeckIds([...myMatched, ...preconMatched], allowedFormat, ruleset, enforceBans);
   const isLegal = (d: Deck) => allowedFormat === "house" || legalIds.has(d.id);
 

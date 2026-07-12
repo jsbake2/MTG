@@ -51,8 +51,8 @@ export function Play() {
   }, []);
 
   // Construction-compatible decks, then real legality for the chosen ruleset.
-  const myMatched = useMemo(() => decks.filter((d) => constructionMatches(form.formatId, d.formatId)), [decks, form.formatId]);
-  const preconMatched = useMemo(() => precons.filter((d) => constructionMatches(form.formatId, d.formatId)), [precons, form.formatId]);
+  const myMatched = useMemo(() => decks.filter((d) => constructionMatches(form.formatId, d)), [decks, form.formatId]);
+  const preconMatched = useMemo(() => precons.filter((d) => constructionMatches(form.formatId, d)), [precons, form.formatId]);
   const { legalIds, loading: checkingLegality } = useLegalDeckIds([...myMatched, ...preconMatched], form.formatId, form.ruleset, form.enforceBans);
   const isLegal = (d: Deck) => form.formatId === "house" || legalIds.has(d.id);
   const myDecks = myMatched.filter(isLegal);
