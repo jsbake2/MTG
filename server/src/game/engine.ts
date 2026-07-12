@@ -128,6 +128,9 @@ export function checkStateBased(state: TableState, ctx: CardIndex): void {
     const lethalDamage = o.damage > 0 && o.damage >= toughness;
     const deathtouchKill = o.deathtouched && o.damage > 0;
     if (toughness <= 0 || ((lethalDamage || deathtouchKill) && !indestructible)) {
+      // A regeneration shield replaces destruction by lethal damage — but NOT
+      // death from 0-or-less toughness (CR 704.5f), which isn't "destroy".
+      if (toughness > 0 && consumeRegen(state, o)) continue;
       moveObject(state, ctx, o, "graveyard", o.ownerSeat, {});
       log(state, { seat: o.controllerSeat, kind: "combat", text: `${o.name} dies.` });
       runTriggers(state, ctx, o, "dies");
@@ -277,6 +280,7 @@ function onEnterStep(state: TableState, ctx: CardIndex): void {
       o.deathtouched = false;
       o.tempBoost = { power: 0, toughness: 0 }; // "until end of turn" pump wears off
       o.grantedKeywords = [];
+      o.regenShield = 0; // unused regeneration shields wear off at end of turn
     }
     // Cleanup step immediately transitions to the next turn.
     advanceStep(state, ctx);
@@ -358,8 +362,23 @@ function resolveWho(
 }
 
 // Route a permanent/spell to a zone using the rules table (destroy/exile/etc.).
+// Regeneration shield (CR 701.19): if `o` has a shield, spend one to replace a
+// destruction — tap it, clear damage, remove from combat — and report true.
+function consumeRegen(state: TableState, o: GameObject): boolean {
+  if ((o.regenShield ?? 0) <= 0) return false;
+  o.regenShield -= 1;
+  o.tapped = true;
+  o.damage = 0;
+  o.attacking = null;
+  o.blocking = null;
+  o.deathtouched = false;
+  log(state, { seat: o.controllerSeat, kind: "combat", text: `${o.name} regenerates.` });
+  return true;
+}
+
 function routeZone(state: TableState, ctx: CardIndex, o: GameObject, action: keyof typeof KEYWORD_ACTIONS): void {
   if (action === "destroy" && hasKeyword(state, ctx, o, "indestructible")) return;
+  if (action === "destroy" && consumeRegen(state, o)) return; // regeneration shield saves it
   const rule = KEYWORD_ACTIONS[action];
   moveObject(state, ctx, o, rule.dest, rule.toOwner ? o.ownerSeat : o.controllerSeat, { toTop: rule.toTop });
 }
@@ -486,6 +505,15 @@ function applyOps(state: TableState, ctx: CardIndex, source: GameObject, ops: Ef
       case "grant":
         if (tgt.object && !tgt.object.grantedKeywords.includes(op.keyword)) tgt.object.grantedKeywords.push(op.keyword);
         break;
+      case "regenerate": {
+        // Self-target ("regenerate this creature") applies to the source.
+        const target = op.what.scope === "target" ? tgt.object : source;
+        if (target) {
+          target.regenShield = (target.regenShield ?? 0) + 1;
+          log(state, { seat: source.controllerSeat, kind: "action", text: `${target.name} gets a regeneration shield.` });
+        }
+        break;
+      }
       case "gain_control":
         if (tgt.object) {
           tgt.object.controllerSeat = source.controllerSeat;
@@ -765,6 +793,19 @@ function dispatch(state: TableState, ctx: CardIndex, seat: number, action: GameA
         const timing = enforce(state, seat === state.activeSeat && isMainPhase(state) && state.stackOrder.length === 0, `${o.name} can only be cast on your main phase with an empty stack (it isn't an instant).`);
         if (timing) return timing;
       }
+      // Commander tax (CR 903.8): {2} more for each previous cast from the command
+      // zone. Mana is paid loosely (player-driven), so surface the tax in the log.
+      if (o.zone === "command" && o.isCommander) {
+        const tax = 2 * o.commanderCasts;
+        o.commanderCasts += 1;
+        log(state, {
+          seat,
+          kind: "system",
+          text: tax > 0
+            ? `Commander tax: pay {${tax}} extra to cast ${o.name} (cast #${o.commanderCasts} from the command zone).`
+            : `${o.name} cast from the command zone (no tax yet).`,
+        });
+      }
       o.zone = "stack";
       o.controllerSeat = seat;
       o.targets = action.targets ?? [];
@@ -1042,6 +1083,8 @@ function newTokenObject(seat: number, name: string): GameObject {
     targets: [],
     tempBoost: { power: 0, toughness: 0 },
     grantedKeywords: [],
+    regenShield: 0,
+    commanderCasts: 0,
     castMode: -1,
     xValue: 0,
     cardTypes: null,

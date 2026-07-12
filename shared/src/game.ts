@@ -57,6 +57,12 @@ export interface GameObject {
   // "Until end of turn" pump and granted keywords (cleared at cleanup).
   tempBoost: { power: number; toughness: number };
   grantedKeywords: string[];
+  // Regeneration shields (CR 701.19). Each saves the creature from being destroyed
+  // once this turn; leftover shields wear off at end of turn.
+  regenShield: number;
+  // Times this card has been cast from the command zone (Commander). Commander tax
+  // is an extra {2} for each previous such cast (CR 903.8).
+  commanderCasts: number;
   // Chosen mode for a modal spell on the stack (-1 = none).
   castMode: number;
   // Chosen value of X for an X spell on the stack.

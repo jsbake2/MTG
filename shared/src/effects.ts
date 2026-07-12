@@ -49,6 +49,7 @@ export type EffectOp =
   | { op: "plus_counter"; what: EffectWho; count: number; kind: "+1/+1" | "-1/-1" }
   | { op: "pump"; what: EffectWho; power: number; toughness: number }
   | { op: "grant"; what: EffectWho; keyword: string }
+  | { op: "regenerate"; what: EffectWho }
   | { op: "gain_control"; what: EffectWho }
   | { op: "tuck"; what: EffectWho; top: boolean }
   | { op: "add_mana"; mana: Record<string, number> }
@@ -147,6 +148,9 @@ const PATTERNS: Pattern[] = [
 
   // --- Gain control ---
   { re: /gain(s)? control of\s+(target [a-z ]*?(?:creature|permanent|artifact|enchantment|planeswalker|land))/i, build: (m) => ({ op: "gain_control", what: who(m[2]!) }) },
+
+  // --- Regenerate (sets a destroy-prevention shield, CR 701.19) ---
+  { re: /^regenerate\s+(target\s+[a-z ]*?creature|this creature|it|.+?)?\.?$/i, build: (m) => { const p = m[1] ?? "this creature"; return { op: "regenerate", what: /target/i.test(p) ? who(p) : { scope: "you" } }; } },
 
   // --- Put on top/bottom of library (tuck) ---
   { re: /put\s+(target[a-z' ]*?(?:creature|permanent|artifact|enchantment)[a-z' ]*?)\s+on\s+(top|the bottom)\s+of\s+(?:its owner['’]s|their owner['’]s|your|owner['’]s) library/i, build: (m) => ({ op: "tuck", what: who(m[1]!), top: /top/i.test(m[2]!) }) },
