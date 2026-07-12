@@ -67,23 +67,13 @@ function Lobby({ t }: { t: TableConn }) {
   const { legalIds, loading: checkingLegality } = useLegalDeckIds([...myMatched, ...preconMatched], allowedFormat, ruleset, enforceBans);
   const isLegal = (d: Deck) => allowedFormat === "house" || legalIds.has(d.id);
 
-  // Pick a sensible legal default once, without fighting the user's own choice.
-  const didDefault = useRef(false);
-  useEffect(() => {
-    if (didDefault.current || checkingLegality || allowedFormat === "house") return;
-    const legalMine = myMatched.filter(isLegal);
-    const pick = legalMine.find((d) => d.isStarred) ?? legalMine[0];
-    if (pick) {
-      setDeckId(pick.id);
-      didDefault.current = true;
-    }
-  }, [checkingLegality, legalIds]);
+  // NOTE: we deliberately do NOT auto-pick a deck. Each player must consciously
+  // choose their own deck before taking a seat (the seat buttons are gated on it).
 
   // Switching your deck must update your seat on the server — otherwise the seat
   // keeps the old (or no) deck and the game refuses to start. Re-seat live.
   function chooseDeck(v: string | null) {
     setDeckId(v);
-    didDefault.current = true; // user has made a choice; stop auto-defaulting
     if (lobby && lobby.you !== null) t.takeSeat(lobby.you, v);
   }
 
@@ -125,8 +115,14 @@ function Lobby({ t }: { t: TableConn }) {
       </div>
       <div className="panel p-4">
         <div className="mb-3 text-sm text-table-muted">
-          Format: <b className="text-table-ink">{lobby.formatId}</b> · pick your seat and deck.
+          Format: <b className="text-table-ink">{lobby.formatId}</b>
+          {allowedFormat !== "house" ? <> · ruleset <b className="text-table-ink">{ruleset}</b>{!enforceBans && " · bans off"}</> : null}
         </div>
+        {lobby.you === null && (
+          <div className="mb-3 rounded-md border border-table-accent/40 bg-table-accent/10 px-3 py-2 text-sm text-table-accentSoft">
+            👉 To join: <b>pick your deck</b> below, then <b>click an empty seat</b>. Or just watch as a spectator.
+          </div>
+        )}
         <div className="mb-1 flex items-center justify-between">
           <label className="text-sm font-semibold">Your deck</label>
           {decks.some((d) => (lobby.formatId === "house" || d.formatId === lobby.formatId) && d.isStarred) && (

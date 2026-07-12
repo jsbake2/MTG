@@ -109,6 +109,76 @@ export function FreeformBoard({ t, state }: { t: TableConn; state: TableState })
   const [flyingCards, setFlyingCards] = useState<FlyingCard[]>([]);
   const prevLibraryCount = useRef<Record<number, number>>({});
 
+  // Draggable zone positions (Library, Graveyard, Exile) saved to localStorage per table
+  const [zonePositions, setZonePositions] = useState<Record<string, { x: number; y: number }>>(() => {
+    try {
+      const saved = localStorage.getItem(`mtg-zone-pos-${state.id}`);
+      return saved ? JSON.parse(saved) : {};
+    } catch {
+      return {};
+    }
+  });
+
+  useEffect(() => {
+    localStorage.setItem(`mtg-zone-pos-${state.id}`, JSON.stringify(zonePositions));
+  }, [zonePositions, state.id]);
+
+  const getZonePos = (seat: number, zoneName: string) => {
+    const key = `${seat}:${zoneName}`;
+    if (zonePositions[key]) return zonePositions[key];
+    if (seat === 0) {
+      if (zoneName === "library") return { x: 1060, y: 475 };
+      if (zoneName === "graveyard") return { x: 1060, y: 640 };
+      if (zoneName === "exile") return { x: 940, y: 640 };
+    } else {
+      if (zoneName === "library") return { x: 1060, y: 175 };
+      if (zoneName === "graveyard") return { x: 1060, y: 10 };
+      if (zoneName === "exile") return { x: 940, y: 10 };
+    }
+    return { x: 0, y: 0 };
+  };
+
+  const startZoneDrag = (seat: number, zoneName: string, e: React.PointerEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const startPos = matPoint(e);
+    const key = `${seat}:${zoneName}`;
+    const initialPos = getZonePos(seat, zoneName);
+    const offsetX = startPos.x - initialPos.x;
+    const offsetY = startPos.y - initialPos.y;
+    let hasMoved = false;
+
+    const move = (ev: PointerEvent) => {
+      const p = matPoint(ev);
+      const dx = p.x - startPos.x;
+      const dy = p.y - startPos.y;
+      if (Math.abs(dx) > 3 || Math.abs(dy) > 3) {
+        hasMoved = true;
+      }
+      setZonePositions((prev) => ({
+        ...prev,
+        [key]: { x: p.x - offsetX, y: p.y - offsetY },
+      }));
+    };
+
+    const up = () => {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", up);
+      if (!hasMoved) {
+        if (zoneName === "library") {
+          t.send({ type: "draw", seat, count: 1 });
+        } else if (zoneName === "graveyard") {
+          setBrowse({ zoneId: `graveyard:${seat}`, title: `${seat === you ? "Your" : "Opponent's"} Graveyard` });
+        } else if (zoneName === "exile") {
+          setBrowse({ zoneId: `exile:${seat}`, title: `${seat === you ? "Your" : "Opponent's"} Exile` });
+        }
+      }
+    };
+
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", up);
+  };
+
   const CARD_W = 108;
   const CARD_H = Math.round((CARD_W * 88) / 63);
 
@@ -191,12 +261,12 @@ export function FreeformBoard({ t, state }: { t: TableConn; state: TableState })
     const count = (objectsByZone[`library:${you}`] ?? []).length;
     const prev = prevLibraryCount.current[you];
     if (prev !== undefined && count < prev) {
-      // Card was drawn, trigger fly
+      // Card was drawn, trigger fly from current library position
       const cards = objectsByZone[`library:${you}`] ?? [];
       const topCard = cards[cards.length - 1];
-      const startX = 1060;
-      const invert = you === 1;
-      const startY = invert ? 175 : 475;
+      const libLoc = getZonePos(you, "library");
+      const startX = libLoc.x;
+      const startY = libLoc.y;
       
       const newFly: FlyingCard = {
         id: Math.random().toString(),
@@ -210,7 +280,7 @@ export function FreeformBoard({ t, state }: { t: TableConn; state: TableState })
       }, 480);
     }
     prevLibraryCount.current[you] = count;
-  }, [state.objects, you]);
+  }, [state.objects, you, zonePositions]);
 
   // Find card at exact screen coordinates (used for dropping counters)
   const getCardAt = (clientX: number, clientY: number) => {
@@ -859,12 +929,11 @@ export function FreeformBoard({ t, state }: { t: TableConn; state: TableState })
               const exileCards = objectsByZone[`exile:${seat}`] ?? [];
 
               const invert = you === 1;
-              const isPYou = seat === you;
 
-              // Absolute coordinates
-              const libLoc = { x: 1060, y: seat === 0 ? 475 : 175 };
-              const graveLoc = { x: 1060, y: seat === 0 ? 640 : 10 };
-              const exileLoc = { x: 940, y: seat === 0 ? 640 : 10 };
+              // Absolute coordinates (draggable / persistent)
+              const libLoc = getZonePos(seat, "library");
+              const graveLoc = getZonePos(seat, "graveyard");
+              const exileLoc = getZonePos(seat, "exile");
 
               // Local rendering coordinates corrected for perspective inversion
               const rxLib = invert ? (1200 - libLoc.x - CARD_W) : libLoc.x;
@@ -886,7 +955,7 @@ export function FreeformBoard({ t, state }: { t: TableConn; state: TableState })
                     <CardStackDeck
                       count={libCards.length}
                       label="Library"
-                      onClick={() => isPYou && t.send({ type: "draw", seat, count: 1 })}
+                      onPointerDown={(e) => startZoneDrag(seat, "library", e)}
                       onRightClick={(e) => { e.preventDefault(); e.stopPropagation(); setLibraryMenu({ seat, x: e.clientX, y: e.clientY }); }}
                     />
                   </div>
@@ -897,7 +966,7 @@ export function FreeformBoard({ t, state }: { t: TableConn; state: TableState })
                       count={graveCards.length}
                       faceUpCardId={topGraveCard?.cardId}
                       label="Graveyard"
-                      onClick={() => setBrowse({ zoneId: `graveyard:${seat}`, title: `${p.name}'s Graveyard` })}
+                      onPointerDown={(e) => startZoneDrag(seat, "graveyard", e)}
                     />
                   </div>
 
@@ -907,7 +976,7 @@ export function FreeformBoard({ t, state }: { t: TableConn; state: TableState })
                       count={exileCards.length}
                       faceUpCardId={topExileCard?.cardId}
                       label="Exile"
-                      onClick={() => setBrowse({ zoneId: `exile:${seat}`, title: `${p.name}'s Exile` })}
+                      onPointerDown={(e) => startZoneDrag(seat, "exile", e)}
                     />
                   </div>
                 </div>
