@@ -797,7 +797,7 @@ function GameBoard({ t, state }: { t: TableConn; state: TableState }) {
           <span>
             {targeting.specs[targeting.collected.length]?.label ?? "Choose target"} ({targeting.collected.length}/{targeting.specs.length})
           </span>
-          <span className="text-xs text-table-muted">— click a card{["player", "any"].includes(targeting.specs[targeting.collected.length]?.kind ?? "") ? " or a player" : ""}</span>
+          <span className="text-xs text-table-muted">— click a card{["player", "any", "opponent"].includes(targeting.specs[targeting.collected.length]?.kind ?? "") ? " or a player" : ""}</span>
           <button className="btn-ghost !py-1" onClick={() => setTargeting(null)}>
             Cancel
           </button>

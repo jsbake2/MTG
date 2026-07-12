@@ -100,7 +100,8 @@ function who(phrase: string): EffectWho {
     return { scope: "you" };
   }
   if (p.includes("any target") || p.includes("or player")) return { scope: "target", kind: "any" };
-  if (p.includes("player") || p.includes("opponent")) return { scope: "target", kind: "player" };
+  if (p.includes("opponent")) return { scope: "target", kind: "opponent" };
+  if (p.includes("player")) return { scope: "target", kind: "player" };
   if (p.includes("spell")) return { scope: "target", kind: "spell" };
   if (p.includes("planeswalker")) return { scope: "target", kind: "planeswalker" };
   if (p.includes("creature")) return { scope: "target", kind: "creature" };

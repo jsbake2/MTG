@@ -405,17 +405,42 @@ function runEtb(state: TableState, ctx: CardIndex, source: GameObject): void {
   if (!ci?.oracleText) return;
   const comp = compileEtbEffects(ci.oracleText, source.name);
   if (!comp.matched) return;
-  const auto = comp.ops.filter((op) => {
+  // Auto-resolve the non-target ops, plus target ops whose target is unambiguous
+  // (e.g. "target opponent" with a single opponent). Anything still needing a
+  // choice is left to the player.
+  const auto: EffectOp[] = [];
+  const targetIds: string[] = [];
+  let needsManual = false;
+  for (const op of comp.ops) {
+    if (op.op === "manual") { needsManual = true; continue; }
     const w = whoOf(op);
-    return op.op !== "manual" && !(w && w.scope === "target");
-  });
+    if (w && w.scope === "target") {
+      const at = soleTargetFor(state, source, w);
+      if (at) { auto.push(op); targetIds.push(at); }
+      else needsManual = true;
+    } else {
+      auto.push(op);
+    }
+  }
   if (auto.length > 0) {
-    applyOps(state, ctx, source, auto, []);
+    applyOps(state, ctx, source, auto, targetIds);
     log(state, { seat: source.controllerSeat, kind: "action", text: `${source.name} enters — its ability resolves.` });
   }
-  if (comp.ops.length > auto.length) {
+  if (needsManual) {
     log(state, { seat: source.controllerSeat, kind: "system", text: `${source.name}'s enter ability needs a target/choice — resolve it manually.` });
   }
+}
+
+// If a target op has exactly one legal target, return its target id (for auto-
+// resolving triggered abilities like "when this enters, deal 1 to target
+// opponent"). Only players are auto-picked; card targets stay a manual choice.
+function soleTargetFor(state: TableState, source: GameObject, w: EffectWho): string | null {
+  if (w.scope !== "target") return null;
+  if (w.kind === "opponent") {
+    const opps = state.players.filter((p) => p.seat !== source.controllerSeat && !p.hasLost);
+    return opps.length === 1 ? `seat:${opps[0]!.seat}` : null;
+  }
+  return null;
 }
 
 // Fire a permanent's triggered abilities for a game event (non-targeted ops
