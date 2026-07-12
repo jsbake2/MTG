@@ -1214,6 +1214,9 @@ function PhaseControls({ state, t, isActive, hasPriority, you }: { state: TableS
       <button className="btn-primary !py-1" onClick={() => t.send({ type: "advance_step" })} disabled={!isActive}>
         Next step
       </button>
+      <button className="btn-ghost !py-1" onClick={() => t.send({ type: "end_turn" })} disabled={!isActive} title="Skip through the rest of your turn to the next player">
+        End turn ⏭
+      </button>
       {state.step === "main1" && (
         <button className="btn-ghost !py-1 text-amber-200 border-amber-500/30 hover:border-amber-500/50" onClick={() => t.send({ type: "skip_combat", seat: you })} disabled={!hasPriority}>
           Skip Combat

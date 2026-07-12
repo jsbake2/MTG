@@ -656,6 +656,13 @@ function dispatch(state: TableState, ctx: CardIndex, seat: number, action: GameA
     case "draw": {
       const prio = enforce(state, seat === state.prioritySeat, "You do not have priority.");
       if (prio) return prio;
+      // Guided mode already draws for you at your draw step; a card's draw effect
+      // resolves on its own. So a by-hand draw is a manual override — strict blocks
+      // it, relaxed allows it with a nudge. Freeform (manual tabletop) never gates.
+      if (state.mode === "guided") {
+        const gate = enforce(state, false, "You draw automatically at your draw step — extra draws should come from a card's effect. (Use Override to force a manual draw.)");
+        if (gate) return gate;
+      }
       const n = drawCards(state, action.seat, action.count);
       log(state, { seat: action.seat, kind: "action", text: `${playerBySeat(state, action.seat)?.name} draws ${n}.` });
       return null;
@@ -896,6 +903,19 @@ function dispatch(state: TableState, ctx: CardIndex, seat: number, action: GameA
       const timing = enforce(state, false, "In strict mode, steps advance automatically when all players pass priority on an empty stack.");
       if (timing) return timing;
       advanceStep(state, ctx);
+      return null;
+    }
+    case "end_turn": {
+      const active = enforce(state, seat === state.activeSeat, "Only the active player can end the turn.");
+      if (active) return active;
+      // Fast-forward through the rest of this turn until the next player's turn
+      // begins (activeSeat changes). Guarded against runaway loops.
+      const startActive = state.activeSeat;
+      let guard = 0;
+      while (state.activeSeat === startActive && state.status === "playing" && guard++ < 60) {
+        advanceStep(state, ctx);
+      }
+      log(state, { seat, kind: "phase", text: `${playerBySeat(state, seat)?.name} ends the turn.` });
       return null;
     }
     case "skip_combat": {

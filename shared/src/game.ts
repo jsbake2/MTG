@@ -217,6 +217,7 @@ export type GameAction =
   | { type: "pay_mana"; seat: number; cost: Partial<Record<ManaColor, number>> }
   | { type: "pass_priority"; seat: number }
   | { type: "advance_step" } // move to next step/turn (only when allowed)
+  | { type: "end_turn" } // fast-forward through the rest of the active player's turn
   | { type: "skip_combat"; seat: number }
   | { type: "set_active_player"; seat: number }
   | { type: "declare_attacker"; objectId: string; defendingSeat: number }
