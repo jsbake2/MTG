@@ -155,6 +155,8 @@ export interface TableState {
   id: string;
   name: string;
   formatId: string;
+  ruleset: string;
+  enforceBans: boolean;
   mode: TableMode;
   status: TableStatus;
   players: PlayerState[];
@@ -199,7 +201,7 @@ export type GameAction =
   | { type: "set_damage"; objectId: string; damage: number }
   | { type: "flip"; objectId: string; faceIndex?: number; faceDown?: boolean }
   | { type: "attach"; objectId: string; toObjectId: string | null }
-  | { type: "create_token"; seat: number; name: string; power?: number; toughness?: number; typeLine?: string; colors?: string[]; cardId?: string | null; oracleId?: string | null }
+  | { type: "create_token"; seat: number; name: string; power?: number; toughness?: number; typeLine?: string; colors?: string[]; cardId?: string | null; oracleId?: string | null; x?: number; y?: number }
   | { type: "cast"; objectId: string; targets?: string[]; mode?: number; x?: number } // move to stack (framework: timing/mana enforced)
   | { type: "activate"; objectId: string; abilityIndex: number; targets?: string[]; x?: number } // activate an ability (auto)
   | { type: "resolve_top" } // resolve top of stack (player then performs the effect manually)
@@ -258,6 +260,8 @@ export type ServerMessage =
       seats: LobbySeat[];
       maxPlayers: number;
       formatId: string;
+      ruleset: string;
+      enforceBans: boolean;
       mode: TableMode;
       name: string;
       hostUserId: string;

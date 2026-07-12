@@ -123,7 +123,13 @@ export function analyzeDeckTags(entries: DeckEntryWithCard[]): DeckTag[] {
 //     color identity, no sideboard.  Format legality/banned/restricted per Scryfall.
 //   NOTE: rarity does NOT restrict deck construction — there is no such rule in
 //   the CR. A common and a mythic have the same 4-copy limit.
-export function validateDeck(formatId: string, entries: DeckEntryWithCard[]): DeckValidation {
+export interface LegalityOverride {
+  legalityKey?: string | null; // Scryfall key to check against (overrides the format's)
+  enforceBans?: boolean; // when false, banned/restricted cards are allowed (casual)
+  rulesetName?: string; // human label for messages
+}
+
+export function validateDeck(formatId: string, entries: DeckEntryWithCard[], legality?: LegalityOverride): DeckValidation {
   const format = getFormat(formatId);
   const issues: DeckValidationIssue[] = [];
   const stats = computeStats(entries);
@@ -170,19 +176,24 @@ export function validateDeck(formatId: string, entries: DeckEntryWithCard[]): De
     }
   }
 
-  // Legality per card.
-  if (format.legalityKey) {
+  // Legality per card. The table's ruleset can override which legality tier we
+  // check and whether bans are enforced (casual play can allow banned cards).
+  const legalityKey = legality && "legalityKey" in legality ? legality.legalityKey : format.legalityKey;
+  const enforceBans = legality?.enforceBans ?? true;
+  const poolName = legality?.rulesetName ?? format.name;
+  if (legalityKey) {
     for (const e of [...main, ...commanders]) {
-      const legality = e.card.legalities[format.legalityKey];
-      if (legality === "banned") {
-        issues.push({ severity: "error", cardName: e.card.name, message: `${e.card.name} is banned in ${format.name}.` });
-      } else if (legality === "not_legal" || legality === undefined) {
-        issues.push({ severity: "error", cardName: e.card.name, message: `${e.card.name} is not legal in ${format.name}.` });
-      } else if (legality === "restricted") {
-        const total = byName.get(e.card.name) ?? 0;
-        if (total > 1) {
-          issues.push({ severity: "error", cardName: e.card.name, message: `${e.card.name} is restricted (max 1) in ${format.name}.` });
+      const status = e.card.legalities[legalityKey];
+      if (status === "banned" || status === "restricted") {
+        if (!enforceBans) continue; // casual: banned/restricted cards allowed
+        if (status === "banned") {
+          issues.push({ severity: "error", cardName: e.card.name, message: `${e.card.name} is banned in ${poolName}.` });
+        } else {
+          const total = byName.get(e.card.name) ?? 0;
+          if (total > 1) issues.push({ severity: "error", cardName: e.card.name, message: `${e.card.name} is restricted (max 1) in ${poolName}.` });
         }
+      } else if (status === "not_legal" || status === undefined) {
+        issues.push({ severity: "error", cardName: e.card.name, message: `${e.card.name} is not legal in ${poolName}.` });
       }
     }
   }

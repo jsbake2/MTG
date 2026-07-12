@@ -132,6 +132,27 @@ export function getFormat(id: string): FormatDef | undefined {
   return FORMATS.find((f) => f.id === id);
 }
 
+// A "ruleset" is the card-legality tier a table enforces, independent of the deck
+// construction rules (the game type). It resolves to a Scryfall legality key.
+// `null` = no legality filtering (any card). "all" uses Vintage, which marks
+// virtually every real card legal.
+export interface RulesetDef {
+  id: string;
+  name: string;
+  legalityKey: string | null;
+}
+export const RULESETS: RulesetDef[] = [
+  { id: "all", name: "All cards", legalityKey: "vintage" },
+  { id: "standard", name: "Standard (current sets)", legalityKey: "standard" },
+  { id: "modern", name: "Modern", legalityKey: "modern" },
+  { id: "legacy", name: "Legacy", legalityKey: "legacy" },
+  { id: "commander", name: "Commander", legalityKey: "commander" },
+  { id: "none", name: "Anything goes", legalityKey: null },
+];
+export function getRuleset(id: string | undefined): RulesetDef | undefined {
+  return RULESETS.find((r) => r.id === id);
+}
+
 // Basic lands and a handful of cards are exempt from the copy limit.
 export function isCopyLimitExempt(card: Pick<Card, "typeLine" | "oracleText" | "supertypes">): boolean {
   if (card.supertypes.includes("Basic")) return true;

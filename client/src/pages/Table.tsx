@@ -4,7 +4,7 @@ import type { Ability, CardDetailResponse, Deck, EffectMode, GameObject, PlayerS
 import { TURN_STEPS, compileEffects, parseAbilities } from "@mtg/shared";
 import { api } from "@/api/client";
 import { useAuth } from "@/store/auth";
-import { useLegalDeckIds } from "@/lib/deckLegality";
+import { constructionMatches, useLegalDeckIds } from "@/lib/deckLegality";
 import { useTable, type TableConn } from "@/game/useTable";
 import { CardImage } from "@/components/CardTile";
 import { Avatar } from "@/components/Avatar";
@@ -57,13 +57,14 @@ function Lobby({ t }: { t: TableConn }) {
     });
   }, [lobby?.formatId]);
 
-  // Verify real legality (not just the formatId label) for this table's format.
-  // Pre-filter by label first so we only validate plausible decks.
+  // Pre-filter to construction-compatible decks, then verify real legality for
+  // this table's ruleset (card legality + ban toggle).
   const allowedFormat = lobby?.formatId ?? "house";
-  const labelMatch = (d: Deck) => allowedFormat === "house" || d.formatId === allowedFormat;
-  const myMatched = decks.filter(labelMatch);
-  const preconMatched = precons.filter(labelMatch);
-  const { legalIds, loading: checkingLegality } = useLegalDeckIds([...myMatched, ...preconMatched], allowedFormat);
+  const ruleset = lobby?.ruleset ?? "standard";
+  const enforceBans = lobby?.enforceBans ?? true;
+  const myMatched = decks.filter((d) => constructionMatches(allowedFormat, d.formatId));
+  const preconMatched = precons.filter((d) => constructionMatches(allowedFormat, d.formatId));
+  const { legalIds, loading: checkingLegality } = useLegalDeckIds([...myMatched, ...preconMatched], allowedFormat, ruleset, enforceBans);
   const isLegal = (d: Deck) => allowedFormat === "house" || legalIds.has(d.id);
 
   // Pick a sensible legal default once, without fighting the user's own choice.

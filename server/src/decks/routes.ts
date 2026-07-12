@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { z } from "zod";
-import type { DeckValidation } from "@mtg/shared";
+import { getRuleset, type DeckValidation } from "@mtg/shared";
 import { requireAuth } from "../auth/sessions.js";
 import { getCardsByIds } from "../cards/repo.js";
 import {
@@ -89,8 +89,29 @@ decksRouter.post("/validate", async (req, res) => {
   const entries: DeckEntryWithCard[] = parsed.data.cards
     .filter((c) => cards.has(c.cardId))
     .map((c) => ({ card: cards.get(c.cardId)!, quantity: c.quantity, board: c.board }));
-  const result: DeckValidation = validateDeck(parsed.data.formatId, entries);
+  // Optional ruleset override (used by the lobby to check decks against a table's
+  // chosen legality tier + ban setting rather than the deck's own format label).
+  const rulesetId = typeof req.body?.ruleset === "string" ? req.body.ruleset : undefined;
+  const rs = getRuleset(rulesetId);
+  const override = rs ? { legalityKey: rs.legalityKey, enforceBans: req.body?.enforceBans !== false, rulesetName: rs.name } : undefined;
+  const result: DeckValidation = validateDeck(parsed.data.formatId, entries, override);
   res.json({ validation: result, dynamicTags: analyzeDeckTags(entries) });
+});
+
+// Check a saved deck's legality for a given game type + ruleset (used by the lobby
+// to show only decks a player can actually field at this table). One round-trip.
+decksRouter.post("/:id/check", async (req, res) => {
+  const detail = await getDeckDetail(String(req.params.id));
+  if (!detail) {
+    res.status(404).json({ error: "Deck not found" });
+    return;
+  }
+  const gameType = typeof req.body?.formatId === "string" ? req.body.formatId : detail.formatId;
+  const rs = getRuleset(typeof req.body?.ruleset === "string" ? req.body.ruleset : undefined);
+  const override = rs ? { legalityKey: rs.legalityKey, enforceBans: req.body?.enforceBans !== false, rulesetName: rs.name } : undefined;
+  const entries: DeckEntryWithCard[] = detail.cards.map((c) => ({ card: c.card, quantity: c.quantity, board: c.board }));
+  const v = validateDeck(gameType, entries, override);
+  res.json({ valid: v.valid });
 });
 
 // Import a pasted decklist (MTGA / MTGGoldfish / plain text) as a new deck.

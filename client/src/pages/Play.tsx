@@ -1,19 +1,21 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import type { CreateTableRequest, Deck, FormatDef, TableSummary } from "@mtg/shared";
+import { RULESETS } from "@mtg/shared";
 import { api } from "@/api/client";
 import { useAuth } from "@/store/auth";
-import { useLegalDeckIds } from "@/lib/deckLegality";
+import { constructionMatches, useLegalDeckIds } from "@/lib/deckLegality";
 
-// e.g. "Friday 7AM Standard game" — day of week + hour + game type.
-function generatedTableName(formatName: string, mode: "guided" | "freeform"): string {
+// e.g. "Friday 7AM Standard game, ruleset Legacy" — day, hour, game type, ruleset.
+function generatedTableName(gameTypeName: string, rulesetName: string, formatId: string, mode: "guided" | "freeform"): string {
   const d = new Date();
   const day = d.toLocaleDateString(undefined, { weekday: "long" });
   let h = d.getHours();
   const ampm = h < 12 ? "AM" : "PM";
   h = h % 12 || 12;
-  const type = mode === "freeform" ? "Tabletop" : formatName;
-  return `${day} ${h}${ampm} ${type} game`;
+  const type = mode === "freeform" ? "Tabletop" : gameTypeName;
+  const suffix = formatId === "standard" ? `, ruleset ${rulesetName}` : "";
+  return `${day} ${h}${ampm} ${type} game${suffix}`;
 }
 
 export function Play() {
@@ -22,7 +24,7 @@ export function Play() {
   const [decks, setDecks] = useState<Deck[]>([]);
   const [precons, setPrecons] = useState<Deck[]>([]);
   const [deckId, setDeckId] = useState<string>("");
-  const [form, setForm] = useState<CreateTableRequest>({ name: "", formatId: "standard", maxPlayers: 4, enforcement: "relaxed", mode: "guided" });
+  const [form, setForm] = useState<CreateTableRequest>({ name: "", formatId: "standard", ruleset: "standard", enforceBans: true, maxPlayers: 2, enforcement: "relaxed", mode: "guided" });
   const nameEdited = useRef(false);
   const nav = useNavigate();
   const { user } = useAuth();
@@ -48,24 +50,30 @@ export function Play() {
     return () => clearInterval(iv);
   }, []);
 
-  // Label-match first, then verify real legality (not just the formatId label).
-  const matches = (d: Deck) => form.formatId === "house" || d.formatId === form.formatId;
-  const myMatched = useMemo(() => decks.filter(matches), [decks, form.formatId]);
-  const preconMatched = useMemo(() => precons.filter(matches), [precons, form.formatId]);
-  const { legalIds, loading: checkingLegality } = useLegalDeckIds([...myMatched, ...preconMatched], form.formatId);
+  // Construction-compatible decks, then real legality for the chosen ruleset.
+  const myMatched = useMemo(() => decks.filter((d) => constructionMatches(form.formatId, d.formatId)), [decks, form.formatId]);
+  const preconMatched = useMemo(() => precons.filter((d) => constructionMatches(form.formatId, d.formatId)), [precons, form.formatId]);
+  const { legalIds, loading: checkingLegality } = useLegalDeckIds([...myMatched, ...preconMatched], form.formatId, form.ruleset, form.enforceBans);
   const isLegal = (d: Deck) => form.formatId === "house" || legalIds.has(d.id);
   const myDecks = myMatched.filter(isLegal);
   const preconDecks = preconMatched.filter(isLegal);
-  // Keep the selected deck valid when the format changes or legality resolves.
+  // Keep the selected deck valid when the format/ruleset changes or legality resolves.
   useEffect(() => {
     if (deckId && ![...myDecks, ...preconDecks].some((d) => d.id === deckId)) setDeckId("");
-  }, [form.formatId, legalIds]);
+  }, [form.formatId, form.ruleset, form.enforceBans, legalIds]);
+
+  // Commander's ruleset is fixed; Standard picks from the ruleset dropdown.
+  useEffect(() => {
+    if (form.formatId === "commander" && form.ruleset !== "commander") setForm((f) => ({ ...f, ruleset: "commander" }));
+    if (form.formatId === "standard" && form.ruleset === "commander") setForm((f) => ({ ...f, ruleset: "standard" }));
+  }, [form.formatId]);
 
   // Auto-name the table (until the host types their own name).
-  const formatName = formats.find((f) => f.id === form.formatId)?.name ?? form.formatId;
+  const gameTypeName = form.formatId === "commander" ? "Commander" : "Standard";
+  const rulesetName = RULESETS.find((r) => r.id === form.ruleset)?.name ?? form.ruleset;
   useEffect(() => {
-    if (!nameEdited.current) setForm((f) => ({ ...f, name: generatedTableName(formatName, f.mode) }));
-  }, [formatName, form.mode]);
+    if (!nameEdited.current) setForm((f) => ({ ...f, name: generatedTableName(gameTypeName, rulesetName, f.formatId, f.mode) }));
+  }, [gameTypeName, rulesetName, form.mode]);
 
   async function create() {
     const r = await api.post<{ table: TableSummary }>("/api/tables", {
@@ -89,20 +97,44 @@ export function Play() {
       <div className="panel mb-6 p-4">
         <h2 className="mb-3 font-display text-lg">New table</h2>
         <div className="flex flex-wrap items-end gap-2">
+          <div className="flex flex-col text-xs text-table-muted">
+            Table type
+            <div className="mt-1 flex overflow-hidden rounded-md border border-table-border">
+              {(["guided", "freeform"] as const).map((m) => (
+                <button
+                  key={m}
+                  type="button"
+                  onClick={() => setForm({ ...form, mode: m })}
+                  className={`px-3 py-2 text-sm ${form.mode === m ? "bg-table-accent font-semibold text-black" : "bg-table-panel2 text-table-ink hover:bg-table-border/50"}`}
+                >
+                  {m === "guided" ? "Guided" : "Manual"}
+                </button>
+              ))}
+            </div>
+          </div>
           <label className="flex flex-col text-xs text-table-muted">
             Name
-            <input className="input mt-1" value={form.name} onChange={(e) => { nameEdited.current = true; setForm({ ...form, name: e.target.value }); }} placeholder="Friday night game" />
+            <input className="input mt-1 w-56" value={form.name} onChange={(e) => { nameEdited.current = true; setForm({ ...form, name: e.target.value }); }} placeholder="Friday night game" />
           </label>
           <label className="flex flex-col text-xs text-table-muted">
-            Format (legality)
+            Game type
             <select className="input mt-1" value={form.formatId} onChange={(e) => setForm({ ...form, formatId: e.target.value })}>
-              {formats.map((f) => (
-                <option key={f.id} value={f.id}>
-                  {f.name}
-                </option>
-              ))}
+              <option value="standard">Standard</option>
+              <option value="commander">Commander</option>
             </select>
           </label>
+          {form.formatId === "standard" && (
+            <label className="flex flex-col text-xs text-table-muted">
+              Ruleset (card pool)
+              <select className="input mt-1" value={form.ruleset} onChange={(e) => setForm({ ...form, ruleset: e.target.value })}>
+                {RULESETS.filter((r) => ["all", "standard", "modern", "legacy"].includes(r.id)).map((r) => (
+                  <option key={r.id} value={r.id}>
+                    {r.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
           <label className="flex flex-col text-xs text-table-muted">
             Your deck {checkingLegality && <span className="text-table-muted/70">· checking legality…</span>}
             <select className="input mt-1 min-w-[12rem]" value={deckId} onChange={(e) => setDeckId(e.target.value)}>
@@ -130,28 +162,33 @@ export function Play() {
           <label className="flex flex-col text-xs text-table-muted">
             Players
             <select className="input mt-1" value={form.maxPlayers} onChange={(e) => setForm({ ...form, maxPlayers: Number(e.target.value) })}>
-              {[1, 2, 3, 4].map((n) => (
+              {[2, 3, 4].map((n) => (
                 <option key={n} value={n}>
                   {n}
                 </option>
               ))}
             </select>
           </label>
-          <label className="flex flex-col text-xs text-table-muted">
-            Table type
-            <select className="input mt-1" value={form.mode} onChange={(e) => setForm({ ...form, mode: e.target.value as "guided" | "freeform" })}>
-              <option value="guided">Guided (rules engine)</option>
-              <option value="freeform">Tabletop (manual)</option>
-            </select>
+          <label className="flex items-center gap-1.5 self-center text-xs text-table-muted" title="Enforce this ruleset's banned/restricted list. Turn off for casual games where banned cards are OK.">
+            <input type="checkbox" checked={form.enforceBans} onChange={(e) => setForm({ ...form, enforceBans: e.target.checked })} />
+            Enforce bans
           </label>
           {form.mode === "guided" && (
-            <label className="flex flex-col text-xs text-table-muted">
-              Rules
-              <select className="input mt-1" value={form.enforcement} onChange={(e) => setForm({ ...form, enforcement: e.target.value as "relaxed" | "strict" })}>
-                <option value="relaxed">Relaxed (learning)</option>
-                <option value="strict">Strict</option>
-              </select>
-            </label>
+            <div className="flex flex-col text-xs text-table-muted">
+              Rules engine
+              <div className="mt-1 flex overflow-hidden rounded-md border border-table-border" title="How strictly the rules engine enforces turns, timing, land drops, summoning sickness and combat. Relaxed nudges but lets you do anything; Strict enforces the framework.">
+                {(["relaxed", "strict"] as const).map((r) => (
+                  <button
+                    key={r}
+                    type="button"
+                    onClick={() => setForm({ ...form, enforcement: r })}
+                    className={`px-3 py-2 text-sm ${form.enforcement === r ? "bg-table-accent font-semibold text-black" : "bg-table-panel2 text-table-ink hover:bg-table-border/50"}`}
+                  >
+                    {r === "relaxed" ? "Relaxed" : "Strict"}
+                  </button>
+                ))}
+              </div>
+            </div>
           )}
           <button className="btn-primary" onClick={create}>
             Create & sit down

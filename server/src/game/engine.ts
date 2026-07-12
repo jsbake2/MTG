@@ -722,6 +722,8 @@ function dispatch(state: TableState, ctx: CardIndex, seat: number, action: GameA
         cardId: action.cardId ?? null,
         oracleId: action.oracleId ?? null,
         ptOverride: action.power !== undefined && action.toughness !== undefined ? { power: action.power, toughness: action.toughness } : null,
+        x: action.x ?? 0,
+        y: action.y ?? 0,
       };
       state.objects[o.id] = o;
       log(state, { seat: action.seat, kind: "action", text: `${playerBySeat(state, action.seat)?.name} creates a ${action.name} token.` });

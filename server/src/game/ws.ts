@@ -36,6 +36,8 @@ function pushState(conn: Conn): void {
       seats: conn.table.seats.map((s) => ({ seat: s.seat, name: s.name, userId: s.userId, deckId: s.deckId, avatarCardId: s.avatarCardId })),
       maxPlayers: conn.table.maxPlayers,
       formatId: conn.table.formatId,
+      ruleset: conn.table.ruleset,
+      enforceBans: conn.table.enforceBans,
       mode: conn.table.mode,
       name: conn.table.name,
       hostUserId: conn.table.hostUserId,

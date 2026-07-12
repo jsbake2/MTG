@@ -350,3 +350,34 @@ body {
 .stack-overlap-vertical > *:not(:first-child) {
   margin-top: -110px; /* overlapping cards vertically */
 }
+
+/* Card draw animation from Library to Hand */
+@keyframes fly-to-hand {
+  0% {
+    transform: translate(var(--fly-start-x, 1080px), var(--fly-start-y, 520px)) rotate(0deg) scale(1);
+    opacity: 1;
+  }
+  40% {
+    opacity: 0.9;
+  }
+  100% {
+    transform: translate(500px, 780px) rotate(15deg) scale(0.6);
+    opacity: 0;
+  }
+}
+
+.animate-fly-draw {
+  animation: fly-to-hand 0.48s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+}
+
+@keyframes spin-once {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+.animate-spin-once {
+  animation: spin-once 0.45s ease-out forwards;
+}

@@ -2,7 +2,7 @@
 // undo history, and producing per-seat redacted state views (hidden zones).
 import { randomUUID } from "node:crypto";
 import type { GameAction, TableMode, TableState, TableSummary } from "@mtg/shared";
-import { getFormat } from "@mtg/shared";
+import { getFormat, getRuleset } from "@mtg/shared";
 import { getCardsByIds } from "../cards/repo.js";
 import { getAvatarForUser } from "../auth/users.js";
 import { getDeckDetail, getDeckRow } from "../decks/repo.js";
@@ -27,6 +27,8 @@ export class Table {
   maxPlayers: number;
   enforcement: "relaxed" | "strict";
   mode: TableMode;
+  ruleset: string;
+  enforceBans: boolean;
   hostUserId: string;
   seats: SeatAssignment[] = [];
   state: TableState | null = null;
@@ -35,12 +37,14 @@ export class Table {
   listeners = new Set<() => void>();
   private recorded = false;
 
-  constructor(opts: { name: string; formatId: string; maxPlayers: number; enforcement: "relaxed" | "strict"; mode?: TableMode; hostUserId: string }) {
+  constructor(opts: { name: string; formatId: string; maxPlayers: number; enforcement: "relaxed" | "strict"; mode?: TableMode; ruleset?: string; enforceBans?: boolean; hostUserId: string }) {
     this.name = opts.name;
     this.formatId = opts.formatId;
     this.maxPlayers = opts.maxPlayers;
     this.enforcement = opts.enforcement;
     this.mode = opts.mode ?? "guided";
+    this.ruleset = opts.ruleset ?? defaultRulesetFor(opts.formatId);
+    this.enforceBans = opts.enforceBans ?? true;
     this.hostUserId = opts.hostUserId;
   }
 
@@ -49,12 +53,20 @@ export class Table {
       id: this.id,
       name: this.name,
       formatId: this.formatId,
+      ruleset: this.ruleset,
+      enforceBans: this.enforceBans,
       status: this.state?.status ?? "lobby",
       playerCount: this.seats.length,
       maxPlayers: this.maxPlayers,
       mode: this.mode,
       seats: this.seats.map((s) => ({ seat: s.seat, name: s.name, userId: s.userId })),
     };
+  }
+
+  // The legality override this table enforces (from its ruleset + ban toggle).
+  legalityOverride() {
+    const rs = getRuleset(this.ruleset);
+    return { legalityKey: rs?.legalityKey ?? null, enforceBans: this.enforceBans, rulesetName: rs?.name ?? this.ruleset };
   }
 
   notify(): void {
@@ -85,11 +97,11 @@ export class Table {
   async start(): Promise<{ ok: boolean; error?: string }> {
     if (this.seats.length < 1) return { ok: false, error: "Need at least one seated player." };
     const format = getFormat(this.formatId);
-    // Deck-legality gate: every seated player's deck must be legal for this
-    // format before the game can start. The House / Kitchen Table format has no
-    // legality checks (legalityKey === null), so casual games are exempt and
-    // anything goes there.
-    const enforceLegality = !!format && format.legalityKey !== null;
+    // Deck-legality gate: every seated player's deck must satisfy the game type's
+    // construction rules AND the table's ruleset (card legality + ban toggle)
+    // before the game can start. The House game type is exempt (anything goes).
+    const enforceLegality = this.formatId !== "house";
+    const override = this.legalityOverride();
     const legalityErrors: string[] = [];
     const seatDecks: SeatDeck[] = [];
     const allCardIds = new Set<string>();
@@ -100,7 +112,7 @@ export class Table {
         const deck = await getDeckDetail(s.deckId);
         if (deck) {
           if (enforceLegality) {
-            const validation = validateDeck(this.formatId, deck.cards);
+            const validation = validateDeck(this.formatId, deck.cards, override);
             for (const issue of validation.issues) {
               if (issue.severity === "error") legalityErrors.push(`${s.name} — "${deck.name}": ${issue.message}`);
             }
@@ -153,6 +165,8 @@ export class Table {
       name: this.name,
       formatId: this.formatId,
       mode: this.mode,
+      ruleset: this.ruleset,
+      enforceBans: this.enforceBans,
       enforcement: this.enforcement,
       seats: seatDecks,
     });
@@ -291,7 +305,7 @@ function actionCardName(state: TableState, action: GameAction): string | null {
 class TableManager {
   private tables = new Map<string, Table>();
 
-  create(opts: { name: string; formatId: string; maxPlayers: number; enforcement: "relaxed" | "strict"; mode?: TableMode; hostUserId: string }): Table {
+  create(opts: { name: string; formatId: string; maxPlayers: number; enforcement: "relaxed" | "strict"; mode?: TableMode; ruleset?: string; enforceBans?: boolean; hostUserId: string }): Table {
     const t = new Table(opts);
     this.tables.set(t.id, t);
     return t;
@@ -315,3 +329,10 @@ class TableManager {
 }
 
 export const tables = new TableManager();
+
+// Sensible default legality tier when a table doesn't specify one.
+function defaultRulesetFor(formatId: string): string {
+  if (formatId === "commander") return "commander";
+  if (formatId === "house") return "none";
+  return "standard";
+}

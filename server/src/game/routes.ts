@@ -15,6 +15,8 @@ tablesRouter.get("/", (_req, res) => {
 const createSchema = z.object({
   name: z.string().min(1).max(80),
   formatId: z.string().min(1).max(40),
+  ruleset: z.string().min(1).max(40).optional().default("standard"),
+  enforceBans: z.boolean().optional().default(true),
   maxPlayers: z.number().int().min(1).max(4),
   enforcement: z.enum(["relaxed", "strict"]),
   mode: z.enum(["guided", "freeform"]).optional().default("guided"),

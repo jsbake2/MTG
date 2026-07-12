@@ -161,6 +161,8 @@ export interface TableSummary {
   id: string;
   name: string;
   formatId: string;
+  ruleset: string;
+  enforceBans: boolean;
   status: string;
   playerCount: number;
   maxPlayers: number;
@@ -171,6 +173,8 @@ export interface TableSummary {
 export interface CreateTableRequest {
   name: string;
   formatId: string;
+  ruleset: string; // legality tier id (all|standard|modern|legacy|commander|none)
+  enforceBans: boolean;
   maxPlayers: number;
   enforcement: "relaxed" | "strict";
   mode: TableMode;

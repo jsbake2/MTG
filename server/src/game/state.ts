@@ -71,6 +71,8 @@ export function buildInitialState(opts: {
   name: string;
   formatId: string;
   mode?: import("@mtg/shared").TableMode;
+  ruleset?: string;
+  enforceBans?: boolean;
   enforcement: "relaxed" | "strict";
   seats: SeatDeck[];
 }): TableState {
@@ -123,6 +125,8 @@ export function buildInitialState(opts: {
     name: opts.name,
     formatId: opts.formatId,
     mode: opts.mode ?? "guided",
+    ruleset: opts.ruleset ?? "standard",
+    enforceBans: opts.enforceBans ?? true,
     status: "mulligan",
     players,
     activeSeat: startingSeat,
