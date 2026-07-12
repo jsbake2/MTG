@@ -14,7 +14,7 @@ export function CardImage({
   face?: number;
 }) {
   const [errored, setErrored] = useState(false);
-  const src = id ? `/api/cards/${id}/image?face=${face}` : "https://svgs.scryfall.io/card-back.svg";
+  const src = id ? `/api/cards/${id}/image?face=${face}` : "/api/cards/card-back";
   if (errored) {
     return (
       <div

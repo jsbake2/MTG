@@ -133,3 +133,23 @@ export async function getCardArt(id: string): Promise<CachedImage | null> {
   }
   return null;
 }
+
+export async function getCardBack(): Promise<CachedImage | null> {
+  const url = "https://cards.scryfall.io/normal/front/a/e/ae9568fb-ac38-4034-9388-1dc995adcc05.jpg";
+  const file = cacheFileFor(url);
+  if (await exists(file)) return { data: await readFile(file), contentType: "image/jpeg" };
+  await acquire();
+  try {
+    const buf = await fetchWithRetry(url);
+    if (buf) {
+      await mkdir(dirname(file), { recursive: true });
+      await writeFile(file, buf);
+      return { data: buf, contentType: "image/jpeg" };
+    }
+  } catch (e) {
+    console.error("[images] fetch card back failed", e);
+  } finally {
+    release();
+  }
+  return null;
+}

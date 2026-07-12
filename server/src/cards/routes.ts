@@ -1,7 +1,7 @@
 import { Router } from "express";
 import type { CardDetailResponse, SearchRequest } from "@mtg/shared";
 import { getCardById, getImportMeta, getPrintings, listSets, searchCards, searchTokens } from "./repo.js";
-import { getCardArt, getCardImage } from "./images.js";
+import { getCardArt, getCardImage, getCardBack } from "./images.js";
 import { getDecksContainingCard } from "../decks/repo.js";
 
 export const cardsRouter = Router();
@@ -30,6 +30,17 @@ cardsRouter.get("/search", async (req, res) => {
 
 cardsRouter.get("/import-status", async (_req, res) => {
   res.json(await getImportMeta());
+});
+
+cardsRouter.get("/card-back", async (_req, res) => {
+  const img = await getCardBack();
+  if (!img) {
+    res.status(404).json({ error: "Card back image not available" });
+    return;
+  }
+  res.setHeader("Content-Type", img.contentType);
+  res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
+  res.send(img.data);
 });
 
 cardsRouter.get("/:id/image", async (req, res) => {

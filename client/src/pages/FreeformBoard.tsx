@@ -954,7 +954,7 @@ export function FreeformBoard({ t, state }: { t: TableConn; state: TableState })
                   <div className="absolute" style={{ left: rxLib, top: ryLib }}>
                     <CardStackDeck
                       count={libCards.length}
-                      label="Library"
+                      label={`${p.name} (Lib)`}
                       onPointerDown={(e) => startZoneDrag(seat, "library", e)}
                       onRightClick={(e) => { e.preventDefault(); e.stopPropagation(); setLibraryMenu({ seat, x: e.clientX, y: e.clientY }); }}
                     />
@@ -965,7 +965,7 @@ export function FreeformBoard({ t, state }: { t: TableConn; state: TableState })
                     <CardStackDeck
                       count={graveCards.length}
                       faceUpCardId={topGraveCard?.cardId}
-                      label="Graveyard"
+                      label={`${p.name} (Grave)`}
                       onPointerDown={(e) => startZoneDrag(seat, "graveyard", e)}
                     />
                   </div>
@@ -975,7 +975,7 @@ export function FreeformBoard({ t, state }: { t: TableConn; state: TableState })
                     <CardStackDeck
                       count={exileCards.length}
                       faceUpCardId={topExileCard?.cardId}
-                      label="Exile"
+                      label={`${p.name} (Exile)`}
                       onPointerDown={(e) => startZoneDrag(seat, "exile", e)}
                     />
                   </div>
@@ -1220,8 +1220,9 @@ function CardStackDeck({
       title={`${label} (${count} cards) - click to interact, right click library for options`}
     >
       {count === 0 ? (
-        <div className="w-full h-full rounded-md border-2 border-dashed border-table-border/30 flex items-center justify-center text-[10px] text-table-muted bg-black/10">
-          empty
+        <div className="w-full h-full rounded-md border-2 border-dashed border-table-border/30 flex flex-col items-center justify-center text-center p-1 text-[10px] text-table-muted bg-black/10">
+          <span className="font-semibold uppercase tracking-wider text-[8px] mb-1 leading-snug">{label}</span>
+          <span className="text-[8px] opacity-60">empty</span>
         </div>
       ) : (
         <>
