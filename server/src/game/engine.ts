@@ -405,13 +405,24 @@ function runEtb(state: TableState, ctx: CardIndex, source: GameObject): void {
   if (!ci?.oracleText) return;
   const comp = compileEtbEffects(ci.oracleText, source.name);
   if (!comp.matched) return;
-  // Auto-resolve the non-target ops, plus target ops whose target is unambiguous
-  // (e.g. "target opponent" with a single opponent). Anything still needing a
-  // choice is left to the player.
+  const { auto, targetIds, needsManual } = partitionAutoOps(state, source, comp.ops);
+  if (auto.length > 0) {
+    applyOps(state, ctx, source, auto, targetIds);
+    log(state, { seat: source.controllerSeat, kind: "action", text: `${source.name} enters — its ability resolves.` });
+  }
+  if (needsManual) {
+    log(state, { seat: source.controllerSeat, kind: "system", text: `${source.name}'s enter ability needs a target/choice — resolve it manually.` });
+  }
+}
+
+// Split a triggered ability's ops into those the engine can auto-resolve (non-
+// target ops, plus target ops whose target is unambiguous — e.g. "target
+// opponent" with a single opponent) and the rest, which need a player choice.
+function partitionAutoOps(state: TableState, source: GameObject, ops: EffectOp[]): { auto: EffectOp[]; targetIds: string[]; needsManual: boolean } {
   const auto: EffectOp[] = [];
   const targetIds: string[] = [];
   let needsManual = false;
-  for (const op of comp.ops) {
+  for (const op of ops) {
     if (op.op === "manual") { needsManual = true; continue; }
     const w = whoOf(op);
     if (w && w.scope === "target") {
@@ -422,13 +433,7 @@ function runEtb(state: TableState, ctx: CardIndex, source: GameObject): void {
       auto.push(op);
     }
   }
-  if (auto.length > 0) {
-    applyOps(state, ctx, source, auto, targetIds);
-    log(state, { seat: source.controllerSeat, kind: "action", text: `${source.name} enters — its ability resolves.` });
-  }
-  if (needsManual) {
-    log(state, { seat: source.controllerSeat, kind: "system", text: `${source.name}'s enter ability needs a target/choice — resolve it manually.` });
-  }
+  return { auto, targetIds, needsManual };
 }
 
 // If a target op has exactly one legal target, return its target id (for auto-
@@ -451,15 +456,12 @@ function runTriggers(state: TableState, ctx: CardIndex, o: GameObject, event: Tr
   for (const tr of compileTriggers(ci.oracleText, o.name)) {
     if (tr.event !== event) continue;
     const ops = tr.effect.modes && tr.effect.modes.length > 0 ? tr.effect.modes[0]!.ops : tr.effect.ops;
-    const auto = ops.filter((op) => {
-      const w = whoOf(op);
-      return op.op !== "manual" && !(w && w.scope === "target");
-    });
+    const { auto, targetIds, needsManual } = partitionAutoOps(state, o, ops);
     if (auto.length > 0) {
-      applyOps(state, ctx, o, auto, []);
+      applyOps(state, ctx, o, auto, targetIds);
       log(state, { seat: o.controllerSeat, kind: "action", text: `${o.name}'s ${event.replace("_", " ")} ability resolves.` });
     }
-    if (ops.length > auto.length) {
+    if (needsManual) {
       log(state, { seat: o.controllerSeat, kind: "system", text: `${o.name}'s triggered ability needs a target/choice — resolve manually.` });
     }
   }
