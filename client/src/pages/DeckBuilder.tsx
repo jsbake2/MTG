@@ -298,6 +298,23 @@ export function DeckBuilder() {
               </div>
             </div>
           ))}
+          {search.resp && search.resp.total > search.resp.pageSize && (
+            <div className="mt-1 flex items-center justify-center gap-2 text-xs">
+              <button className="btn-ghost !py-1" disabled={search.page <= 1 || search.loading} onClick={() => search.goPage(search.page - 1)}>
+                ← Prev
+              </button>
+              <span className="text-table-muted">
+                Pg {search.page}/{Math.max(1, Math.ceil(search.resp.total / search.resp.pageSize))} · {search.resp.total.toLocaleString()}
+              </span>
+              <button
+                className="btn-ghost !py-1"
+                disabled={search.page >= Math.ceil(search.resp.total / search.resp.pageSize) || search.loading}
+                onClick={() => search.goPage(search.page + 1)}
+              >
+                Next →
+              </button>
+            </div>
+          )}
         </div>
       </div>
 

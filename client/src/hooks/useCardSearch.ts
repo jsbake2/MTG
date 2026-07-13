@@ -11,7 +11,7 @@ export interface SearchOpts {
 
 export function useCardSearch(initial = "") {
   const [q, setQ] = useState(initial);
-  const [opts, setOpts] = useState<SearchOpts>({ group: true, sort: "name", dir: "asc", pageSize: 60 });
+  const [opts, setOpts] = useState<SearchOpts>({ group: false, sort: "name", dir: "asc", pageSize: 60 });
   const [resp, setResp] = useState<SearchResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [page, setPage] = useState(1);

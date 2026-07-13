@@ -20,8 +20,10 @@ function ImportBanner() {
 }
 
 export function Browse() {
-  const { q, setQ, opts, setOpts, resp, loading } = useCardSearch("");
+  const { q, setQ, opts, setOpts, resp, loading, page, goPage } = useCardSearch("");
   const [detailId, setDetailId] = useState<string | null>(null);
+  const totalPages = resp ? Math.max(1, Math.ceil(resp.total / resp.pageSize)) : 1;
+  const toTop = () => window.scrollTo({ top: 0, behavior: "smooth" });
 
   return (
     <div className="mx-auto max-w-7xl p-4">
@@ -35,6 +37,10 @@ export function Browse() {
           queryError={resp?.error}
           autoFocus
         />
+        <label className="mt-2 flex items-center gap-1.5 text-xs text-table-muted" title="Split results into cards that ARE the search term vs cards that only mention it in their text.">
+          <input type="checkbox" checked={opts.group} onChange={(e) => setOpts({ ...opts, group: e.target.checked })} />
+          Group by relevance (ARE vs mentions)
+        </label>
       </div>
 
       {loading && <div className="py-8 text-center text-table-muted">Searching…</div>}
@@ -58,6 +64,20 @@ export function Browse() {
 
       {resp && resp.groups.every((g) => g.cards.length === 0) && !loading && (
         <div className="py-10 text-center text-table-muted">No cards found. Try adjusting filters or the search.</div>
+      )}
+
+      {resp && resp.total > 0 && totalPages > 1 && (
+        <div className="mt-6 flex items-center justify-center gap-4">
+          <button className="btn-ghost" disabled={page <= 1 || loading} onClick={() => { goPage(page - 1); toTop(); }}>
+            ← Prev
+          </button>
+          <span className="text-sm text-table-muted">
+            Page {page} / {totalPages} · {resp.total.toLocaleString()} cards
+          </span>
+          <button className="btn-ghost" disabled={page >= totalPages || loading} onClick={() => { goPage(page + 1); toTop(); }}>
+            Next →
+          </button>
+        </div>
       )}
 
       {detailId && <CardDetailModal cardId={detailId} onClose={() => setDetailId(null)} />}
