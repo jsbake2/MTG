@@ -55,14 +55,16 @@ function conditionSql(c: Condition, p: Params): string | null {
     case "color": {
       const letters = parseColorValue(v);
       if (letters.length === 0) return `colors = '{}'`; // colorless
-      if (c.op === "=") return `colors = ${p.add(letters)}::text[] `;
+      // "exactly these": order-independent set equality (Postgres array = is
+      // order-sensitive, and stored colors are in WUBRG order).
+      if (c.op === "=") return `(colors @> ${p.add(letters)}::text[] AND coalesce(array_length(colors,1),0) = ${letters.length})`;
       // ":" / others -> contains all listed colors
       return `colors @> ${p.add(letters)}::text[]`;
     }
     case "identity": {
       const letters = parseColorValue(v);
       if (letters.length === 0) return `color_identity = '{}'`;
-      if (c.op === "=") return `color_identity = ${p.add(letters)}::text[]`;
+      if (c.op === "=") return `(color_identity @> ${p.add(letters)}::text[] AND coalesce(array_length(color_identity,1),0) = ${letters.length})`;
       // subset: the card's identity fits within the given colors (deck/commander)
       return `color_identity <@ ${p.add(letters)}::text[]`;
     }
