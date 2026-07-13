@@ -16,6 +16,7 @@ import {
   Params,
   termAnyExpr,
   termAreExpr,
+  termNameExpr,
   termRefExpr,
 } from "./search.js";
 
@@ -203,7 +204,7 @@ export async function searchCards(req: SearchRequest): Promise<SearchResponse> {
     const baseWhere = base.length ? base.join(" AND ") : "TRUE";
 
     // Grouped discovery mode (the "vampire" case): split ARE vs REFERENCES.
-    if (req.group && built.positiveTerms.length > 0) {
+    if (req.group && !req.nameOnly && built.positiveTerms.length > 0) {
       // ARE group
       const areParts = [...base];
       for (const t of built.positiveTerms) areParts.push(termAreExpr(t, p));
@@ -243,7 +244,7 @@ export async function searchCards(req: SearchRequest): Promise<SearchResponse> {
 
     // Flat mode: positive terms match anywhere.
     const flatParts = [...base];
-    for (const t of built.positiveTerms) flatParts.push(termAnyExpr(t, p));
+    for (const t of built.positiveTerms) flatParts.push((req.nameOnly ? termNameExpr : termAnyExpr)(t, p));
     const flatWhere = flatParts.length ? flatParts.join(" AND ") : baseWhere;
     const all = await runGroup("Results", "all", flatWhere, p.values, order, page, pageSize);
     return {

@@ -37,10 +37,6 @@ export function Browse() {
           queryError={resp?.error}
           autoFocus
         />
-        <label className="mt-2 flex items-center gap-1.5 text-xs text-table-muted" title="Split results into cards that ARE the search term vs cards that only mention it in their text.">
-          <input type="checkbox" checked={opts.group} onChange={(e) => setOpts({ ...opts, group: e.target.checked })} />
-          Group by relevance (ARE vs mentions)
-        </label>
       </div>
 
       {loading && <div className="py-8 text-center text-table-muted">Searching…</div>}

@@ -88,6 +88,10 @@ export function CardFilterBar({ onQuery, opts, setOpts, interpreted, queryError,
           onChange={(e) => setText(e.target.value)}
           autoFocus={autoFocus}
         />
+        <label className="flex shrink-0 items-center gap-1 whitespace-nowrap text-xs text-table-muted" title="Match card names only — ignore type line and rules text.">
+          <input type="checkbox" checked={opts.nameOnly} onChange={(e) => setOpts({ ...opts, nameOnly: e.target.checked })} />
+          Name only
+        </label>
         <select className="input" value={opts.sort} onChange={(e) => setOpts({ ...opts, sort: e.target.value })}>
           <option value="name">Sort: Name</option>
           <option value="cmc">Sort: Mana value</option>

@@ -190,6 +190,9 @@ export function termRefExpr(term: string, p: Params): string {
   const tp = likeContains("type_line", term, p);
   return `(${ot} AND NOT (${nm} OR ${tp}))`;
 }
+export function termNameExpr(term: string, p: Params): string {
+  return likeContains("name", term, p);
+}
 export function termAnyExpr(term: string, p: Params): string {
   const nm = likeContains("name", term, p);
   const tp = likeContains("type_line", term, p);

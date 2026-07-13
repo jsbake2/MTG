@@ -39,6 +39,8 @@ export interface SearchRequest {
   dir?: "asc" | "desc";
   // When true, a bare term is split into ARE vs REFERENCES buckets.
   group?: boolean;
+  // When true, free-text terms match card NAMES only (not type line or rules text).
+  nameOnly?: boolean;
 }
 
 export interface SearchGroup {

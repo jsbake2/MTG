@@ -4,6 +4,7 @@ import { api } from "@/api/client";
 
 export interface SearchOpts {
   group: boolean;
+  nameOnly: boolean;
   sort: string;
   dir: string;
   pageSize: number;
@@ -11,7 +12,7 @@ export interface SearchOpts {
 
 export function useCardSearch(initial = "") {
   const [q, setQ] = useState(initial);
-  const [opts, setOpts] = useState<SearchOpts>({ group: false, sort: "name", dir: "asc", pageSize: 60 });
+  const [opts, setOpts] = useState<SearchOpts>({ group: false, nameOnly: false, sort: "name", dir: "asc", pageSize: 60 });
   const [resp, setResp] = useState<SearchResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [page, setPage] = useState(1);
@@ -24,6 +25,7 @@ export function useCardSearch(initial = "") {
         const params = new URLSearchParams({
           q: query,
           group: o.group ? "1" : "0",
+          nameOnly: o.nameOnly ? "1" : "0",
           sort: o.sort,
           dir: o.dir,
           page: String(p),
