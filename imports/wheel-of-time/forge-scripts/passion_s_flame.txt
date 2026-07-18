@@ -1,0 +1,8 @@
+Name:Passion's Flame
+ManaCost:2 R R
+Types:Enchantment
+T:Mode$ SpellCast | ValidCard$ Card.Red | ValidActivatingPlayer$ You | TriggerZones$ Battlefield | Execute$ TrigPump | TriggerDescription$ Whenever you cast a red spell, all creatures you control get +1/+0 until end of turn and CARDNAME deals 1 damage to each opponent.
+SVar:TrigPump:DB$ PumpAll | ValidCards$ Creature.YouCtrl | NumAtt$ +1 | NumDef$ +0 | SubAbility$ DBDamage
+SVar:DBDamage:DB$ DealDamage | Defined$ Player.Opponent | NumDmg$ 1
+A:AB$ Mana | Cost$ R | Produced$ R | Amount$ 2 | SpellDescription$ Add {R}{R}.
+Oracle:Whenever you cast a red spell, all creatures you control get +1/+0 until end of turn and Passion's Flame deals 1 damage to each opponent.\n{R}: Add {R}{R}.

@@ -1,0 +1,7 @@
+Name:The Pattern Weaves
+ManaCost:2 W
+Types:Sorcery
+A:SP$ Token | TokenAmount$ 2 | TokenScript$ w_1_1_soldier | TokenOwner$ You | SubAbility$ Weave | SpellDescription$ Create two 1/1 white Soldier creature tokens. Weave twice.
+SVar:Weave:DB$ PutCounter | Defined$ You | CounterType$ WEAVE | CounterNum$ 2
+DeckHas:Ability$Token
+Oracle:Create two 1/1 white Soldier creature tokens. Weave twice.

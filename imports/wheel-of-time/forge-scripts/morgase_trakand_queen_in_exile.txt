@@ -1,0 +1,11 @@
+Name:Morgase Trakand, Queen in Exile
+ManaCost:2 W
+Types:Legendary Creature Human Noble
+PT:2/3
+S:Mode$ Continuous | Affected$ Creature.Human+Other+YouCtrl | AddToughness$ 1 | Description$ Other Humans you control get +0/+1.
+T:Mode$ ChangesZone | Origin$ Any | Destination$ Battlefield | ValidCard$ Card.Self | Execute$ TrigToken | TriggerDescription$ When CARDNAME enters, create a 1/1 white Soldier creature token.
+SVar:TrigToken:DB$ Token | TokenScript$ w_1_1_soldier | TokenOwner$ You
+SVar:PlayMain1:TRUE
+DeckHints:Type$Human
+DeckHas:Ability$Token & Type$Soldier
+Oracle:Other Humans you control get +0/+1.\nWhen Morgase Trakand, Queen in Exile enters, create a 1/1 white Soldier creature token.

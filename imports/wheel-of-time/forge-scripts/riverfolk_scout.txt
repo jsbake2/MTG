@@ -1,0 +1,7 @@
+Name:Riverfolk Scout
+ManaCost:U
+Types:Creature Human Scout
+PT:1/2
+T:Mode$ ChangesZone | Origin$ Any | Destination$ Battlefield | ValidCard$ Land | TriggerZones$ Battlefield | Execute$ TrigPump | TriggerDescription$ Whenever a land enters, CARDNAME gets +1/+0 until end of turn.
+SVar:TrigPump:DB$ Pump | Defined$ Self | NumAtt$ +1
+Oracle:Whenever a land enters, Riverfolk Scout gets +1/+0 until end of turn.

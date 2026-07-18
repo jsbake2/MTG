@@ -1,0 +1,8 @@
+Name:Trolloc Endless
+ManaCost:1 B
+Types:Creature Trolloc
+PT:1/1
+T:Mode$ SpellCast | ValidCard$ Card.Black | ValidActivatingPlayer$ You | TriggerZones$ Battlefield | Execute$ TrigToken | TriggerDescription$ Whenever you cast a black spell, create a 1/1 black Trolloc creature token with haste and menace.
+SVar:TrigToken:DB$ Token | TokenScript$ b_1_1_trolloc_haste_menace | TokenOwner$ You
+DeckHas:Ability$Token
+Oracle:Whenever you cast a black spell, create a 1/1 black Trolloc creature token with haste and menace.

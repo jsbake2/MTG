@@ -1,0 +1,11 @@
+Name:Sammael, Lord of Illian
+ManaCost:2 R R
+Types:Legendary Creature Forsaken Channeler
+PT:4/4
+K:Haste
+K:Menace
+T:Mode$ DamageDone | ValidSource$ Creature | ValidTarget$ Card.Self | TriggerZones$ Battlefield | Execute$ TrigDealDamage | TriggerDescription$ Whenever a creature deals damage to CARDNAME, CARDNAME deals that much damage to that creature's controller.
+SVar:TrigDealDamage:DB$ DealDamage | Defined$ TriggeredSourceController | NumDmg$ X
+SVar:X:TriggerCount$DamageAmount
+SVar:HasCombatEffect:TRUE
+Oracle:Haste, menace.\nWhenever a creature deals damage to Sammael, Lord of Illian, he deals that much damage to that creature's controller.

@@ -1,0 +1,10 @@
+Name:Natural Resistance
+ManaCost:1 G
+Types:Enchantment Aura
+K:Enchant:Creature
+SVar:AttachAILogic:Pump
+S:Mode$ Continuous | Affected$ Creature.EnchantedBy | AddToughness$ X | Description$ Enchanted creature gets +0/+1 for each land you control.
+SVar:X:Count$Valid Land.YouCtrl
+SVar:BuffedBy:Land
+DeckHints:Type$Land
+Oracle:Enchant creature\nEnchanted creature gets +0/+1 for each land you control.

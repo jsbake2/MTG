@@ -1,0 +1,9 @@
+Name:Wolfkin Pack
+ManaCost:1 G
+Types:Creature Wolf
+PT:2/2
+T:Mode$ ChangesZone | Origin$ Any | Destination$ Battlefield | ValidCard$ Creature.Other+YouCtrl | TriggerZones$ Battlefield | Execute$ TrigPump | TriggerDescription$ Whenever another Wolf or creature you control enters, CARDNAME gets +1/+1 until end of turn.
+SVar:TrigPump:DB$ Pump | Defined$ Self | NumAtt$ +1 | NumDef$ +1
+SVar:BuffedBy:Creature
+DeckHints:Type$Wolf
+Oracle:Whenever another Wolf or creature enters under your control, Wolfkin Pack gets +1/+1 until end of turn.

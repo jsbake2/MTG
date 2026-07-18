@@ -1,0 +1,6 @@
+Name:Sea Folk Windfinder
+ManaCost:1 U
+Types:Creature Human Windfinder
+PT:1/3
+A:AB$ Scry | Cost$ T | ScryNum$ 1 | SpellDescription$ Scry 1.
+Oracle:{T}: Scry 1.

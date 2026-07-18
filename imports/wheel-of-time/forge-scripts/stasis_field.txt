@@ -1,0 +1,7 @@
+Name:Stasis Field
+ManaCost:1 W U
+Types:Enchantment
+T:Mode$ ChangesZone | Origin$ Any | Destination$ Battlefield | ValidCard$ Creature | TriggerZones$ Battlefield | Execute$ TrigStasis | TriggerDescription$ Whenever a creature enters, put a stasis counter on CARDNAME.
+SVar:TrigStasis:DB$ PutCounter | Defined$ Self | CounterType$ STASIS | CounterNum$ 1
+A:AB$ Pump | Cost$ U W | ValidTgts$ Creature | TgtPrompt$ Select target creature | KW$ HIDDEN This card doesn't untap during your next untap step. | Duration$ Permanent | IsCurse$ True | SpellDescription$ Target creature doesn't untap during its controller's next untap step.
+Oracle:Whenever a creature enters, Stasis Field gains a stasis counter.\n{U}{W}: Target creature doesn't untap during its controller's next untap step.

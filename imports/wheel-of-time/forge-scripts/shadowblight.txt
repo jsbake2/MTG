@@ -1,0 +1,9 @@
+Name:Shadowblight
+ManaCost:1 B
+Types:Enchantment Aura
+K:Enchant:Creature
+SVar:AttachAILogic:Curse
+S:Mode$ Continuous | Affected$ Creature.EnchantedBy | AddPower$ -2 | AddToughness$ -1 | Description$ Enchanted creature gets -2/-1.
+T:Mode$ AttackerBlocked | ValidCard$ Card.AttachedBy | TriggerZones$ Battlefield | Execute$ TrigLoseAbilities | TriggerDescription$ Whenever enchanted creature becomes blocked, it loses all abilities until end of turn.
+SVar:TrigLoseAbilities:DB$ Animate | Defined$ TriggeredAttackerLKICopy | RemoveAllAbilities$ True
+Oracle:Enchant creature\nEnchanted creature gets -2/-1.\nWhenever enchanted creature becomes blocked, it loses all abilities until end of turn.

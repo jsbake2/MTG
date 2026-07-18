@@ -1,0 +1,15 @@
+Name:Mesaana, Hidden in the Tower
+ManaCost:2 U B
+Types:Legendary Creature Forsaken Channeler
+PT:3/3
+# Can't be blocked (Ghastlord of Fugue idiom)
+S:Mode$ CantBlockBy | ValidAttacker$ Creature.Self | Description$ CARDNAME can't be blocked.
+# Combat damage trigger: look at that player's hand, exile a card (you choose), then they may play it while Mesaana is on the battlefield
+T:Mode$ DamageDone | ValidSource$ Card.Self | ValidTarget$ Player | CombatDamage$ True | Execute$ TrigExile | TriggerZones$ Battlefield | TriggerDescription$ Whenever CARDNAME deals combat damage to a player, look at that player's hand and exile a card from it. They may play that card for as long as it remains exiled, until CARDNAME leaves the battlefield.
+SVar:TrigExile:DB$ ChangeZone | Origin$ Hand | Destination$ Exile | ChangeType$ Card | DefinedPlayer$ TriggeredTarget | Chooser$ You | ChangeNum$ 1 | RememberChanged$ True | SubAbility$ DBEffect
+# EffectOwner$ TargetedOwner makes the effect owned by the exiled card's owner (Aerial Extortionist idiom)
+# so MayPlay$ True grants *that player* (the opponent) permission to cast it
+SVar:DBEffect:DB$ Effect | RememberObjects$ Remembered | StaticAbilities$ STPlay | EffectOwner$ TargetedOwner | Duration$ UntilHostLeavesPlay | ForgetOnMoved$ Exile | SubAbility$ DBCleanup
+SVar:STPlay:Mode$ Continuous | MayPlay$ True | Affected$ Card.IsRemembered | AffectedZone$ Exile | Description$ They may play that card for as long as it remains exiled, until EFFECTSOURCE leaves the battlefield.
+SVar:DBCleanup:DB$ Cleanup | ClearRemembered$ True
+Oracle:Mesaana, Hidden in the Tower can't be blocked.\nWhenever Mesaana, Hidden in the Tower deals combat damage to a player, look at that player's hand and exile a card from it. They may play that card for as long as it remains exiled, until Mesaana, Hidden in the Tower leaves the battlefield.

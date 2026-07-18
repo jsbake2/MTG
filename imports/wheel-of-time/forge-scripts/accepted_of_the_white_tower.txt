@@ -1,0 +1,7 @@
+Name:Accepted of the White Tower
+ManaCost:1 U
+Types:Creature Human Channeler
+PT:1/3
+T:Mode$ CounterAdded | ValidPlayer$ You | CounterType$ WEAVE | TriggerZones$ Battlefield | Execute$ TrigPump | TriggerDescription$ Whenever you weave, CARDNAME gets +1/+0 until end of turn.
+SVar:TrigPump:DB$ Pump | Defined$ Self | NumAtt$ +1 | NumDef$ +0
+Oracle:Whenever you weave, Accepted of the White Tower gets +1/+0 until end of turn.

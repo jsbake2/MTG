@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import type { GameObject, PlayerState, TableState, Card } from "@mtg/shared";
 import type { TableConn } from "@/game/useTable";
 import { useReportIssue } from "@/store/reportIssue";
+import { useCardDetail } from "@/store/cardDetail";
 import { CardImage } from "@/components/CardTile";
 import { Avatar } from "@/components/Avatar";
 import { useSettings } from "@/store/settings";
@@ -56,12 +57,24 @@ export function FreeformBoard({ t, state }: { t: TableConn; state: TableState })
   const me = state.players.find((p) => p.seat === you) ?? null;
   const opponents = state.players.filter((p) => p.seat !== you);
   const matRef = useRef<HTMLDivElement>(null);
+  // Drop targets so a hand card can be dragged straight into your graveyard/exile.
+  const graveDropRef = useRef<HTMLDivElement>(null);
+  const exileDropRef = useRef<HTMLDivElement>(null);
   const { handCardWidth, setHandCardWidth } = useSettings();
   const [drag, setDrag] = useState<DragState | null>(null);
   const [handDrag, setHandDrag] = useState<{ id: string; cardId: string | null; name: string; x: number; y: number; isToken?: boolean; power?: string | number; toughness?: string | number; typeLine?: string } | null>(null);
   const [menu, setMenu] = useState<{ id: string; x: number; y: number } | null>(null);
   const [hover, setHover] = useState<{ id: string; name: string } | null>(null);
   const [expanded, setExpanded] = useState<string | null>(null);
+  // Escape always closes the click-opened card preview.
+  useEffect(() => {
+    if (!hover) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setHover(null);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [hover !== null]);
   const [tokenOpen, setTokenOpen] = useState(false);
   const [browse, setBrowse] = useState<{ zoneId: string; title: string } | null>(null);
   const [notesOpen, setNotesOpen] = useState(false);
@@ -500,6 +513,16 @@ export function FreeformBoard({ t, state }: { t: TableConn; state: TableState })
     const up = (e: PointerEvent) => {
       setHandDrag((d) => {
         if (d && you !== null) {
+          // Dropped onto your graveyard/exile bucket? Route it there instead of
+          // the battlefield. (Tokens just cease to exist, so ignore them.)
+          const overRef = (ref: React.RefObject<HTMLDivElement>) => {
+            const rr = ref.current?.getBoundingClientRect();
+            return !!rr && e.clientX >= rr.left && e.clientX <= rr.right && e.clientY >= rr.top && e.clientY <= rr.bottom;
+          };
+          if (!d.id.startsWith("create-token-")) {
+            if (overRef(graveDropRef)) { t.send({ type: "move_card", objectId: d.id, toZone: "graveyard", toSeat: you }); return null; }
+            if (overRef(exileDropRef)) { t.send({ type: "move_card", objectId: d.id, toZone: "exile", toSeat: you }); return null; }
+          }
           const r = matRef.current?.getBoundingClientRect();
           const overMat = r && e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom;
           if (overMat && r) {
@@ -921,6 +944,20 @@ export function FreeformBoard({ t, state }: { t: TableConn; state: TableState })
                           </div>
                         )}
                         
+                        {/* Effective P/T (base ± counters/pumps), computed server-side.
+                            Glows when it differs from the printed base. */}
+                        {c.effPower != null && c.effToughness != null && (() => {
+                          const buffed = c.basePower != null && (c.effPower !== c.basePower || c.effToughness !== c.baseToughness);
+                          const up = c.basePower != null && c.effPower >= c.basePower && c.effToughness >= (c.baseToughness ?? 0);
+                          const cls = !buffed ? "bg-black/85 text-white" : up
+                            ? "bg-emerald-600 text-white ring-1 ring-emerald-300 shadow-[0_0_8px] shadow-emerald-400/60"
+                            : "bg-rose-700 text-white ring-1 ring-rose-300 shadow-[0_0_8px] shadow-rose-400/60";
+                          return (
+                            <span className={`absolute bottom-0 right-0 z-10 rounded px-1 text-[11px] font-extrabold tabular-nums pointer-events-none ${cls}`} title={buffed && c.basePower != null ? `base ${c.basePower}/${c.baseToughness}` : undefined}>
+                              {c.effPower}/{c.effToughness}
+                            </span>
+                          );
+                        })()}
                         {c.isCommander && <span className="absolute left-0 top-0 rounded bg-table-accent px-1 text-[9px] text-black font-semibold z-10 pointer-events-none">CMD</span>}
                       </div>
                     );
@@ -986,7 +1023,7 @@ export function FreeformBoard({ t, state }: { t: TableConn; state: TableState })
                   </div>
 
                   {/* Graveyard stack */}
-                  <div className="absolute" style={{ left: rxGrave, top: ryGrave }}>
+                  <div className="absolute" style={{ left: rxGrave, top: ryGrave }} ref={seat === you ? graveDropRef : undefined}>
                     <CardStackDeck
                       count={graveCards.length}
                       faceUpCardId={topGraveCard?.cardId}
@@ -997,7 +1034,7 @@ export function FreeformBoard({ t, state }: { t: TableConn; state: TableState })
                   </div>
 
                   {/* Exile stack */}
-                  <div className="absolute" style={{ left: rxExile, top: ryExile }}>
+                  <div className="absolute" style={{ left: rxExile, top: ryExile }} ref={seat === you ? exileDropRef : undefined}>
                     <CardStackDeck
                       count={exileCards.length}
                       faceUpCardId={topExileCard?.cardId}
@@ -1226,10 +1263,22 @@ export function FreeformBoard({ t, state }: { t: TableConn; state: TableState })
       
       <RollOverlay roll={state.lastRoll} />
       
-      {/* Selection detail overlay */}
+      {/* Selection detail overlay. Opened by clicking a battlefield card (or
+          hovering a hand card), so it needs an explicit way to close — click it
+          or the ✕, or press Escape. */}
       {hover && (
-        <div className="pointer-events-none fixed bottom-28 left-4 z-40">
-          <img src={`/api/cards/${hover.id}/image`} alt={hover.name} className="w-56 rounded-lg shadow-2xl card-aspect border-2 border-table-accent/40 bg-black" />
+        <div className="fixed bottom-28 left-4 z-40">
+          <button
+            type="button"
+            className="group relative block cursor-pointer"
+            onClick={() => setHover(null)}
+            title="Click to close"
+          >
+            <img src={`/api/cards/${hover.id}/image?v=4`} alt={hover.name} className="w-56 rounded-lg shadow-2xl card-aspect border-2 border-table-accent/40 bg-black" />
+            <span className="absolute -right-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full border border-table-border bg-black/90 text-sm text-table-ink shadow-lg group-hover:border-table-accent">
+              ✕
+            </span>
+          </button>
         </div>
       )}
     </div>
@@ -1373,6 +1422,7 @@ function FreeformCardMenu({ menu, state, you, t, onClose }: { menu: { id: string
       <Item label="→ Library (top)" onClick={() => move("library", true)} />
       <Item label="→ Library (bottom)" onClick={() => move("library", false)} />
       <div className="my-1 border-t border-table-border" />
+      {o.cardId && <Item label="⚙️ Engine details" onClick={() => useCardDetail.getState().open(o.cardId!)} />}
       <Item label="🐞 Report issue" onClick={() => useReportIssue.getState().openReport({ cardId: o.cardId, oracleId: o.oracleId, cardName: o.name })} />
     </div>
   );

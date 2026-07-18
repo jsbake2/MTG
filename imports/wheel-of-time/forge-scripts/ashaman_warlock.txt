@@ -1,0 +1,9 @@
+Name:Asha'man Warlock
+ManaCost:2 R
+Types:Creature Human Ashaman
+PT:2/2
+T:Mode$ SpellCast | ValidCard$ Card.Red | ValidActivatingPlayer$ You | TriggerZones$ Battlefield | Execute$ TrigDamage | TriggerDescription$ Whenever you cast a red spell, CARDNAME deals 1 damage to any target.
+SVar:TrigDamage:DB$ DealDamage | ValidTgts$ Any | NumDmg$ 1
+T:Mode$ DamageDealtOnce | ValidSource$ Card.Self | TriggerZones$ Battlefield | OptionalDecider$ You | Execute$ TrigDraw | TriggerDescription$ Whenever CARDNAME deals damage, you may draw a card.
+SVar:TrigDraw:DB$ Draw | Defined$ You | NumCards$ 1
+Oracle:Whenever you cast a red spell, Asha'man Warlock deals 1 damage to any target.\nWhenever Asha'man Warlock deals damage, you may draw a card.

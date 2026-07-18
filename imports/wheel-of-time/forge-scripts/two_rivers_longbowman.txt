@@ -1,0 +1,7 @@
+Name:Two Rivers Longbowman
+ManaCost:2 G
+Types:Creature Human Archer
+PT:1/3
+K:Reach
+A:AB$ DealDamage | Cost$ T | ValidTgts$ Creature.withFlying | TgtPrompt$ Select target creature with flying | NumDmg$ 1 | SpellDescription$ CARDNAME deals 1 damage to target creature with flying.
+Oracle:Reach\n{T}: Two Rivers Longbowman deals 1 damage to target creature with flying.

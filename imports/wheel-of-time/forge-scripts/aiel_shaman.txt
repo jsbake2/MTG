@@ -1,0 +1,9 @@
+Name:Aiel Shaman
+ManaCost:1 G
+Types:Creature Human Aiel WiseOne
+PT:2/2
+T:Mode$ ChangesZone | Origin$ Any | Destination$ Battlefield | ValidCard$ Card.Self | Execute$ TrigToken | TriggerDescription$ When CARDNAME enters, create a 1/1 green Wolf creature token.
+SVar:TrigToken:DB$ Token | TokenScript$ g_1_1_wolf | TokenOwner$ You
+A:AB$ Pump | Cost$ G | Defined$ Self | NumAtt$ +1 | NumDef$ +1 | SpellDescription$ CARDNAME gets +1/+1 until end of turn.
+DeckHas:Ability$Token
+Oracle:When Aiel Shaman enters, create a 1/1 green Wolf creature token.\n{G}: Aiel Shaman gets +1/+1 until end of turn.

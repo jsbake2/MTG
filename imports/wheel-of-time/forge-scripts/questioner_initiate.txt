@@ -1,0 +1,7 @@
+Name:Questioner Initiate
+ManaCost:1 W
+Types:Creature Human Whitecloak Cleric
+PT:1/3
+T:Mode$ ChangesZone | Origin$ Any | Destination$ Battlefield | ValidCard$ Card.Self | Execute$ TrigTap | TriggerDescription$ When Questioner Initiate enters, tap target creature an opponent controls.
+SVar:TrigTap:DB$ Tap | ValidTgts$ Creature.OppCtrl | TgtPrompt$ Choose target creature an opponent controls.
+Oracle:When Questioner Initiate enters, tap target creature an opponent controls.

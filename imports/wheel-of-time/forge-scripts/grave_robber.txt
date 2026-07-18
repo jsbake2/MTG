@@ -1,0 +1,6 @@
+Name:Grave Robber
+ManaCost:1 B
+Types:Creature Human Darkfriend
+PT:2/2
+A:AB$ Discard | Cost$ T | ValidTgts$ Player | NumCards$ 1 | Mode$ TgtChoose | SpellDescription$ Target player discards a card.
+Oracle:{T}: Target player discards a card.

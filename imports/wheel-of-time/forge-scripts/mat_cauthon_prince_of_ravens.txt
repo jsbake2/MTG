@@ -1,0 +1,11 @@
+Name:Mat Cauthon, Prince of Ravens
+ManaCost:1 B R
+Types:Legendary Creature Human Rogue
+PT:4/2
+T:Mode$ Attacks | ValidCard$ Card.Self | TriggerZones$ Battlefield | OptionalDecider$ You | Execute$ TrigFlip | TriggerDescription$ Whenever CARDNAME attacks, you may flip a coin. If heads, create a Treasure token. If tails, target opponent discards a card.
+SVar:TrigFlip:DB$ FlipCoin | WinSubAbility$ DBTreasure | LoseSubAbility$ DBDiscard
+SVar:DBTreasure:DB$ Token | TokenScript$ c_a_treasure_sac | TokenOwner$ You
+SVar:DBDiscard:DB$ Discard | ValidTgts$ Opponent | Mode$ TgtChoose | NumCards$ 1
+A:AB$ Pump | Cost$ R B | Defined$ Self | NumAtt$ +1 | NumDef$ +1 | SpellDescription$ CARDNAME gets +1/+1 until end of turn.
+DeckHas:Ability$Token & Type$Treasure
+Oracle:Whenever Mat Cauthon, Prince of Ravens attacks, you may flip a coin. If heads, create a Treasure token. If tails, target opponent discards a card.\n{R}{B}: Mat Cauthon, Prince of Ravens gets +1/+1 until end of turn.

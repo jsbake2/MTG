@@ -1,0 +1,10 @@
+Name:Moiraine Damodred, Blue Ajah
+ManaCost:1 U U
+Types:Legendary Creature Human Aes Sedai
+PT:2/2
+A:AB$ Draw | Cost$ T | NumCards$ 1 | SpellDescription$ Draw a card.
+T:Mode$ CounterAdded | CounterType$ WEAVE | ValidPlayer$ You | TriggerZones$ Battlefield | Execute$ TrigPump | TriggerDescription$ Whenever you weave, CARDNAME gets +1/+0 until end of turn.
+SVar:TrigPump:DB$ Pump | Defined$ Self | NumAtt$ +1 | NumDef$ +0
+A:AB$ Animate | Cost$ 4 U U | Defined$ Self | Power$ 5 | Toughness$ 5 | Keywords$ Flying | SubAbility$ Weave | SpellDescription$ Until end of turn, CARDNAME has base power and toughness 5/5 and gains flying. Weave.
+SVar:Weave:DB$ PutCounter | Defined$ You | CounterType$ WEAVE | CounterNum$ 1
+Oracle:{T}: Draw a card.\nWhenever you weave, Moiraine Damodred, Blue Ajah gets +1/+0 until end of turn.\n{4}{U}{U}: Until end of turn, Moiraine Damodred, Blue Ajah has base power and toughness 5/5 and gains flying. Weave.

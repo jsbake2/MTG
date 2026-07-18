@@ -1,0 +1,8 @@
+Name:Bonds of Power
+ManaCost:2 W U
+Types:Sorcery
+A:SP$ Token | TokenAmount$ 2 | TokenScript$ u_1_1_aes_sedai | TokenOwner$ You | SubAbility$ DBWhiteToken | SpellDescription$ Create two 1/1 blue Aes Sedai creature tokens and a 1/1 white Aes Sedai creature token. Weave.
+SVar:DBWhiteToken:DB$ Token | TokenAmount$ 1 | TokenScript$ w_1_1_aes_sedai | TokenOwner$ You | SubAbility$ Weave
+SVar:Weave:DB$ PutCounter | Defined$ You | CounterType$ WEAVE | CounterNum$ 1
+DeckHas:Ability$Token
+Oracle:Create two 1/1 blue Aes Sedai creature tokens and a 1/1 white Aes Sedai creature token. Weave.

@@ -1,0 +1,8 @@
+Name:Haste Rune
+ManaCost:2 R
+Types:Enchantment Aura
+K:Enchant:Creature
+SVar:AttachAILogic:Pump
+S:Mode$ Continuous | Affected$ Creature.EnchantedBy | AddPower$ 1 | AddKeyword$ Haste | Description$ Enchanted creature gets +1/+0 and has haste.
+SVar:PlayMain1:TRUE
+Oracle:Enchant creature\nEnchanted creature gets +1/+0 and has haste.

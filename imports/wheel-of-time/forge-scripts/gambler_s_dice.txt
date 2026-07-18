@@ -1,0 +1,8 @@
+Name:Gambler's Dice
+ManaCost:1
+Types:Artifact
+A:AB$ FlipCoin | Cost$ T | WinSubAbility$ DBDraw | LoseSubAbility$ Weave | SpellDescription$ Flip a coin. If you win the flip, draw a card, then discard a card. If you lose the flip, weave.
+SVar:DBDraw:DB$ Draw | Defined$ You | NumCards$ 1 | SubAbility$ DBDiscard
+SVar:DBDiscard:DB$ Discard | Defined$ You | NumCards$ 1 | Mode$ TgtChoose
+SVar:Weave:DB$ PutCounter | Defined$ You | CounterType$ WEAVE | CounterNum$ 1
+Oracle:{T}: Flip a coin. If you win the flip, draw a card, then discard a card. If you lose the flip, weave.

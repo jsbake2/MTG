@@ -1,0 +1,9 @@
+Name:Jaret Byar, Zealous Lieutenant
+ManaCost:W B
+Types:Legendary Creature Human Whitecloak Soldier
+PT:2/1
+S:Mode$ CantBlock | ValidCard$ Card.Self | Description$ CARDNAME can't block.
+T:Mode$ Attacks | ValidCard$ Card.Self | Execute$ TrigPump | TriggerDescription$ Whenever CARDNAME attacks, target creature an opponent controls gets -1/-1 until end of turn.
+SVar:TrigPump:DB$ Pump | ValidTgts$ Creature.OppCtrl | TgtPrompt$ Select target creature an opponent controls | NumAtt$ -1 | NumDef$ -1 | IsCurse$ True
+SVar:HasAttackEffect:TRUE
+Oracle:Jaret Byar, Zealous Lieutenant can't block.\nWhenever Jaret Byar, Zealous Lieutenant attacks, target creature an opponent controls gets -1/-1 until end of turn.

@@ -13,8 +13,13 @@ export interface LobbyInfo {
   you: number | null;
 }
 
+export type ManaChoice = Extract<ServerMessage, { type: "mana_choice" }>;
+
 export interface TableConn {
+  tableId: string;
   state: TableState | null;
+  manaChoice: ManaChoice | null;
+  clearManaChoice: () => void;
   lobby: LobbyInfo | null;
   you: number | null;
   hands: Record<number, string[]>;
@@ -37,6 +42,7 @@ export function useTable(tableId: string): TableConn {
   const [hands, setHands] = useState<Record<number, string[]>>({});
   const [connected, setConnected] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [manaChoice, setManaChoice] = useState<ManaChoice | null>(null);
   const wsRef = useRef<WebSocket | null>(null);
   const closedRef = useRef(false);
 
@@ -80,6 +86,8 @@ export function useTable(tableId: string): TableConn {
         } else if (msg.type === "error") {
           setError(msg.message);
           setTimeout(() => setError(null), 4000);
+        } else if (msg.type === "mana_choice") {
+          setManaChoice(msg);
         }
       };
       ws.onclose = () => {
@@ -100,7 +108,10 @@ export function useTable(tableId: string): TableConn {
   const send = useCallback((action: GameAction) => raw({ type: "action", action }), [raw]);
 
   return {
+    tableId,
     state,
+    manaChoice,
+    clearManaChoice: () => setManaChoice(null),
     lobby,
     you,
     hands,

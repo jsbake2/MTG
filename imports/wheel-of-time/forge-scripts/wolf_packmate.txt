@@ -1,0 +1,9 @@
+Name:Wolf Packmate
+ManaCost:1 G
+Types:Creature Wolf
+PT:2/2
+T:Mode$ ChangesZone | Origin$ Any | Destination$ Battlefield | ValidCard$ Card.Self | IsPresent$ Wolf.Other+YouCtrl | Execute$ TrigPutCounter | TriggerDescription$ When CARDNAME enters, if you control another Wolf, put a +1/+1 counter on it.
+SVar:TrigPutCounter:DB$ PutCounter | ValidTgts$ Wolf.Other+YouCtrl | TgtPrompt$ Select another Wolf you control | CounterType$ P1P1 | CounterNum$ 1
+DeckHints:Type$Wolf
+DeckHas:Ability$Counters
+Oracle:When Wolf Packmate enters, if you control another Wolf, put a +1/+1 counter on it.

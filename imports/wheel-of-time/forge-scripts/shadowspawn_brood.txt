@@ -1,0 +1,8 @@
+Name:Shadowspawn Brood
+ManaCost:B
+Types:Creature Shadowspawn
+PT:1/1
+T:Mode$ SpellCast | ValidCard$ Card.Black | ValidActivatingPlayer$ You | TriggerZones$ Battlefield | Execute$ TrigToken | TriggerDescription$ Whenever you cast a black spell, create a 1/1 black Shadowspawn creature token.
+SVar:TrigToken:DB$ Token | TokenScript$ b_1_1_shadowspawn | TokenOwner$ You
+DeckHas:Ability$Token
+Oracle:Whenever you cast a black spell, create a 1/1 black Shadowspawn creature token.

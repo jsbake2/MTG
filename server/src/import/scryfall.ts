@@ -250,7 +250,7 @@ function rowValues(r: CardRow): unknown[] {
   ];
 }
 
-async function upsertBatch(rows: CardRow[]): Promise<void> {
+export async function upsertBatch(rows: CardRow[]): Promise<void> {
   if (rows.length === 0) return;
   const cols = COLUMNS.length;
   const valuesSql: string[] = [];

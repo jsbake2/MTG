@@ -1,0 +1,9 @@
+Name:Hopper, Dream Wolf
+ManaCost:1 G
+Types:Legendary Creature Wolf Spirit
+PT:2/2
+T:Mode$ ChangesZone | Origin$ Battlefield | Destination$ Graveyard | ValidCard$ Card.Self | Execute$ TrigPutCounter | TriggerDescription$ When CARDNAME dies, put two +1/+1 counters on target Wolf or Wolfbrother you control.
+SVar:TrigPutCounter:DB$ PutCounter | ValidTgts$ Creature.Wolf+YouCtrl,Creature.Wolfbrother+YouCtrl | TgtPrompt$ Select target Wolf or Wolfbrother you control | CounterType$ P1P1 | CounterNum$ 2
+DeckHas:Ability$Counters
+DeckHints:Type$Wolf
+Oracle:When Hopper, Dream Wolf dies, put two +1/+1 counters on target Wolf or Wolfbrother you control.

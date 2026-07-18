@@ -1,0 +1,25 @@
+Name:Rand al'Thor, Shepherd of Emond's Field
+ManaCost:1 W R
+Types:Legendary Creature Human Channeler
+PT:2/2
+T:Mode$ CounterAdded | CounterType$ WEAVE | ValidPlayer$ You | TriggerZones$ Battlefield | Execute$ TrigPowerCounter | TriggerDescription$ Whenever you weave, put a power counter on CARDNAME.
+SVar:TrigPowerCounter:DB$ PutCounter | Defined$ Self | CounterType$ POWER | CounterNum$ 1
+A:AB$ PutCounter | Cost$ W R | Defined$ You | CounterType$ WEAVE | CounterNum$ 1 | SubAbility$ DBTransform | SpellDescription$ Weave. Then if CARDNAME has three or more power counters on it, transform it.
+SVar:DBTransform:DB$ SetState | Defined$ Self | Mode$ Transform | ConditionCheckSVar$ X | ConditionSVarCompare$ GE3
+SVar:X:Count$CardCounters.POWER
+AlternateMode:DoubleFaced
+Oracle:Whenever you weave, put a power counter on Rand al'Thor, Shepherd of Emond's Field. (Put a WEAVE counter on yourself.)\n{W}{R}: Weave. Then if Rand al'Thor, Shepherd of Emond's Field has three or more power counters on it, transform it.
+
+ALTERNATE
+
+Name:Rand al'Thor, the Dragon Reborn
+ManaCost:no cost
+Colors:white,red
+Types:Legendary Creature Human Channeler Avatar
+PT:5/5
+K:Flying
+K:Lifelink
+T:Mode$ CounterAdded | CounterType$ WEAVE | ValidPlayer$ You | TriggerZones$ Battlefield | Execute$ TrigDragon | TriggerDescription$ Whenever you weave, create a 2/2 red Dragon creature token with flying.
+SVar:TrigDragon:DB$ Token | TokenOwner$ You | TokenScript$ r_2_2_dragon_flying
+A:AB$ DealDamage | Cost$ W R W R | Defined$ Player.Opponent | NumDmg$ 2 | SpellDescription$ CARDNAME deals 2 damage to each opponent.
+Oracle:(Transforms from Rand al'Thor, Shepherd of Emond's Field.)\nFlying, lifelink\nWhenever you weave, create a 2/2 red Dragon creature token with flying.\n{W}{R}{W}{R}: Rand al'Thor, the Dragon Reborn deals 2 damage to each opponent.

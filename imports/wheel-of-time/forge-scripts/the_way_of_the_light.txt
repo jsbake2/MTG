@@ -1,0 +1,8 @@
+Name:The Way of the Light
+ManaCost:2 W
+Types:Enchantment
+S:Mode$ Continuous | Affected$ Creature.Whitecloak+YouCtrl | AddPower$ 1 | AddToughness$ 1 | CheckSVar$ X | SVarCompare$ LT3 | Description$ Whitecloaks you control get +1/+1.
+S:Mode$ Continuous | Affected$ Creature.YouCtrl | AddPower$ 1 | AddToughness$ 1 | CheckSVar$ X | SVarCompare$ GE3 | Description$ Pattern 3 — Creatures you control get +1/+1.
+SVar:X:Count$YourCountersWEAVE
+SVar:PlayMain1:TRUE
+Oracle:Whitecloaks you control get +1/+1.\nPattern 3 — This enchantment loses all other abilities and gains "Creatures you control get +1/+1."

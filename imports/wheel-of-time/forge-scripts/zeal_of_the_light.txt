@@ -1,0 +1,7 @@
+Name:Zeal of the Light
+ManaCost:W
+Types:Instant
+A:SP$ Pump | ValidTgts$ Creature | TgtPrompt$ Select target creature | NumAtt$ +2 | NumDef$ +2 | SubAbility$ DBAnathPump | SpellDescription$ Target creature gets +2/+2 until end of turn. If an opponent controls a Channeler, it gets +3/+3 until end of turn instead.
+SVar:DBAnathPump:DB$ Pump | Defined$ Targeted | NumAtt$ +1 | NumDef$ +1 | ConditionCheckSVar$ Anath | ConditionSVarCompare$ GE1
+SVar:Anath:Count$Valid Creature.Channeler+OppCtrl,Creature.AesSedai+OppCtrl,Creature.Ashaman+OppCtrl,Creature.WiseOne+OppCtrl,Creature.Windfinder+OppCtrl,Creature.Damane+OppCtrl,Creature.Dreadlord+OppCtrl,Creature.Forsaken+OppCtrl
+Oracle:Target creature gets +2/+2 until end of turn. If an opponent controls a Channeler, it gets +3/+3 until end of turn instead.

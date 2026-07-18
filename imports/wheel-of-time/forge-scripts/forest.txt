@@ -1,0 +1,3 @@
+Name:Forest
+Types:Basic Land Forest
+Oracle:({T}: Add {G}.)

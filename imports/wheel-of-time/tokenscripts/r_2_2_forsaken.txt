@@ -1,0 +1,6 @@
+Name:Forsaken Token
+ManaCost:no cost
+Colors:red
+Types:Creature Forsaken
+PT:2/2
+Oracle:

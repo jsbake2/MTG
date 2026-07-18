@@ -1,0 +1,11 @@
+Name:Egwene al'Vere, Amyrlin Seat
+ManaCost:2 W U
+Types:Legendary Creature Human Aes Sedai
+PT:2/4
+T:Mode$ CounterAdded | CounterType$ WEAVE | ValidPlayer$ You | TriggerZones$ Battlefield | Execute$ TrigDraw | TriggerDescription$ Whenever you weave, draw a card, then discard a card.
+SVar:TrigDraw:DB$ Draw | NumCards$ 1 | SubAbility$ DBDiscard
+SVar:DBDiscard:DB$ Discard | Defined$ You | Mode$ TgtChoose | NumCards$ 1
+A:AB$ Tap | Cost$ U W | ValidTgts$ Creature | TgtPrompt$ Select target creature | SubAbility$ Weave | SpellDescription$ Tap target creature. Weave.
+SVar:Weave:DB$ PutCounter | Defined$ You | CounterType$ WEAVE | CounterNum$ 1
+A:AB$ Token | Cost$ 3 U W | TokenOwner$ You | TokenScript$ w_1_1_aes_sedai | SpellDescription$ Create a 1/1 white Aes Sedai creature token.
+Oracle:Whenever you weave, draw a card, then discard a card.\n{U}{W}: Tap target creature. Weave.\n{3}{U}{W}: Create a 1/1 white Aes Sedai creature token.

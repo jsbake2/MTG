@@ -1,0 +1,5 @@
+Name:Prophecy
+ManaCost:1 U
+Types:Sorcery
+A:SP$ Dig | ValidTgts$ Opponent | TgtPrompt$ Select target opponent | DigNum$ 3 | ChangeNum$ 1 | DestinationZone$ Library | LibraryPosition$ -1 | LibraryPosition2$ 0 | IsCurse$ True | SpellDescription$ Look at the next three cards in target opponent's library. Choose one and put it on the bottom of that library.
+Oracle:Look at the next three cards in target opponent's library. Choose one and move it to the bottom of that library.

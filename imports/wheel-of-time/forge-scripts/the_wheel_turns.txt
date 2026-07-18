@@ -1,0 +1,7 @@
+Name:The Wheel Turns
+ManaCost:3 W U
+Types:Sorcery
+A:SP$ ChangeZoneAll | Defined$ Player | ChangeType$ Card | Origin$ Graveyard | Destination$ Library | Shuffle$ True | SubAbility$ DBDraw | SpellDescription$ Each player shuffles their graveyard into their library. You draw three cards. Weave three times.
+SVar:DBDraw:DB$ Draw | Defined$ You | NumCards$ 3 | SubAbility$ Weave
+SVar:Weave:DB$ PutCounter | Defined$ You | CounterType$ WEAVE | CounterNum$ 3
+Oracle:Each player shuffles their graveyard into their library. You draw three cards. Weave three times.

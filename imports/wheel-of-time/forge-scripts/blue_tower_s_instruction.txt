@@ -1,0 +1,7 @@
+Name:Blue Tower's Instruction
+ManaCost:1 U
+Types:Instant
+A:SP$ Draw | Defined$ You | NumCards$ 1 | SubAbility$ DBToken | SpellDescription$ Draw a card. Create a 1/1 blue Aes Sedai creature token.
+SVar:DBToken:DB$ Token | TokenAmount$ 1 | TokenScript$ u_1_1_aes_sedai | TokenOwner$ You
+DeckHas:Ability$Token
+Oracle:Draw a card. Create a 1/1 blue Aes Sedai creature token.

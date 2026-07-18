@@ -1,0 +1,9 @@
+Name:Shadowstalker Wolf
+ManaCost:2 G
+Types:Creature Wolf
+PT:3/2
+K:Vigilance
+S:Mode$ Continuous | Affected$ Card.Self | AddPower$ 1 | AddToughness$ 1 | CheckSVar$ Anath | SVarCompare$ GE1 | Description$ Shadowstalker Wolf gets +1/+1 as long as an opponent controls a Shadowspawn, Trolloc, Fade, or Forsaken.
+SVar:Anath:Count$Valid Creature.Shadowspawn+OppCtrl,Creature.Trolloc+OppCtrl,Creature.Fade+OppCtrl,Creature.Forsaken+OppCtrl
+DeckHints:Type$Wolf
+Oracle:Vigilance\nShadowstalker Wolf gets +1/+1 as long as an opponent controls a Shadowspawn, Trolloc, Fade, or Forsaken.

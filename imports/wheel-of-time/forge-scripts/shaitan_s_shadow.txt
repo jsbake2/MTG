@@ -1,0 +1,14 @@
+Name:Shaitan's Shadow
+ManaCost:5 U B R
+Types:Creature Forsaken Avatar
+PT:7/7
+K:Menace
+K:Haste
+S:Mode$ CantBlockBy | ValidAttacker$ Creature.Self | Description$ CARDNAME can't be blocked.
+T:Mode$ Attacks | ValidCard$ Card.Self | Execute$ TrigSteal | TriggerZones$ Battlefield | TriggerDescription$ Whenever CARDNAME attacks, you gain control of target creature until end of turn.
+SVar:TrigSteal:DB$ GainControl | ValidTgts$ Creature | LoseControl$ EOT
+T:Mode$ Attacks | ValidCard$ Card.Self | Execute$ TrigDrain | TriggerZones$ Battlefield | TriggerDescription$ Whenever CARDNAME attacks, each opponent loses 3 life.
+SVar:TrigDrain:DB$ LoseLife | LifeAmount$ 3 | Defined$ Opponent
+SVar:HasAttackEffect:TRUE
+SVar:PlayMain1:TRUE
+Oracle:Menace, haste. Shaitan's Shadow can't be blocked.\nWhenever Shaitan's Shadow attacks, you gain control of target creature until end of turn.\nWhenever Shaitan's Shadow attacks, each opponent loses 3 life.

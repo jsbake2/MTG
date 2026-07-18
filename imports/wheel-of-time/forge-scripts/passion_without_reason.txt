@@ -1,0 +1,10 @@
+Name:Passion Without Reason
+ManaCost:2 R R
+Types:Sorcery
+A:SP$ PumpAll | ValidCards$ Creature.YouCtrl | NumAtt$ +3 | NumDef$ +1 | SubAbility$ DBDelayDiscard | SpellDescription$ All creatures you control get +3/+1 until end of turn. Discard a card at the beginning of your end step. If you can't, create a 2/2 red Dragon token.
+SVar:DBDelayDiscard:DB$ DelayedTrigger | Mode$ Phase | Phase$ End of Turn | ValidPlayer$ You | Execute$ TrigDiscard | TriggerDescription$ At the beginning of your end step, discard a card. If you can't, create a 2/2 red Dragon token.
+SVar:TrigDiscard:DB$ Discard | Defined$ You | NumCards$ 1 | Mode$ TgtChoose | RememberDiscarded$ True | SubAbility$ DBToken
+SVar:DBToken:DB$ Token | TokenScript$ r_2_2_dragon | TokenOwner$ You | ConditionDefined$ Remembered | ConditionPresent$ Card | ConditionCompare$ EQ0 | SubAbility$ DBCleanup | TokenAmount$ 1
+SVar:DBCleanup:DB$ Cleanup | ClearRemembered$ True
+DeckHas:Ability$Discard|Token
+Oracle:All creatures you control get +3/+1 until end of turn. Discard a card at the beginning of your end step. If you can't, create a 2/2 red Dragon token.

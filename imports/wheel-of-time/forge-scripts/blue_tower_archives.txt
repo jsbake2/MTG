@@ -1,0 +1,8 @@
+Name:Blue Tower Archives
+ManaCost:2 U
+Types:Enchantment
+T:Mode$ SpellCast | ValidCard$ Card.Blue | ValidActivatingPlayer$ You | TriggerZones$ Battlefield | Execute$ TrigLoot | TriggerDescription$ Whenever you cast a blue spell, draw a card, then discard a card.
+SVar:TrigLoot:DB$ Draw | NumCards$ 1 | SubAbility$ DBDiscard
+SVar:DBDiscard:DB$ Discard | Defined$ You | NumCards$ 1 | Mode$ TgtChoose
+SVar:BuffedBy:Card.Blue
+Oracle:Whenever you cast a blue spell, draw a card, then discard a card.

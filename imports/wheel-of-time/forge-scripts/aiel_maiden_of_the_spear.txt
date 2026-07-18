@@ -1,0 +1,6 @@
+Name:Aiel Maiden of the Spear
+ManaCost:1 R
+Types:Creature Human Aiel Warrior
+PT:2/1
+K:First Strike
+Oracle:First strike

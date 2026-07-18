@@ -1,0 +1,6 @@
+Name:Consumed by Shadow
+ManaCost:3 B
+Types:Sorcery
+A:SP$ Destroy | ValidTgts$ Creature.toughnessLE3 | TgtPrompt$ Select target creature with toughness 3 or less | SubAbility$ DBGainLife | SpellDescription$ Destroy target creature with toughness 3 or less. You gain 2 life.
+SVar:DBGainLife:DB$ GainLife | Defined$ You | LifeAmount$ 2
+Oracle:Destroy target creature with toughness 3 or less. You gain 2 life.

@@ -1,0 +1,7 @@
+Name:Drain Life
+ManaCost:1 B
+Types:Instant
+A:SP$ LoseLife | ValidTgts$ Creature,Player | TgtPrompt$ Select target creature or player | LifeAmount$ 1 | SubAbility$ DBGainLife | SpellDescription$ Target creature or player loses 1 life and you gain 1 life.
+SVar:DBGainLife:DB$ GainLife | Defined$ You | LifeAmount$ 1
+DeckHas:Ability$LifeGain
+Oracle:Target creature or player loses 1 life and you gain 1 life.

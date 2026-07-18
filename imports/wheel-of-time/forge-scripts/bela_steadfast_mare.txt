@@ -1,0 +1,10 @@
+Name:Bela, Steadfast Mare
+ManaCost:1 G
+Types:Legendary Creature Horse
+PT:1/3
+S:Mode$ Continuous | Affected$ Card.Self | AddKeyword$ Indestructible | IsPresent$ Creature.Legendary+Other+YouCtrl | Description$ CARDNAME has indestructible as long as you control another legendary creature.
+T:Mode$ Attacks | ValidCard$ Card.Self | TriggerZones$ Battlefield | Execute$ TrigPump | TriggerDescription$ Whenever CARDNAME attacks, another target attacking creature gets +0/+2 until end of turn.
+SVar:TrigPump:DB$ Pump | ValidTgts$ Creature.attacking+Other | TgtPrompt$ Select another target attacking creature | NumDef$ +2
+SVar:HasAttackEffect:TRUE
+DeckHints:Type$Legendary
+Oracle:Bela, Steadfast Mare has indestructible as long as you control another legendary creature.\nWhenever Bela attacks, another target attacking creature gets +0/+2 until end of turn.

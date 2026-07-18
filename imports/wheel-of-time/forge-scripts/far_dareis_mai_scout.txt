@@ -1,0 +1,6 @@
+Name:Far Dareis Mai Scout
+ManaCost:R
+Types:Creature Human Aiel Scout
+PT:1/2
+K:Haste
+Oracle:Haste

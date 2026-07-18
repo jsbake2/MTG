@@ -78,14 +78,23 @@ const authoredSorted = authored.sort((a, b) => b.count - a.count);
 const longtail = [...tmpl.entries()].sort((a, b) => b[1].count - a[1].count);
 
 const issues = [];
+const usedIds = new Set();
+// Ensure ids are unique and non-empty; a clause of only mana symbols/numbers
+// would otherwise slug to "" (collapsing every such clause onto one "cl-" id).
+const uniqueId = (base) => {
+  let id = base && base !== "cl-" ? base : "cl-clause";
+  if (!usedIds.has(id)) { usedIds.add(id); return id; }
+  for (let n = 2; ; n++) { const cand = `${id}-${n}`; if (!usedIds.has(cand)) { usedIds.add(cand); return cand; } }
+};
 for (const a of authoredSorted) {
+  usedIds.add(a.id);
   issues.push({ id: a.id, title: a.title, blurb: a.blurb, count: a.count, examples: a.examples, candidates: a.candidates, recommended: a.recommended, kind: "mechanic" });
 }
 for (const [key, t] of longtail) {
   if (issues.length >= TOTAL) break;
   // Stable id derived from the normalized clause template, so re-generating (to
   // fill in candidate guesses) preserves any answers already saved for it.
-  const id = "cl-" + key.replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 52);
+  const id = uniqueId("cl-" + key.replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 52));
   issues.push({
     id,
     title: t.example.replace(/\s+/g, " ").slice(0, 90),

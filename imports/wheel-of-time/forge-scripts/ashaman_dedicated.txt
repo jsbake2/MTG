@@ -1,0 +1,7 @@
+Name:Asha'man Dedicated
+ManaCost:1 R
+Types:Creature Human Asha'man Channeler
+PT:2/1
+T:Mode$ ChangesZone | Origin$ Any | Destination$ Battlefield | ValidCard$ Card.Self | Execute$ Weave | TriggerDescription$ When CARDNAME enters, weave.
+SVar:Weave:DB$ PutCounter | Defined$ You | CounterType$ WEAVE | CounterNum$ 1
+Oracle:When Asha'man Dedicated enters, weave.

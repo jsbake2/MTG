@@ -1,0 +1,5 @@
+Name:Molten Strike
+ManaCost:2 R
+Types:Sorcery
+A:SP$ DamageAll | ValidCards$ Creature | ValidPlayers$ Player | NumDmg$ 1 | SpellDescription$ CARDNAME deals 1 damage to each creature and each player.
+Oracle:Molten Strike deals 1 damage to each creature and each player.

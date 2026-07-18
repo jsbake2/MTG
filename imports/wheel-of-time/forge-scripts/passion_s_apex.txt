@@ -1,0 +1,7 @@
+Name:Passion's Apex
+ManaCost:1 R
+Types:Sorcery
+A:SP$ Token | TokenAmount$ 1 | TokenScript$ r_4_4_creature_haste | TokenOwner$ You | RememberTokens$ True | SubAbility$ DBPump | SpellDescription$ Create a 4/4 red Creature token with haste. If you control another creature, that token gets +1/+1 and gains trample.
+SVar:DBPump:DB$ Pump | Defined$ Remembered | NumAtt$ +1 | NumDef$ +1 | KW$ Trample | ConditionPresent$ Creature.Other+YouCtrl | SubAbility$ DBCleanup
+SVar:DBCleanup:DB$ Cleanup | ClearRemembered$ True
+Oracle:Create a 4/4 red Creature token with haste. If you control another creature, that token gets +1/+1 and gains trample.

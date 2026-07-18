@@ -1,0 +1,8 @@
+Name:Scribe's Collection
+ManaCost:2 U
+Types:Enchantment
+T:Mode$ SpellCast | ValidCard$ Card.Blue | ValidActivatingPlayer$ You | TriggerZones$ Battlefield | Execute$ TrigPutCounter | TriggerDescription$ Whenever you cast a blue spell, put a knowledge counter on CARDNAME.
+SVar:TrigPutCounter:DB$ PutCounter | Defined$ Self | CounterType$ KNOWLEDGE | CounterNum$ 1
+A:AB$ Draw | Cost$ U SubCounter<3/KNOWLEDGE> | NumCards$ 2 | SpellDescription$ Draw two cards.
+DeckHas:Ability$Counters
+Oracle:Whenever you cast a blue spell, put a knowledge counter on Scribe's Collection.\n{U}, Remove three knowledge counters from Scribe's Collection: Draw two cards.

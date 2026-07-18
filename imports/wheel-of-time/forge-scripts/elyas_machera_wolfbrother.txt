@@ -1,0 +1,10 @@
+Name:Elyas Machera, Wolfbrother
+ManaCost:2 G
+Types:Legendary Creature Human Wolfbrother
+PT:3/2
+T:Mode$ ChangesZone | Origin$ Any | Destination$ Battlefield | ValidCard$ Card.Self | Execute$ TrigToken | TriggerDescription$ When CARDNAME enters, create a 1/1 green Wolf creature token.
+SVar:TrigToken:DB$ Token | TokenScript$ g_1_1_wolf | TokenOwner$ You
+S:Mode$ Continuous | Affected$ Wolf.YouCtrl | AddKeyword$ Vigilance | Description$ Wolves you control have vigilance.
+DeckHints:Type$Wolf
+DeckHas:Ability$Token
+Oracle:When Elyas Machera, Wolfbrother enters, create a 1/1 green Wolf creature token.\nWolves you control have vigilance.

@@ -1,0 +1,6 @@
+Name:Light's Judgment
+ManaCost:2 W
+Types:Sorcery
+A:SP$ Destroy | ValidTgts$ Creature.Black | TgtPrompt$ Select target black creature | SubAbility$ DBGainLife | SpellDescription$ Destroy target black creature. You gain 2 life.
+SVar:DBGainLife:DB$ GainLife | Defined$ You | LifeAmount$ 2
+Oracle:Destroy target black creature. You gain 2 life.

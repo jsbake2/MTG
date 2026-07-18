@@ -1,0 +1,7 @@
+Name:Weaving Reality
+ManaCost:W U
+Types:Sorcery
+A:SP$ PutCounter | Defined$ You | CounterType$ WEAVE | CounterNum$ 2 | SubAbility$ DBToken | SpellDescription$ Weave twice. Create a 2/2 blue Aes Sedai creature token.
+SVar:DBToken:DB$ Token | TokenAmount$ 1 | TokenScript$ u_2_2_aes_sedai | TokenOwner$ You
+DeckHas:Ability$Token
+Oracle:Weave twice. Create a 2/2 blue Aes Sedai creature token.

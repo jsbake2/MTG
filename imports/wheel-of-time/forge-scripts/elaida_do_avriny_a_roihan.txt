@@ -1,0 +1,10 @@
+Name:Elaida do Avriny a'Roihan
+ManaCost:2 W
+Types:Legendary Creature Human AesSedai
+PT:3/3
+S:Mode$ Continuous | Affected$ Creature.AesSedai+YouCtrl | AddPower$ 1 | Description$ Aes Sedai you control get +1/+0.
+T:Mode$ Phase | Phase$ Upkeep | ValidPlayer$ You | TriggerZones$ Battlefield | IsPresent$ Creature.Legendary+Other+YouCtrl | PresentCompare$ EQ0 | Execute$ TrigDraw | TriggerDescription$ At the beginning of your upkeep, if you control no other legendary creatures, draw a card.
+SVar:TrigDraw:DB$ Draw | Defined$ You | NumCards$ 1
+SVar:PlayMain1:TRUE
+DeckHints:Type$AesSedai
+Oracle:Aes Sedai you control get +1/+0.\nAt the beginning of your upkeep, if you control no other legendary creatures, draw a card.

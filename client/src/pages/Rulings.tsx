@@ -30,7 +30,11 @@ export function Rulings() {
       fetch("/rulings-issues.json").then((r) => r.json()),
       api.get<{ answers: Answer[] }>("/api/rulings/answers").catch(() => ({ answers: [] })),
     ]).then(([data, saved]) => {
-      setIssues(data.issues);
+      // The generated asset can contain duplicate ids (clauses that normalize to
+      // the same slug); keep the first of each so the counter and queue agree.
+      const seen = new Set<string>();
+      const uniqueIssues = (data.issues as Issue[]).filter((iss) => !seen.has(iss.id) && seen.add(iss.id));
+      setIssues(uniqueIssues);
       const map: Record<string, Draft> = {};
       for (const a of saved.answers) {
         if (!a.issue_id) continue;
@@ -41,7 +45,9 @@ export function Rulings() {
     });
   }, []);
 
-  const answeredCount = Object.keys(answers).length;
+  // Count only answers that correspond to a current issue (ignore stale rows for
+  // ids that no longer appear in the generated asset).
+  const answeredCount = issues.filter((iss) => answers[iss.id]).length;
   // Answered issues drop out of the queue (unless you toggle them back on).
   const queue = useMemo(
     () => issues.filter((iss) => showAnswered || !answers[iss.id]),

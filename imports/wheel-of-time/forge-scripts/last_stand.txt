@@ -1,0 +1,12 @@
+Name:Last Stand
+ManaCost:1 W R
+Types:Creature Human Soldier
+PT:3/3
+T:Mode$ ChangesZone | Origin$ Any | Destination$ Battlefield | ValidCard$ Card.Self | Execute$ TrigToken | TriggerDescription$ When CARDNAME enters, create a 2/2 white Soldier creature token.
+SVar:TrigToken:DB$ Token | TokenScript$ w_2_2_soldier | TokenOwner$ You
+T:Mode$ Attacks | ValidCard$ Card.Self | Execute$ TrigPump | TriggerZones$ Battlefield | TriggerDescription$ Whenever CARDNAME attacks, it gets +1/+0 until end of turn for each other creature that attacked.
+SVar:TrigPump:DB$ Pump | Defined$ Self | NumAtt$ +X
+SVar:X:Count$Valid Creature.attacking+Other
+SVar:HasAttackEffect:TRUE
+DeckHas:Ability$Token
+Oracle:When Last Stand enters, create a 2/2 white Soldier creature token.\nWhenever Last Stand attacks, it gets +1/+0 until end of turn for each other creature that attacked.

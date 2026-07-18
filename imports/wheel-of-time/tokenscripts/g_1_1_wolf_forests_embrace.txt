@@ -1,0 +1,6 @@
+Name:Wolf Forests Embrace Token
+ManaCost:no cost
+Colors:green
+Types:Creature Wolf Forests Embrace
+PT:1/1
+Oracle:

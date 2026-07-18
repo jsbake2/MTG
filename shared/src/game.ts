@@ -71,6 +71,14 @@ export interface GameObject {
   // on send for battlefield/stack cards; used for combat UX + land/creature rows).
   cardTypes: string[] | null;
   keywords: string[] | null;
+  // Effective power/toughness for a battlefield creature (printed ± counters,
+  // pumps, and overrides), computed server-side and surfaced on send so the
+  // client always shows the real numbers after a counter is added/removed.
+  effPower?: number | null;
+  effToughness?: number | null;
+  // The printed base P/T, so the client can show e.g. "2/2 → 4/4" context.
+  basePower?: number | null;
+  baseToughness?: number | null;
 }
 
 export type Phase =
@@ -120,6 +128,9 @@ export interface PlayerState {
   commanderDamage: Record<number, number>;
   manaPool: Record<ManaColor, number>;
   landsPlayedThisTurn: number;
+  // London mulligan: how many times this player has mulliganed this game. On
+  // keep, they must put this many cards on the bottom of their library.
+  mulligansTaken: number;
   hasLost: boolean;
   hasConceded: boolean;
   connected: boolean;
@@ -200,7 +211,7 @@ export type GameAction =
   | { type: "shuffle"; seat: number }
   | { type: "scry"; seat: number; count: number }
   | { type: "mulligan"; seat: number }
-  | { type: "keep_hand"; seat: number }
+  | { type: "keep_hand"; seat: number; bottom?: string[] } // London mulligan: object ids to put on the bottom
   | { type: "set_life"; seat: number; life: number }
   | { type: "adjust_life"; seat: number; delta: number }
   | { type: "set_poison"; seat: number; value: number }
@@ -211,7 +222,7 @@ export type GameAction =
   | { type: "flip"; objectId: string; faceIndex?: number; faceDown?: boolean }
   | { type: "attach"; objectId: string; toObjectId: string | null }
   | { type: "create_token"; seat: number; name: string; power?: number; toughness?: number; typeLine?: string; colors?: string[]; cardId?: string | null; oracleId?: string | null; x?: number; y?: number }
-  | { type: "cast"; objectId: string; targets?: string[]; mode?: number; x?: number } // move to stack (framework: timing/mana enforced)
+  | { type: "cast"; objectId: string; targets?: string[]; mode?: number; x?: number; manaSources?: string[]; autoMana?: boolean } // move to stack (framework: timing/mana enforced). manaSources = explicit sources to tap; autoMana = pay any valid way without prompting
   | { type: "activate"; objectId: string; abilityIndex: number; targets?: string[]; x?: number } // activate an ability (auto)
   | { type: "resolve_top" } // resolve top of stack (player then performs the effect manually)
   | { type: "counter_top" } // remove top of stack to graveyard
@@ -281,6 +292,16 @@ export type ServerMessage =
   | { type: "log"; entries: LogEntry[] }
   | { type: "chat"; message: ChatMessage }
   | { type: "error"; message: string; recoverable: boolean }
+  // The player must choose which mana sources to tap for a cast (ambiguous
+  // payment). The client shows a picker and re-sends `cast` with `manaSources`.
+  | {
+      type: "mana_choice";
+      objectId: string;
+      cardName: string;
+      x: number;
+      cost: { pips: string[]; generic: number };
+      sources: Array<{ id: string; name: string; colors: string[]; amount: number }>;
+    }
   | { type: "pong" };
 
 export function emptyManaPool(): Record<ManaColor, number> {

@@ -1,0 +1,7 @@
+Name:Talmanes Delovinde, of the Red Hand
+ManaCost:2 R
+Types:Legendary Creature Human Soldier
+PT:3/2
+S:Mode$ Continuous | Affected$ Creature.Soldier+YouCtrl | AddKeyword$ First Strike | Description$ Soldiers you control have first strike.
+SVar:PlayMain1:TRUE
+Oracle:Soldiers you control have first strike.

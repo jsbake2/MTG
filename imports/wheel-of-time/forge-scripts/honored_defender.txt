@@ -1,0 +1,9 @@
+Name:Honored Defender
+ManaCost:1 W
+Types:Creature Human Knight
+PT:2/2
+T:Mode$ Blocks | ValidCard$ Card.Self | Execute$ TrigPump | TriggerDescription$ Whenever CARDNAME blocks, it gets +1/+3 until end of turn.
+SVar:TrigPump:DB$ Pump | Defined$ Self | NumAtt$ +1 | NumDef$ +3
+A:AB$ Tap | Cost$ W | ValidTgts$ Creature | SpellDescription$ Tap target creature.
+SVar:NonCombatPriority:10
+Oracle:Whenever Honored Defender blocks, it gets +1/+3 until end of turn.\n{W}: Tap target creature.

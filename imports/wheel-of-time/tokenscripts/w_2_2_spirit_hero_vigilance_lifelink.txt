@@ -1,0 +1,8 @@
+Name:Spirit Hero Token
+ManaCost:no cost
+Colors:white
+Types:Creature Spirit Hero
+PT:2/2
+K:Vigilance
+K:Lifelink
+Oracle:

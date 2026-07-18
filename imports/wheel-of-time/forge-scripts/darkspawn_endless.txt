@@ -1,0 +1,9 @@
+Name:Darkspawn Endless
+ManaCost:B
+Types:Creature Shadowspawn
+PT:1/1
+T:Mode$ SpellCast | ValidCard$ Card.Black | ValidActivatingPlayer$ You | TriggerZones$ Battlefield | Execute$ TrigToken | TriggerDescription$ Whenever you cast a black spell, create a 1/1 black Shadowspawn creature token.
+SVar:TrigToken:DB$ Token | TokenScript$ b_1_1_shadowspawn | TokenOwner$ You
+A:AB$ Token | Cost$ 1 B | TokenScript$ b_1_1_shadowspawn | TokenOwner$ You | SpellDescription$ Create a 1/1 black Shadowspawn creature token.
+DeckHas:Ability$Token
+Oracle:Whenever you cast a black spell, create a 1/1 black Shadowspawn creature token.\n{1}{B}: Create a 1/1 black Shadowspawn creature token.

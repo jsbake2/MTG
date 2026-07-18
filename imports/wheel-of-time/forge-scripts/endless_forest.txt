@@ -1,0 +1,11 @@
+Name:Endless Forest
+ManaCost:3 G G
+Types:Enchantment
+T:Mode$ SpellCast | ValidCard$ Card.Green | ValidActivatingPlayer$ You | TriggerZones$ Battlefield | Execute$ TrigWolf | TriggerDescription$ Whenever you cast a green spell, create a 1/1 green Wolf creature token.
+SVar:TrigWolf:DB$ Token | TokenScript$ g_1_1_wolf | TokenOwner$ You
+T:Mode$ ChangesZone | Origin$ Any | Destination$ Battlefield | ValidCard$ Land | TriggerZones$ Battlefield | Execute$ TrigCounter | TriggerDescription$ Whenever a land enters, put a +1/+1 counter on each creature.
+SVar:TrigCounter:DB$ PutCounterAll | ValidCards$ Creature | CounterType$ P1P1 | CounterNum$ 1
+T:Mode$ TapsForMana | ValidCard$ Land.YouCtrl | Activator$ You | Execute$ TrigMana | TriggerZones$ Battlefield | Static$ True | TriggerDescription$ Whenever you tap a land you control for mana, add an additional {G}.
+SVar:TrigMana:DB$ Mana | Produced$ G | Amount$ 1
+DeckHas:Ability$Token|Counters
+Oracle:Whenever you cast a green spell, create a 1/1 green Wolf creature token.\nWhenever a land enters, put a +1/+1 counter on each creature.\nLands you control tap for an additional {G}.

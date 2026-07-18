@@ -1,0 +1,7 @@
+Name:Portal-Stone Watcher
+ManaCost:3
+Types:Artifact Creature Construct
+PT:2/3
+T:Mode$ ChangesZone | Origin$ Any | Destination$ Battlefield | ValidCard$ Card.Self | Execute$ TrigScry | TriggerDescription$ When CARDNAME enters, scry 2.
+SVar:TrigScry:DB$ Scry | ScryNum$ 2
+Oracle:When Portal-Stone Watcher enters, scry 2.

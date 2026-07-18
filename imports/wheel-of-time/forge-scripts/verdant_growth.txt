@@ -1,0 +1,5 @@
+Name:Verdant Growth
+ManaCost:2 G
+Types:Sorcery
+A:SP$ ChangeZone | Origin$ Library | Destination$ Battlefield | ChangeType$ Land.Basic | ChangeTypeDesc$ basic land | ChangeNum$ 1 | SpellDescription$ Search your library for a basic land and put it onto the battlefield. Shuffle.
+Oracle:Search your library for a basic land and put it onto the battlefield. Shuffle.

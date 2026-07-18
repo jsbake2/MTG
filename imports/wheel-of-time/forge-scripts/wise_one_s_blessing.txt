@@ -1,0 +1,7 @@
+Name:Wise One's Blessing
+ManaCost:W G
+Types:Instant
+A:SP$ Pump | ValidTgts$ Creature | TgtPrompt$ Select target creature | NumAtt$ +2 | NumDef$ +2 | KW$ Lifelink | SubAbility$ DBPump | SpellDescription$ Target creature gets +2/+2 and gains lifelink until end of turn. If it's a Wise One, it gets +3/+3 instead.
+SVar:DBPump:DB$ Pump | Defined$ Targeted | NumAtt$ +1 | NumDef$ +1 | ConditionDefined$ Targeted | ConditionPresent$ Creature.WiseOne
+DeckHas:Ability$LifeGain
+Oracle:Target creature gets +2/+2 and gains lifelink until end of turn. If a creature is a Wise One, it gets +3/+3 instead.

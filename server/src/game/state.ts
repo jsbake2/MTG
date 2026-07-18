@@ -1,6 +1,6 @@
 // Helpers to build and reason about a TableState. Pure/card-agnostic — the
 // framework rules engine (engine.ts) uses these.
-import { randomUUID } from "node:crypto";
+import { randomInt, randomUUID } from "node:crypto";
 import {
   emptyManaPool,
   TURN_STEPS,
@@ -57,12 +57,13 @@ export function newObject(partial: Partial<GameObject> & Pick<GameObject, "name"
   };
 }
 
-// Seeded shuffle would be nicer for reproducibility, but a plain shuffle is fine
-// for a family game; each player's library is private anyway.
-function shuffle<T>(arr: T[]): T[] {
+// Cryptographically-random Fisher–Yates. Math.random's PRNG state is recoverable
+// from observed outputs (dice rolls, etc.), which would let a player predict
+// future shuffles/draws — so tournament integrity needs a CSPRNG.
+export function shuffle<T>(arr: T[]): T[] {
   const a = [...arr];
   for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
+    const j = randomInt(i + 1); // uniform in [0, i]
     [a[i], a[j]] = [a[j]!, a[i]!];
   }
   return a;
@@ -95,6 +96,7 @@ export function buildInitialState(opts: {
       commanderDamage,
       manaPool: emptyManaPool(),
       landsPlayedThisTurn: 0,
+      mulligansTaken: 0,
       hasLost: false,
       hasConceded: false,
       connected: true,

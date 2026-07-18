@@ -1,0 +1,9 @@
+Name:Blue Ajah Insight
+ManaCost:1 U U
+Types:Enchantment
+T:Mode$ CounterAddedOnce | ValidPlayer$ You | CounterType$ WEAVE | TriggerZones$ Battlefield | ActivationLimit$ 1 | Execute$ TrigDraw | TriggerDescription$ Whenever you weave for the first time each turn, draw a card.
+SVar:TrigDraw:DB$ Draw | Defined$ You | NumCards$ 1
+T:Mode$ CounterAddedOnce | ValidPlayer$ You | CounterType$ WEAVE | TriggerZones$ Battlefield | ConditionCheckSVar$ X | ConditionSVarCompare$ GE5 | Execute$ TrigGainLife | TriggerDescription$ Pattern 5 — Whenever you weave, you gain 1 life.
+SVar:TrigGainLife:DB$ GainLife | Defined$ You | LifeAmount$ 1
+SVar:X:Count$YourCountersWEAVE
+Oracle:Whenever you weave for the first time each turn, draw a card. Pattern 5 — Whenever you weave, you gain 1 life.

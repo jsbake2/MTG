@@ -1,0 +1,10 @@
+Name:Wolfkin Warrior
+ManaCost:1 G
+Types:Creature Aiel Warrior
+PT:2/2
+T:Mode$ ChangesZone | Origin$ Any | Destination$ Battlefield | ValidCard$ Wolf.Other | TriggerZones$ Battlefield | Execute$ TrigPump | TriggerDescription$ Whenever another Wolf enters, CARDNAME gets +1/+0 until end of turn.
+SVar:TrigPump:DB$ Pump | Defined$ Self | NumAtt$ +1
+A:AB$ Token | Cost$ G | TokenScript$ g_1_1_wolf | TokenOwner$ You | SpellDescription$ Create a 1/1 green Wolf creature token.
+DeckHints:Type$Wolf
+DeckHas:Ability$Token
+Oracle:Whenever another Wolf enters, Wolfkin Warrior gets +1/+0 until end of turn.\n{G}: Create a 1/1 green Wolf creature token.

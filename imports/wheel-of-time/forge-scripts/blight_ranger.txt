@@ -1,0 +1,8 @@
+Name:Blight Ranger
+ManaCost:2 G
+Types:Creature Human Ranger
+PT:3/3
+K:Reach
+S:Mode$ Continuous | Affected$ Card.Self | AddPower$ 1 | AddToughness$ 1 | CheckSVar$ Anath | SVarCompare$ GE1 | Description$ Anathema — CARDNAME gets +1/+1 as long as an opponent controls a black creature.
+SVar:Anath:Count$Valid Creature.Black+OppCtrl
+Oracle:Reach\nAnathema — Blight Ranger gets +1/+1 as long as an opponent controls a black creature.

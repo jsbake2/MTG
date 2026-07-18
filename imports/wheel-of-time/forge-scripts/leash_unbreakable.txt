@@ -1,0 +1,19 @@
+Name:Leash Unbreakable
+ManaCost:2 U B
+Types:Enchantment
+# "Whenever you leash a creature" = CounterAdded LEASH trigger (established WoT convention;
+# see seanchan_damane_trainer.txt, forsaken_scheme.txt, etc.).
+T:Mode$ CounterAdded | CounterType$ LEASH | ValidCard$ Creature | TriggerZones$ Battlefield | Execute$ TrigLeash | TriggerDescription$ Whenever you leash a creature, create a 1/1 blue Damane creature token.
+SVar:TrigLeash:DB$ Token | TokenAmount$ 1 | TokenScript$ u_1_1_damane | TokenOwner$ You
+# "The first leash cost you pay each turn costs {2} less."
+# Leash costs are UnlessCost$ Y payments inside a DelayedTrigger chain (see collar_training.txt /
+# the_bore_opens.txt). Forge's S:Mode$ ReduceCost intercepts spells and activated abilities on
+# the stack, but NOT the UnlessCost option inside a triggered DB$ chain, so exact engine
+# support is uncertain. Best approximation: a static ReduceCost targeting "Ability" type for
+# the first activation each turn. This will fire for conventional activated-ability leash costs
+# if any leash card is modelled that way; it silently does nothing for UnlessCost chains.
+# Confidence: low for this line — see notes.
+S:Mode$ ReduceCost | EffectZone$ Battlefield | ValidCard$ Card | Type$ Ability | Activator$ You | Amount$ 2 | MinMana$ 1 | OnlyFirstAbility$ True | Description$ The first leash cost you pay each turn costs {2} less.
+DeckHas:Ability$Token
+AI:RemoveDeck:All
+Oracle:The first leash cost you pay each turn costs {2} less.\nWhenever you leash a creature, create a 1/1 blue Damane creature token.

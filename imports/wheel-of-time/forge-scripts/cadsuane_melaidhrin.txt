@@ -1,0 +1,9 @@
+Name:Cadsuane Melaidhrin
+ManaCost:2 G W
+Types:Legendary Creature Human Aes Sedai
+PT:3/4
+K:Ward:2
+S:Mode$ Continuous | Affected$ Creature.Channeler+YouCtrl+Other,Creature.AesSedai+YouCtrl+Other,Creature.Ashaman+YouCtrl+Other,Creature.WiseOne+YouCtrl+Other,Creature.Windfinder+YouCtrl+Other,Creature.Damane+YouCtrl+Other,Creature.Dreadlord+YouCtrl+Other,Creature.Forsaken+YouCtrl+Other | AddKeyword$ Ward:1 | Description$ Other Channelers you control have ward {1}.
+T:Mode$ ChangesZone | Origin$ Any | Destination$ Battlefield | ValidCard$ Card.Self | Execute$ TrigTap | TriggerDescription$ When CARDNAME enters, tap up to two target creatures.
+SVar:TrigTap:DB$ Tap | ValidTgts$ Creature | TargetMin$ 0 | TargetMax$ 2 | TgtPrompt$ Select up to two target creatures
+Oracle:Ward {2}\nOther Channelers you control have ward {1}.\nWhen Cadsuane Melaidhrin enters, tap up to two target creatures.

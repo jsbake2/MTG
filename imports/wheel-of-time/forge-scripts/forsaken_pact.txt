@@ -1,0 +1,10 @@
+Name:Forsaken Pact
+ManaCost:B R
+Types:Enchantment
+T:Mode$ CounterAdded | CounterType$ LEASH | ValidCard$ Creature | TriggerZones$ Battlefield | Execute$ TrigLeashToken | TriggerDescription$ Whenever you leash a creature, create a 2/2 red Forsaken creature token.
+SVar:TrigLeashToken:DB$ Token | TokenAmount$ 1 | TokenScript$ r_2_2_forsaken | TokenOwner$ You
+T:Mode$ SpellCast | ValidCard$ Card.Black,Card.Red | ValidActivatingPlayer$ You | TriggerZones$ Battlefield | Execute$ TrigDrain | TriggerDescription$ Whenever you cast a red or black spell, target opponent loses 1 life.
+SVar:TrigDrain:DB$ LoseLife | ValidTgts$ Opponent | TgtPrompt$ Select target opponent | LifeAmount$ 1
+DeckHas:Ability$Token
+DeckNeeds:Color$Black|Color$Red
+Oracle:Whenever you leash a creature, create a 2/2 red Forsaken creature token.\nWhenever you cast a red or black spell, target opponent loses 1 life.

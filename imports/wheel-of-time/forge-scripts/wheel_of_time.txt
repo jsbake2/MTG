@@ -1,0 +1,11 @@
+Name:Wheel of Time
+ManaCost:5
+Types:Legendary Artifact
+T:Mode$ Phase | Phase$ Upkeep | TriggerZones$ Battlefield | ValidPlayer$ You | Execute$ TrigWeave | TriggerDescription$ At the beginning of your upkeep, weave, then exile the top card of your library. You may play it this turn.
+SVar:TrigWeave:DB$ PutCounter | Defined$ You | CounterType$ WEAVE | CounterNum$ 1 | SubAbility$ TrigExile
+SVar:TrigExile:DB$ Dig | Defined$ You | DigNum$ 1 | ChangeNum$ All | DestinationZone$ Exile | RememberChanged$ True | SubAbility$ DBEffect
+SVar:DBEffect:DB$ Effect | RememberObjects$ RememberedCard | StaticAbilities$ Play | SubAbility$ DBCleanup | ExileOnMoved$ Exile
+SVar:Play:Mode$ Continuous | MayPlay$ True | Affected$ Card.IsRemembered | AffectedZone$ Exile | Description$ You may play the exiled card this turn.
+SVar:DBCleanup:DB$ Cleanup | ClearRemembered$ True
+A:AB$ Mana | Cost$ T | Produced$ Any | Amount$ 1 | SpellDescription$ Add one mana of any color.
+Oracle:At the beginning of your upkeep, weave, then exile the top card of your library. You may play it this turn. (Weave — put a WEAVE counter on you.)\n{T}: Add one mana of any color.

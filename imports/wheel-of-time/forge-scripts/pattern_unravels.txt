@@ -1,0 +1,7 @@
+Name:Pattern Unravels
+ManaCost:2 W W
+Types:Sorcery
+A:SP$ Token | TokenAmount$ 3 | TokenScript$ w_1_1_soldier | TokenOwner$ You | SubAbility$ DBPumpAll | SpellDescription$ Create three 1/1 white Soldier creature tokens. All creatures gain lifelink until end of turn.
+SVar:DBPumpAll:DB$ PumpAll | ValidCards$ Creature | KW$ Lifelink
+DeckHas:Ability$Token
+Oracle:Create three 1/1 white Soldier creature tokens. All creatures gain lifelink until end of turn.

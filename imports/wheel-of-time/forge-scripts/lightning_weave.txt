@@ -1,0 +1,6 @@
+Name:Lightning Weave
+ManaCost:2 R
+Types:Instant
+A:SP$ DealDamage | ValidTgts$ Any | NumDmg$ 2 | SubAbility$ Weave | SpellDescription$ CARDNAME deals 2 damage to any target. Weave.
+SVar:Weave:DB$ PutCounter | Defined$ You | CounterType$ WEAVE | CounterNum$ 1
+Oracle:Lightning Weave deals 2 damage to any target. Weave.

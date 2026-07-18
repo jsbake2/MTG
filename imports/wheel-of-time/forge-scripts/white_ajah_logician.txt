@@ -1,0 +1,7 @@
+Name:White Ajah Logician
+ManaCost:1 W
+Types:Creature Human Aes Sedai
+PT:1/2
+T:Mode$ CounterAddedOnce | ValidPlayer$ You | CounterType$ WEAVE | TriggerZones$ Battlefield | ActivationLimit$ 1 | Execute$ TrigPutCounter | TriggerDescription$ Whenever you weave for the first time each turn, put a +1/+1 counter on CARDNAME.
+SVar:TrigPutCounter:DB$ PutCounter | Defined$ Self | CounterType$ P1P1 | CounterNum$ 1
+Oracle:Whenever you weave for the first time each turn, put a +1/+1 counter on White Ajah Logician.

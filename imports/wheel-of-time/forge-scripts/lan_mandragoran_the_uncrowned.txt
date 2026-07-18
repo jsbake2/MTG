@@ -1,0 +1,11 @@
+Name:Lan Mandragoran, the Uncrowned
+ManaCost:2 G W
+Types:Legendary Creature Human Warder Warrior
+PT:4/4
+K:First Strike
+K:Vigilance
+S:Mode$ Continuous | Affected$ Card.Self | AddPower$ 1 | AddToughness$ 1 | AddKeyword$ Hexproof | IsPresent$ Creature.AesSedai+YouCtrl | Description$ As long as you control an Aes Sedai, CARDNAME has hexproof and gets +1/+1.
+T:Mode$ Attacks | ValidCard$ Card.Self | Alone$ True | TriggerZones$ Battlefield | Execute$ TrigPump | TriggerDescription$ Whenever CARDNAME attacks alone, he gains double strike until end of turn.
+SVar:TrigPump:DB$ Pump | Defined$ TriggeredAttackerLKICopy | KW$ Double Strike
+SVar:HasAttackEffect:TRUE
+Oracle:First strike, vigilance.\nAs long as you control an Aes Sedai, Lan has hexproof and gets +1/+1.\nWhenever Lan Mandragoran, the Uncrowned attacks alone, he gains double strike until end of turn.

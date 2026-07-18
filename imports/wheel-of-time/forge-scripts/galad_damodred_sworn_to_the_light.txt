@@ -1,0 +1,27 @@
+Name:Galad Damodred, Sworn to the Light
+ManaCost:1 W W
+Types:Legendary Creature Human Whitecloak Knight
+PT:3/3
+K:First Strike
+S:Mode$ CantBlockBy | ValidAttacker$ Creature.Self | ValidBlocker$ Creature.Channeler,Creature.AesSedai,Creature.Ashaman,Creature.WiseOne,Creature.Windfinder,Creature.Damane,Creature.Dreadlord,Creature.Forsaken | Description$ CARDNAME can't be blocked by Channelers.
+A:AB$ Fight | Cost$ 1 W | Defined$ Self | ValidTgts$ Creature.OppCtrl | TgtPrompt$ Select target creature an opponent controls | SorcerySpeed$ True | SubAbility$ DBDelayedTrigger | StackDescription$ CARDNAME fights {c:Targeted}. | SpellDescription$ Trial Beneath the Light — CARDNAME fights target creature an opponent controls. Activate only as a sorcery.
+SVar:DBDelayedTrigger:DB$ DelayedTrigger | Mode$ ChangesZone | RememberObjects$ Targeted | ValidCard$ Card.IsTriggerRemembered | Origin$ Battlefield | Destination$ Graveyard | ThisTurn$ True | Execute$ TrigTransform | SpellDescription$ When that creature dies this turn, transform CARDNAME.
+SVar:TrigTransform:DB$ SetState | Defined$ Self | Mode$ Transform
+AlternateMode:DoubleFaced
+Oracle:First strike\nGalad Damodred can't be blocked by Channelers.\nTrial Beneath the Light — {1}{W}: Galad Damodred fights target creature an opponent controls. Activate only as a sorcery. Whenever a creature dealt damage by Galad this turn dies, transform him.
+
+ALTERNATE
+
+Name:Galad, Lord Captain Commander
+ManaCost:no cost
+Colors:white,black
+Types:Legendary Creature Human Whitecloak Noble
+PT:4/4
+K:First Strike
+K:Lifelink
+S:Mode$ Continuous | Affected$ Creature.Whitecloak+Other+YouCtrl | AddPower$ 1 | AddToughness$ 1 | Description$ Other Whitecloaks you control get +1/+1.
+T:Mode$ Attacks | ValidCard$ Card.Self | TriggerZones$ Battlefield | Execute$ TrigDrain | TriggerDescription$ Whenever CARDNAME attacks, each opponent loses 1 life and you gain 1 life.
+SVar:TrigDrain:DB$ LoseLife | Defined$ Player.Opponent | LifeAmount$ 1 | SubAbility$ DBGainLife
+SVar:DBGainLife:DB$ GainLife | Defined$ You | LifeAmount$ 1
+SVar:HasAttackEffect:TRUE
+Oracle:First strike, lifelink\nOther Whitecloaks you control get +1/+1.\nWhenever Galad attacks, each opponent loses 1 life and you gain 1 life.

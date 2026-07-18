@@ -1,0 +1,6 @@
+Name:Power Conduit
+ManaCost:3
+Types:Artifact
+A:AB$ Mana | Cost$ T | Produced$ C | Amount$ 2 | RestrictValid$ Spell.Channeler,Spell.AesSedai,Spell.Ashaman,Spell.WiseOne,Spell.Windfinder,Spell.Damane,Spell.Dreadlord,Spell.Forsaken,Activated.Channeler,Activated.AesSedai,Activated.Ashaman,Activated.WiseOne,Activated.Windfinder,Activated.Damane,Activated.Dreadlord,Activated.Forsaken | SpellDescription$ Add {C}{C}. Spend this mana only to cast Channeler spells or activate abilities of Channelers.
+DeckHas:Ability$Mana.Colorless
+Oracle:{T}: Add {C}{C}. Spend this mana only to cast Channeler spells or activate abilities of Channelers.

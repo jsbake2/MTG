@@ -1,0 +1,11 @@
+Name:Perrin Aybara, Wolfbrother
+ManaCost:1 W G
+Types:Legendary Creature Human Warrior
+PT:3/2
+T:Mode$ ChangesZone | Origin$ Any | Destination$ Battlefield | ValidCard$ Creature.Other+YouCtrl | TriggerZones$ Battlefield | Execute$ TrigPutCounter | TriggerDescription$ Whenever another creature you control enters, put a +1/+1 counter on CARDNAME.
+SVar:TrigPutCounter:DB$ PutCounter | Defined$ Self | CounterType$ P1P1 | CounterNum$ 1
+A:AB$ Token | Cost$ G W | TokenScript$ g_1_1_wolf_haste | TokenOwner$ You | SpellDescription$ Create a 1/1 green Wolf creature token with haste.
+S:Mode$ Continuous | Affected$ Creature.Other+YouCtrl | AffectedZone$ Battlefield | AddType$ Wolf | Description$ Other creatures you control are Wolves in addition to their other types.
+DeckHints:Type$Wolf
+DeckHas:Ability$Token|Counters
+Oracle:Whenever another creature you control enters, put a +1/+1 counter on Perrin Aybara, Wolfbrother.\n{G}{W}: Create a 1/1 green Wolf creature token with haste.\nOther creatures you control are Wolves in addition to their other types.

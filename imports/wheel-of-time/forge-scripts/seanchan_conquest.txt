@@ -1,0 +1,7 @@
+Name:Seanchan Conquest
+ManaCost:2 W
+Types:Sorcery
+A:SP$ Token | TokenAmount$ 1 | TokenScript$ w_2_2_soldier | TokenOwner$ You | SubAbility$ DBGainLife | SpellDescription$ Create a 2/2 white Soldier creature token. You gain 2 life.
+SVar:DBGainLife:DB$ GainLife | Defined$ You | LifeAmount$ 2
+DeckHas:Ability$Token
+Oracle:Create a 2/2 white Soldier creature token. You gain 2 life.

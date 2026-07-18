@@ -1,0 +1,28 @@
+Name:The Bore Opens
+ManaCost:2 B B
+Types:Enchantment Saga
+K:Chapter:3:DBChapter1,DBChapter2,DBChapter3
+# Chapter I: each opponent discards a card and loses 2 life.
+# Pattern copied from Angrath, the Flame-Chained +1 (Defined$ Player.Opponent discard + LoseLife chain).
+SVar:DBChapter1:DB$ Discard | Defined$ Player.Opponent | Mode$ TgtChoose | NumCards$ 1 | SubAbility$ DBLoseLife | SpellDescription$ Each opponent discards a card and loses 2 life.
+SVar:DBLoseLife:DB$ LoseLife | LifeAmount$ 2 | Defined$ Player.Opponent
+# Chapter II: Leash target creature an opponent controls.
+# Prototype pattern from suldam_handler.txt (confidence: low — same caveats apply).
+# GainControl is permanent. One LEASH counter is placed on the stolen creature.
+# A recurring upkeep DelayedTrigger adds another LEASH counter, then offers
+#   Count$CardCounters.LEASH/Twice mana payment (linear 2,4,6,… not true doubling
+#   2,4,8,… — Forge DSL has no native exponentiation) or the owner regains control.
+# "Can't be leashed again until your next turn" is omitted (no native hook).
+SVar:DBChapter2:DB$ GainControl | ValidTgts$ Creature.OppCtrl | TgtPrompt$ Select target creature an opponent controls | RememberControlled$ True | SubAbility$ DBLeashCounter | SpellDescription$ Leash target creature an opponent controls. (You gain control of it. At the beginning of your upkeep, pay its leash cost — {2}, doubling each time you pay — or it returns to its owner and can't be leashed again until your next turn.)
+SVar:DBLeashCounter:DB$ PutCounter | Defined$ Remembered | CounterType$ LEASH | CounterNum$ 1 | SubAbility$ DBDelay
+SVar:DBDelay:DB$ DelayedTrigger | Mode$ Phase | Phase$ Upkeep | ValidPlayer$ You | Execute$ TrigLeash | RememberObjects$ Remembered | TriggerDescription$ At the beginning of your upkeep, pay this creature's leash cost or its owner regains control.
+SVar:TrigLeash:DB$ PutCounter | Defined$ DelayTriggerRemembered | CounterType$ LEASH | CounterNum$ 1 | SubAbility$ DBPayOrReturn
+SVar:DBPayOrReturn:DB$ GainControl | Defined$ DelayTriggerRemembered | NewController$ Owner | UnlessCost$ Y | UnlessPayer$ You | UnlessResolveSubs$ WhenNotPaid | SubAbility$ DBRearm
+SVar:DBRearm:DB$ DelayedTrigger | Mode$ Phase | Phase$ Upkeep | ValidPlayer$ You | Execute$ TrigLeash | RememberObjects$ DelayTriggerRemembered | TriggerDescription$ At the beginning of your upkeep, pay this creature's leash cost or its owner regains control.
+SVar:Y:Count$CardCounters.LEASH/Twice
+# Chapter III: create three 2/2 black Trolloc creature tokens with menace.
+# Pattern from Oath of the Grey Host / Revival of the Ancestors (TokenAmount$ 3).
+SVar:DBChapter3:DB$ Token | TokenAmount$ 3 | TokenScript$ b_2_2_trolloc_menace | TokenOwner$ You | SpellDescription$ Create three 2/2 black Trolloc creature tokens with menace.
+DeckHas:Ability$Token|Discard
+AI:RemoveDeck:All
+Oracle:(As this Saga enters and after your draw step, add a lore counter. Sacrifice after III.)\nI — Each opponent discards a card and loses 2 life.\nII — Leash target creature an opponent controls. (You gain control of it. At the beginning of your upkeep, pay its leash cost — {2}, doubling each time you pay — or it returns to its owner and can't be leashed again until your next turn.)\nIII — Create three 2/2 black Trolloc creature tokens with menace.

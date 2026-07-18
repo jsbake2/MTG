@@ -1,0 +1,6 @@
+Name:Mystic's Calling
+ManaCost:1 U
+Types:Enchantment
+T:Mode$ CounterAdded | CounterType$ WEAVE | ValidPlayer$ You | TriggerZones$ Battlefield | OptionalDecider$ You | Execute$ TrigLoot | TriggerDescription$ Whenever you weave, you may draw a card. If you do, discard a card.
+SVar:TrigLoot:AB$ Discard | Defined$ You | Mode$ TgtChoose | Cost$ Draw<1/You>
+Oracle:Whenever you weave, you may draw a card. If you do, discard a card.

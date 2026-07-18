@@ -1,0 +1,7 @@
+Name:Asha'man Soldier
+ManaCost:2 R
+Types:Creature Human Ashaman Channeler
+PT:2/2
+T:Mode$ CounterAdded | CounterType$ WEAVE | ValidPlayer$ You | TriggerZones$ Battlefield | Execute$ TrigPump | TriggerDescription$ Whenever you weave, CARDNAME gets +1/+0 until end of turn.
+SVar:TrigPump:DB$ Pump | Defined$ Self | NumAtt$ +1
+Oracle:Whenever you weave, Asha'man Soldier gets +1/+0 until end of turn.

@@ -1,0 +1,9 @@
+Name:True Power's Corruption
+ManaCost:2 B B
+Types:Sorcery
+A:SP$ Destroy | ValidTgts$ Creature | TgtPrompt$ Select target creature | SubAbility$ DBGainLife | SpellDescription$ Destroy target creature. You gain life equal to that creature's toughness. Create a 1/1 black Shadowspawn creature token for each life gained this way.
+SVar:DBGainLife:DB$ GainLife | Defined$ You | LifeAmount$ X | SubAbility$ DBToken
+SVar:DBToken:DB$ Token | TokenAmount$ X | TokenScript$ b_1_1_shadowspawn | TokenOwner$ You
+SVar:X:Targeted$CardToughness
+DeckHas:Ability$LifeGain|Token
+Oracle:Destroy target creature. You gain life equal to that creature's toughness. Create a 1/1 black Shadowspawn creature token for each life gained this way.

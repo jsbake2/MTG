@@ -1,0 +1,7 @@
+Name:Myrddraal Bladesman
+ManaCost:1 B B
+Types:Creature Fade
+PT:3/2
+K:First Strike
+K:Menace
+Oracle:First strike, menace

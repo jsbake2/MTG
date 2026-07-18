@@ -1,0 +1,7 @@
+Name:Tairen Harbor Pilot
+ManaCost:1 U
+Types:Creature Human Sailor
+PT:1/2
+S:Mode$ CantBlockBy | ValidAttacker$ Creature.Self | CheckSVar$ X | SVarCompare$ GE3 | Description$ Pattern 3 — CARDNAME can't be blocked.
+SVar:X:Count$YourCountersWEAVE
+Oracle:Pattern 3 — Tairen Harbor Pilot can't be blocked.

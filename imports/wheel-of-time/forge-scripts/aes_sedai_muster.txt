@@ -1,0 +1,8 @@
+Name:Aes Sedai Muster
+ManaCost:2 W W
+Types:Sorcery
+A:SP$ Token | TokenAmount$ X | TokenScript$ w_1_1_aes_sedai | TokenOwner$ You | SubAbility$ Weave | SpellDescription$ Create X 1/1 white Aes Sedai creature tokens, where X is the number of Aes Sedai you control. Weave.
+SVar:Weave:DB$ PutCounter | Defined$ You | CounterType$ WEAVE | CounterNum$ 1
+SVar:X:Count$Valid Creature.AesSedai+YouCtrl
+DeckHas:Ability$Token
+Oracle:Create X 1/1 white Aes Sedai creature tokens, where X is the number of Aes Sedai you control. Weave.

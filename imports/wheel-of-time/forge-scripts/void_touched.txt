@@ -1,0 +1,7 @@
+Name:Void Touched
+ManaCost:1 B
+Types:Creature Shadowspawn
+PT:2/2
+S:Mode$ Continuous | Affected$ Creature.Black | AddPower$ 1 | Description$ All black creatures get +1/+0.
+A:AB$ Pump | Cost$ B | Defined$ Self | NumAtt$ +1 | SpellDescription$ CARDNAME gets +1/+0 until end of turn.
+Oracle:All black creatures get +1/+0.\n{B}: Void Touched gets +1/+0 until end of turn.

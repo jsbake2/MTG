@@ -1,0 +1,7 @@
+Name:Nature's Resilience
+ManaCost:1 G
+Types:Instant
+A:SP$ Pump | ValidTgts$ Creature | NumAtt$ +0 | NumDef$ +3 | ConditionCheckSVar$ X | ConditionSVarCompare$ EQ0 | SubAbility$ DBLifelink | SpellDescription$ Target creature gets +0/+3 until end of turn. If you control a land, it gains lifelink instead.
+SVar:DBLifelink:DB$ Pump | Defined$ Targeted | KW$ Lifelink | ConditionCheckSVar$ X | ConditionSVarCompare$ GE1
+SVar:X:Count$Valid Land.YouCtrl
+Oracle:Target creature gets +0/+3 until end of turn. If you control a land, it gains lifelink instead.

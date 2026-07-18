@@ -1,0 +1,8 @@
+Name:Healing Ward
+ManaCost:1 W
+Types:Enchantment Aura
+K:Enchant:Creature
+SVar:AttachAILogic:Pump
+S:Mode$ Continuous | Affected$ Card.EnchantedBy | AddAbility$ HealingWardPump | Description$ Enchanted creature has "{W}: This creature gets +0/+1 until end of turn."
+SVar:HealingWardPump:AB$ Pump | Cost$ W | Defined$ Self | NumDef$ +1 | SpellDescription$ This creature gets +0/+1 until end of turn.
+Oracle:Enchant creature\nEnchanted creature gains "{W}: This creature gets +0/+1 until end of turn."

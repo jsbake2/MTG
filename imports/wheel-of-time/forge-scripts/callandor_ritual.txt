@@ -1,0 +1,6 @@
+Name:Callandor Ritual
+ManaCost:2 W U
+Types:Sorcery
+A:SP$ ChangeZone | Origin$ Library | Destination$ Hand | ChangeType$ EACH Creature.AesSedai & Creature.Ashaman | ChangeTypeDesc$ Aes Sedai card and an Asha'man card | Reveal$ True | SubAbility$ Weave | SpellDescription$ Search your library for an Aes Sedai card and an Asha'man card, reveal them, put them into your hand, then shuffle. Weave.
+SVar:Weave:DB$ PutCounter | Defined$ You | CounterType$ WEAVE | CounterNum$ 1
+Oracle:Search your library for an Aes Sedai card and an Asha'man card, reveal them, put them into your hand, then shuffle. Weave.

@@ -1,0 +1,7 @@
+Name:Child of the Light
+ManaCost:1 W
+Types:Creature Human Whitecloak Soldier
+PT:2/2
+S:Mode$ Continuous | Affected$ Card.Self | AddPower$ 1 | CheckSVar$ Anath | SVarCompare$ GE1 | Description$ Anathema — CARDNAME gets +1/+0 as long as an opponent controls a Channeler.
+SVar:Anath:Count$Valid Creature.Channeler+OppCtrl,Creature.AesSedai+OppCtrl,Creature.Ashaman+OppCtrl,Creature.WiseOne+OppCtrl,Creature.Windfinder+OppCtrl,Creature.Damane+OppCtrl,Creature.Dreadlord+OppCtrl,Creature.Forsaken+OppCtrl
+Oracle:Anathema — Child of the Light gets +1/+0 as long as an opponent controls a Channeler.

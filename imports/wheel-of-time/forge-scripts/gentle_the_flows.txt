@@ -1,0 +1,8 @@
+Name:Gentle the Flows
+ManaCost:2 W
+Types:Instant
+A:SP$ Tap | ValidTgts$ Creature | TgtPrompt$ Select up to two target creatures | TargetMin$ 0 | TargetMax$ 2 | SubAbility$ DBGainLife | SpellDescription$ Tap up to two target creatures. If either is a Channeler, you gain 2 life.
+SVar:DBGainLife:DB$ GainLife | LifeAmount$ 2 | ConditionCheckSVar$ IsChanneler | ConditionSVarCompare$ GE1
+SVar:IsChanneler:Targeted$Valid Creature.Channeler,Creature.AesSedai,Creature.Ashaman,Creature.WiseOne,Creature.Windfinder,Creature.Damane,Creature.Dreadlord,Creature.Forsaken
+DeckHas:Ability$LifeGain
+Oracle:Tap up to two target creatures. If either is a Channeler, you gain 2 life.

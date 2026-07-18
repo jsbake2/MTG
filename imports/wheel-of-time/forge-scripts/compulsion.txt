@@ -1,0 +1,6 @@
+Name:Compulsion
+ManaCost:2 U B
+Types:Sorcery
+A:SP$ GainControl | ValidTgts$ Creature.cmcLE3 | TgtPrompt$ Select target creature with mana value 3 or less | SpellDescription$ Gain control of target creature with mana value 3 or less. (This effect doesn't end.)
+SVar:PlayMain1:ALWAYS
+Oracle:Gain control of target creature with mana value 3 or less. (This effect doesn't end.)

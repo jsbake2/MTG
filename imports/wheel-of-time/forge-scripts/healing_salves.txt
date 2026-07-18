@@ -1,0 +1,8 @@
+Name:Healing Salves
+ManaCost:1
+Types:Artifact
+A:AB$ GainLife | Cost$ 2 T | Defined$ You | LifeAmount$ 3 | ConditionCheckSVar$ X | ConditionSVarCompare$ LT3 | SpellDescription$ You gain 3 life.
+A:AB$ GainLife | Cost$ 1 T | Defined$ You | LifeAmount$ 3 | ConditionCheckSVar$ X | ConditionSVarCompare$ GE3 | SpellDescription$ Pattern 3 — You gain 3 life.
+SVar:X:Count$YourCountersWEAVE
+DeckHas:Ability$LifeGain
+Oracle:{2}, {T}: You gain 3 life. Pattern 3 — This ability costs {1} less to activate.

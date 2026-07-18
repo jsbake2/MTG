@@ -1,0 +1,8 @@
+Name:Fortress Chaplain
+ManaCost:2 W
+Types:Creature Human Whitecloak Cleric
+PT:2/2
+T:Mode$ ChangesZone | Origin$ Any | Destination$ Battlefield | ValidCard$ Card.Self,Creature.Whitecloak+Other+YouCtrl | TriggerZones$ Battlefield | Execute$ TrigGainLife | TriggerDescription$ Whenever CARDNAME or another Whitecloak you control enters, you gain 1 life.
+SVar:TrigGainLife:DB$ GainLife | Defined$ You | LifeAmount$ 1
+DeckHas:Ability$LifeGain
+Oracle:Whenever Fortress Chaplain or another Whitecloak you control enters, you gain 1 life.

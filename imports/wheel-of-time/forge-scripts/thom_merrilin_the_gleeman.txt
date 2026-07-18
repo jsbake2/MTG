@@ -1,0 +1,12 @@
+Name:Thom Merrilin, The Gleeman
+ManaCost:1 U R
+Types:Legendary Creature Human Bard
+PT:2/3
+T:Mode$ ChangesZone | Origin$ Any | Destination$ Battlefield | ValidCard$ Card.Self | Execute$ TrigDraw | TriggerDescription$ When CARDNAME enters, draw a card.
+SVar:TrigDraw:DB$ Draw | Defined$ You | NumCards$ 1
+A:AB$ Draw | Cost$ U R T | NumCards$ 1 | SpellDescription$ Draw a card, then discard a card. | SubAbility$ DBDiscard
+SVar:DBDiscard:DB$ Discard | Defined$ You | Mode$ TgtChoose | NumCards$ 1
+S:Mode$ CantBlockBy | ValidAttacker$ Creature.Self | ValidBlocker$ Creature.withoutFlying | Description$ CARDNAME can't be blocked except by creatures with flying.
+T:Mode$ SpellCast | ValidCard$ Card | ValidActivatingPlayer$ You | TriggerZones$ Battlefield | Execute$ TrigPump | TriggerDescription$ Whenever you cast a spell, CARDNAME gets +1/+0 until end of turn.
+SVar:TrigPump:DB$ Pump | Defined$ Self | NumAtt$ +1
+Oracle:When Thom Merrilin, The Gleeman enters, draw a card.\n{U}{R}, {T}: Draw a card, then discard a card.\nThom Merrilin, The Gleeman can't be blocked except by creatures with flying.\nWhenever you cast a spell, Thom Merrilin, The Gleeman gets +1/+0 until end of turn.

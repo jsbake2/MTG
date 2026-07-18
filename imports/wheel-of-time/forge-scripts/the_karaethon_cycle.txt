@@ -1,0 +1,9 @@
+Name:The Karaethon Cycle
+ManaCost:1 W U
+Types:Enchantment Saga
+K:Chapter:3:DBScry,DBWeave,DBTutor
+SVar:DBScry:DB$ Scry | ScryNum$ 2 | SpellDescription$ Scry 2.
+SVar:DBWeave:DB$ PutCounter | Defined$ You | CounterType$ WEAVE | CounterNum$ 2 | SpellDescription$ Weave twice.
+SVar:DBTutor:DB$ ChangeZone | Origin$ Library | Destination$ Hand | ChangeType$ Creature.Channeler,Creature.AesSedai,Creature.Ashaman,Creature.WiseOne,Creature.Windfinder,Creature.Damane,Creature.Dreadlord,Creature.Forsaken | ChangeTypeDesc$ Channeler | ChangeNum$ 1 | SpellDescription$ Search your library for a Channeler card, reveal it, put it into your hand, then shuffle.
+SVar:PlayMain1:TRUE
+Oracle:(As this Saga enters and after your draw step, add a lore counter. Sacrifice after III.)\nI — Scry 2.\nII — Weave twice.\nIII — Search your library for a Channeler card, reveal it, put it into your hand, then shuffle.

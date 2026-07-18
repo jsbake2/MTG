@@ -1,0 +1,9 @@
+Name:Novice
+ManaCost:W
+Types:Creature Human Aes Sedai
+PT:1/2
+K:Defender
+A:AB$ Pump | Cost$ W | NumAtt$ +1 | NumDef$ +0 | SpellDescription$ CARDNAME gets +1/+0 until end of turn.
+T:Mode$ ChangesZone | Origin$ Battlefield | Destination$ Graveyard | ValidCard$ Card.Self | Execute$ Weave | TriggerDescription$ When CARDNAME dies, weave.
+SVar:Weave:DB$ PutCounter | Defined$ You | CounterType$ WEAVE | CounterNum$ 1
+Oracle:Novice can't attack (Defender).\n{W}: Novice gets +1/+0 until end of turn.\nWhen Novice dies, weave.

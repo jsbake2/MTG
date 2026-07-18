@@ -14,7 +14,7 @@ export function CardImage({
   face?: number;
 }) {
   const [errored, setErrored] = useState(false);
-  const src = id ? `/api/cards/${id}/image?face=${face}` : "/api/cards/card-back";
+  const src = id ? `/api/cards/${id}/image?face=${face}&v=4` : "/api/cards/card-back";
   if (errored) {
     return (
       <div
@@ -65,7 +65,7 @@ export function CardTile({
           className="pointer-events-none fixed z-[60] block"
           style={{ left: Math.min(zoom.x + 20, window.innerWidth - 260), top: Math.min(Math.max(8, zoom.y - 180), window.innerHeight - 380) }}
         >
-          <img src={`/api/cards/${card.id}/image`} alt={card.name} className="w-60 rounded-xl shadow-2xl ring-1 ring-black/50 card-aspect" />
+          <img src={`/api/cards/${card.id}/image?v=4`} alt={card.name} className="w-60 rounded-xl shadow-2xl ring-1 ring-black/50 card-aspect" />
         </span>
       )}
     </button>

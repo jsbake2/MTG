@@ -1,0 +1,8 @@
+Name:Aiel Warrior Token
+ManaCost:no cost
+Colors:red
+Types:Creature Aiel Warrior
+PT:1/1
+K:Haste
+K:Trample
+Oracle:

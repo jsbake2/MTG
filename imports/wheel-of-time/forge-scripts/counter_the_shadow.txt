@@ -1,0 +1,5 @@
+Name:Counter the Shadow
+ManaCost:1 U
+Types:Instant
+A:SP$ Counter | TargetType$ Spell | TgtPrompt$ Select target black spell | ValidTgts$ Card.Black | SpellDescription$ Counter target black spell.
+Oracle:{U}{U}: Counter target black spell.

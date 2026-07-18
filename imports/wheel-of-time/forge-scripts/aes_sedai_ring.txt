@@ -1,0 +1,9 @@
+Name:Aes Sedai Ring
+ManaCost:2
+Types:Artifact
+A:AB$ Mana | Cost$ T | Produced$ Combo W U | SpellDescription$ Add {W} or {U}.
+T:Mode$ CounterAdded | CounterType$ WEAVE | ValidPlayer$ You | TriggerZones$ Battlefield | Execute$ TrigKnowledge | TriggerDescription$ Whenever you weave, put a knowledge counter on CARDNAME.
+SVar:TrigKnowledge:DB$ PutCounter | Defined$ Self | CounterType$ KNOWLEDGE | CounterNum$ 1
+A:AB$ ChangeZone | Cost$ W U T SubCounter<3/KNOWLEDGE> | Origin$ Library | Destination$ Hand | ChangeType$ Creature.Channeler,Creature.AesSedai,Creature.Ashaman,Creature.WiseOne,Creature.Windfinder,Creature.Damane,Creature.Dreadlord,Creature.Forsaken | ChangeTypeDesc$ Channeler | ChangeNum$ 1 | SpellDescription$ Search your library for a Channeler card, reveal it, put it into your hand, then shuffle.
+DeckHas:Ability$Counters
+Oracle:{T}: Add {W} or {U}.\nWhenever you weave, put a knowledge counter on Aes Sedai Ring.\n{W}{U}, {T}, Remove three knowledge counters from it: Search your library for a Channeler card, reveal it, put it into your hand, then shuffle.

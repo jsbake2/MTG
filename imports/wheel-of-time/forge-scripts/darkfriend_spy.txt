@@ -1,0 +1,7 @@
+Name:Darkfriend Spy
+ManaCost:B
+Types:Creature Human Darkfriend
+PT:1/1
+T:Mode$ ChangesZone | Origin$ Any | Destination$ Battlefield | ValidCard$ Card.Self | Execute$ TrigReveal | TriggerDescription$ When CARDNAME enters, target opponent reveals a card from their hand.
+SVar:TrigReveal:DB$ RevealHand | ValidTgts$ Opponent | Look$ True | NumCards$ 1
+Oracle:When Darkfriend Spy enters, target opponent reveals a card from their hand.

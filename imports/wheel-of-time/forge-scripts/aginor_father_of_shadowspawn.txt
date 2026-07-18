@@ -1,0 +1,11 @@
+Name:Aginor, Father of Shadowspawn
+ManaCost:3 R G
+Types:Legendary Creature Forsaken
+PT:4/4
+K:Menace
+K:Trample
+S:Mode$ Continuous | Affected$ Creature.Shadowspawn+Other+YouCtrl,Creature.Trolloc+YouCtrl,Creature.Darkhound+YouCtrl,Creature.Fade+YouCtrl | AddPower$ 1 | AddToughness$ 1 | Description$ Other Shadowspawn, Trollocs, Darkhounds, and Fades you control get +1/+1.
+T:Mode$ Phase | Phase$ End of Turn | ValidPlayer$ You | TriggerZones$ Battlefield | Execute$ TrigToken | TriggerDescription$ At the beginning of your end step, create a 2/2 black Trolloc creature token with menace.
+SVar:TrigToken:DB$ Token | TokenAmount$ 1 | TokenScript$ b_2_2_trolloc_menace | TokenOwner$ You
+DeckHas:Ability$Token & Type$Trolloc|Shadowspawn|Darkhound|Fade
+Oracle:Menace\nTrample\nOther Shadowspawn, Trollocs, Darkhounds, and Fades you control get +1/+1.\nAt the beginning of your end step, create a 2/2 black Trolloc creature token with menace.

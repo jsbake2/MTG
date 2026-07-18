@@ -1,0 +1,7 @@
+Name:Wild Energy
+ManaCost:1 R
+Types:Sorcery
+A:SP$ Token | TokenScript$ r_2_1_elemental_haste | TokenOwner$ You | AtEOT$ Sacrifice | SpellDescription$ Create a 2/1 red Elemental creature token with haste. Sacrifice it at the beginning of the next end step.
+SVar:PlayMain1:TRUE
+DeckHas:Ability$Token
+Oracle:Create a 2/1 red Elemental creature token with haste. Sacrifice it at the beginning of the next end step.

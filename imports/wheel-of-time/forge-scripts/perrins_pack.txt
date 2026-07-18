@@ -1,0 +1,9 @@
+Name:Perrin's Pack
+ManaCost:2 G G
+Types:Sorcery
+A:SP$ Token | TokenAmount$ 2 | TokenScript$ g_1_1_wolf | TokenOwner$ You | SubAbility$ DBEffect | SpellDescription$ Create two 1/1 green Wolf creature tokens. Whenever you cast a green spell this turn, creatures you control get +1/+1.
+SVar:DBEffect:DB$ Effect | Triggers$ GreenSpellTrig | SpellDescription$ Whenever you cast a green spell this turn, creatures you control get +1/+1.
+SVar:GreenSpellTrig:Mode$ SpellCast | ValidCard$ Card.Green | ValidActivatingPlayer$ You | TriggerZones$ Command | Execute$ DBPumpAll | TriggerDescription$ Whenever you cast a green spell this turn, creatures you control get +1/+1.
+SVar:DBPumpAll:DB$ PumpAll | ValidCards$ Creature.YouCtrl | NumAtt$ +1 | NumDef$ +1
+DeckHas:Ability$Token
+Oracle:Create two 1/1 green Wolf creature tokens. Whenever you cast a green spell this turn, creatures you control get +1/+1.

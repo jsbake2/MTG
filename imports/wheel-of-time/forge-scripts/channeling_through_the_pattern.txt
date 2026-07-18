@@ -1,0 +1,9 @@
+Name:Channeling Through the Pattern
+ManaCost:1 W U
+Types:Enchantment
+T:Mode$ ChangesZone | Origin$ Any | Destination$ Battlefield | ValidCard$ Creature.Channeler+YouCtrl,Creature.AesSedai+YouCtrl,Creature.Ashaman+YouCtrl,Creature.WiseOne+YouCtrl,Creature.Windfinder+YouCtrl,Creature.Damane+YouCtrl,Creature.Dreadlord+YouCtrl,Creature.Forsaken+YouCtrl | TriggerZones$ Battlefield | Execute$ TrigDraw | TriggerDescription$ Whenever a Channeler enters under your control, draw a card.
+SVar:TrigDraw:DB$ Draw | Defined$ You | NumCards$ 1
+T:Mode$ CounterAdded | CounterType$ WEAVE | ValidPlayer$ You | TriggerZones$ Battlefield | Execute$ TrigCounterAll | TriggerDescription$ Whenever you weave, put a +1/+1 counter on each Channeler you control.
+SVar:TrigCounterAll:DB$ PutCounterAll | ValidCards$ Creature.Channeler+YouCtrl,Creature.AesSedai+YouCtrl,Creature.Ashaman+YouCtrl,Creature.WiseOne+YouCtrl,Creature.Windfinder+YouCtrl,Creature.Damane+YouCtrl,Creature.Dreadlord+YouCtrl,Creature.Forsaken+YouCtrl | CounterType$ P1P1 | CounterNum$ 1
+DeckHas:Ability$Counters
+Oracle:Whenever a Channeler enters under your control, draw a card.\nWhenever you weave, put a +1/+1 counter on each Channeler you control.

@@ -1,0 +1,6 @@
+Name:Balefire Unleashed
+ManaCost:4 R R
+Types:Sorcery
+A:SP$ ChangeZone | ValidTgts$ Creature,Planeswalker | TgtPrompt$ Select target creature or planeswalker | Origin$ Battlefield | Destination$ Exile | SubAbility$ DBBounce | SpellDescription$ Exile target creature or planeswalker. Return each other permanent that entered the battlefield this turn to its owner's hand. (The thread burns backward.)
+SVar:DBBounce:DB$ ChangeZoneAll | Origin$ Battlefield | Destination$ Hand | ChangeType$ Permanent.ThisTurnEntered
+Oracle:Exile target creature or planeswalker. Return each other permanent that entered the battlefield this turn to its owner's hand. (The thread burns backward.)

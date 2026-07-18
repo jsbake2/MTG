@@ -1,0 +1,9 @@
+Name:Stampeding Trolloc
+ManaCost:2 R
+Types:Creature Trolloc
+PT:3/2
+K:Haste
+T:Mode$ ChangesZone | Origin$ Any | Destination$ Battlefield | ValidCard$ Card.Self | Execute$ TrigPump | TriggerDescription$ When CARDNAME enters, another target creature gains haste until end of turn.
+SVar:TrigPump:DB$ Pump | ValidTgts$ Creature.Other | TgtPrompt$ Select another target creature | KW$ Haste
+SVar:PlayMain1:ALWAYS
+Oracle:Haste\nWhen Stampeding Trolloc enters, another target creature gains haste until end of turn.

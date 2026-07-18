@@ -1,0 +1,8 @@
+Name:Aiel Warrior
+ManaCost:1 G
+Types:Creature Human Aiel Warrior
+PT:1/2
+A:AB$ Mana | Cost$ T | Produced$ G | Amount$ 1 | ConditionCheckSVar$ X | ConditionSVarCompare$ LT3 | SpellDescription$ Add {G}.
+A:AB$ Mana | Cost$ T | Produced$ G | Amount$ 2 | ConditionCheckSVar$ X | ConditionSVarCompare$ GE3 | SpellDescription$ If you've woven three or more times, add {G}{G}.
+SVar:X:Count$YourCountersWEAVE
+Oracle:{T}: Add {G}. If you've woven three or more times, add {G}{G} instead.

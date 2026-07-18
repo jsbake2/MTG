@@ -1,0 +1,8 @@
+Name:Endless Assault
+ManaCost:1 R
+Types:Enchantment
+T:Mode$ SpellCast | ValidCard$ Creature | ValidActivatingPlayer$ You | TriggerZones$ Battlefield | Execute$ TrigPumpAll | TriggerDescription$ Whenever you cast a creature spell, all creatures get +1/+0 until end of turn.
+SVar:TrigPumpAll:DB$ PumpAll | ValidCards$ Creature | NumAtt$ +1
+A:AB$ Token | Cost$ R R | TokenScript$ r_1_1_elemental_haste | TokenOwner$ You | SpellDescription$ Create a 1/1 red Elemental creature token with haste.
+DeckHas:Ability$Token
+Oracle:Whenever you cast a creature spell, all creatures get +1/+0 until end of turn.\n{R}{R}: Create a 1/1 red Elemental creature token with haste.

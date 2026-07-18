@@ -1,0 +1,8 @@
+Name:Jaichim Carridin, Hand of the Shadow
+ManaCost:1 W B
+Types:Legendary Creature Human Whitecloak Cleric
+PT:2/3
+A:AB$ Discard | Cost$ T | Defined$ Opponent | Mode$ TgtChoose | NumCards$ 1 | SubAbility$ DBDraw | SpellDescription$ Each opponent discards a card. If you control a Shadowspawn, Forsaken, or Darkfriend, draw a card.
+SVar:DBDraw:DB$ Draw | Defined$ You | NumCards$ 1 | ConditionPresent$ Shadowspawn.YouCtrl,Forsaken.YouCtrl,Darkfriend.YouCtrl | ConditionCompare$ GE1 | ConditionDescription$ If you control a Shadowspawn, Forsaken, or Darkfriend,
+DeckHints:Type$Shadowspawn|Forsaken|Darkfriend
+Oracle:{T}: Each opponent discards a card. If you control a Shadowspawn, Forsaken, or Darkfriend, draw a card.

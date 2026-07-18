@@ -1,0 +1,8 @@
+Name:Sorilea, Keeper of Traditions
+ManaCost:2 G
+Types:Legendary Creature Aiel WiseOne
+PT:1/4
+S:Mode$ Continuous | Affected$ Creature.WiseOne+Other+YouCtrl | AddPower$ 1 | AddToughness$ 1 | Description$ Other Wise Ones you control get +1/+1.
+A:AB$ Mana | Cost$ T | Produced$ G | Amount$ 2 | RestrictValid$ Spell.Channeler,Spell.AesSedai,Spell.Ashaman,Spell.WiseOne,Spell.Windfinder,Spell.Damane,Spell.Dreadlord,Spell.Forsaken | SpellDescription$ Add {G}{G}. Spend this mana only to cast Channeler spells.
+DeckHints:Type$WiseOne
+Oracle:Other Wise Ones you control get +1/+1.\n{T}: Add {G}{G}. Spend this mana only to cast Channeler spells.

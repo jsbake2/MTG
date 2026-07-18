@@ -1,0 +1,9 @@
+Name:Corruption
+ManaCost:1 B
+Types:Enchantment Aura
+K:Enchant:Creature.YouCtrl:creature you control
+SVar:AttachAILogic:Pump
+S:Mode$ Continuous | Affected$ Creature.EnchantedBy | AddPower$ 2 | AddTrigger$ TrigDamage | AddSVar$ CorruptionDraw | Description$ Enchanted creature gets +2/+0 and has "Whenever this creature deals combat damage, you draw a card."
+SVar:TrigDamage:Mode$ DamageDone | ValidSource$ Card.Self | CombatDamage$ True | ValidTarget$ Player | Execute$ CorruptionDraw | TriggerDescription$ Whenever this creature deals combat damage, you draw a card.
+SVar:CorruptionDraw:DB$ Draw | Defined$ You | NumCards$ 1
+Oracle:Enchant creature you control\nEnchanted creature gets +2/+0 and has "Whenever this creature deals combat damage, you draw a card."

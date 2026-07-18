@@ -1,0 +1,12 @@
+Name:Lanfear, Daughter of the Night
+ManaCost:2 U B
+Types:Legendary Creature Human Forsaken
+PT:4/3
+S:Mode$ CantBlockBy | ValidAttacker$ Creature.Self | Description$ CARDNAME can't be blocked.
+T:Mode$ DamageDone | ValidSource$ Card.Self | ValidTarget$ Player | CombatDamage$ True | Execute$ TrigLoot | TriggerZones$ Battlefield | TriggerDescription$ Whenever CARDNAME deals combat damage to a player, draw a card, then discard a card.
+SVar:TrigLoot:DB$ Draw | Defined$ You | NumCards$ 1 | SubAbility$ DBDiscard
+SVar:DBDiscard:DB$ Discard | Defined$ You | Mode$ TgtChoose | NumCards$ 1
+T:Mode$ CounterAdded | CounterType$ LEASH | ValidCard$ Creature | TriggerZones$ Battlefield | Execute$ TrigLeash | TriggerDescription$ Whenever you leash a creature, CARDNAME gets +1/+0 until end of turn.
+SVar:TrigLeash:DB$ Pump | Defined$ Self | NumAtt$ +1
+SVar:HasCombatEffect:TRUE
+Oracle:Can't be blocked.\nWhenever Lanfear, Daughter of the Night deals combat damage to a player, draw a card, then discard a card.\nWhenever you leash a creature, Lanfear gets +1/+0 until end of turn.

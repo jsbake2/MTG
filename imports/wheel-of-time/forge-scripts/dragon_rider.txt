@@ -1,0 +1,10 @@
+Name:Dragon Rider
+ManaCost:1 R
+Types:Creature Human Dragon Rider
+PT:3/1
+K:Haste
+T:Mode$ Attacks | ValidCard$ Card.Self | Execute$ TrigToken | TriggerZones$ Battlefield | TriggerDescription$ Whenever CARDNAME attacks, create a 2/2 red Dragon creature token with flying that's tapped and attacking.
+SVar:TrigToken:DB$ Token | TokenScript$ r_2_2_dragon_flying | TokenOwner$ You | TokenTapped$ True | TokenAttacking$ True
+SVar:HasAttackEffect:TRUE
+DeckHas:Ability$Token
+Oracle:Haste\nWhenever Dragon Rider attacks, create a 2/2 red Dragon creature token with flying that's tapped and attacking.

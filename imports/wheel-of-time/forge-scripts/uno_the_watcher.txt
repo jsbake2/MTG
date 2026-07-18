@@ -1,0 +1,10 @@
+Name:Uno the Watcher
+ManaCost:2 R
+Types:Legendary Creature Human Soldier
+PT:3/1
+K:Haste
+K:Vigilance
+T:Mode$ Attacks | ValidCard$ Card.Self | OptionalDecider$ You | Execute$ TrigTap | TriggerDescription$ Whenever CARDNAME attacks, you may tap target creature an opponent controls.
+SVar:TrigTap:DB$ Tap | ValidTgts$ Creature.OppCtrl | TgtPrompt$ Select target creature an opponent controls
+A:AB$ Pump | Cost$ R R | Defined$ Self | NumAtt$ +1 | SpellDescription$ CARDNAME gets +1/+0 until end of turn.
+Oracle:Haste, vigilance\nWhenever Uno the Watcher attacks, you may tap target creature an opponent controls.\n{R}{R}: Uno the Watcher gets +1/+0 until end of turn.

@@ -1,0 +1,8 @@
+Name:Ogier Treesinger
+ManaCost:2 G
+Types:Creature Ogier Druid
+PT:1/3
+A:AB$ Mana | Cost$ T | Produced$ G | SpellDescription$ Add {G}.
+T:Mode$ CounterAddedOnce | ValidPlayer$ You | TriggerZones$ Battlefield | CounterType$ WEAVE | Execute$ TrigLife | TriggerDescription$ Whenever you weave, you gain 1 life.
+SVar:TrigLife:DB$ GainLife | Defined$ You | LifeAmount$ 1
+Oracle:{T}: Add {G}.\nWhenever you weave, you gain 1 life.

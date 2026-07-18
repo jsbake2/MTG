@@ -1,0 +1,6 @@
+Name:Ask the Aelfinn
+ManaCost:2 U U
+Types:Sorcery
+A:SP$ Scry | ScryNum$ 3 | SubAbility$ DBDraw | SpellDescription$ Scry 3, then draw two cards.
+SVar:DBDraw:DB$ Draw | Defined$ You | NumCards$ 2
+Oracle:Scry 3, then draw two cards.

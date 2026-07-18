@@ -1,0 +1,6 @@
+Name:Construct Token
+ManaCost:no cost
+Colors:white
+Types:Creature Construct
+PT:3/3
+Oracle:

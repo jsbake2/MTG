@@ -1,0 +1,17 @@
+Name:The Breaking of the World
+ManaCost:3 R R
+Types:Enchantment Saga
+K:Chapter:3:DBChapter1,DBChapter2,DBChapter3
+# Chapter I: The Breaking of the World deals 2 damage to each creature.
+# Pattern from Hour of Devastation (DamageAll | ValidCards$ Creature).
+SVar:DBChapter1:DB$ DamageAll | NumDmg$ 2 | ValidCards$ Creature | SpellDescription$ The Breaking of the World deals 2 damage to each creature.
+# Chapter II: Each player sacrifices a land.
+# Pattern from Akki Blizzard-Herder / Smallpox (DB$ Sacrifice | SacValid$ Land | Defined$ Player).
+SVar:DBChapter2:DB$ Sacrifice | SacValid$ Land | Defined$ Player | SpellDescription$ Each player sacrifices a land.
+# Chapter III: Create a 4/4 red Elemental creature token named Dragonmount.
+# Dragonmount is a custom WoT token (4/4 red Elemental, no keywords); requires
+#   r_4_4_elemental_dragonmount token script in ~/.forge/custom/token/.
+SVar:DBChapter3:DB$ Token | TokenAmount$ 1 | TokenScript$ r_4_4_elemental_dragonmount | TokenOwner$ You | SpellDescription$ Create a 4/4 red Elemental creature token named Dragonmount.
+DeckHas:Ability$Token
+AI:RemoveDeck:All
+Oracle:(As this Saga enters and after your draw step, add a lore counter. Sacrifice after III.)\nI — The Breaking of the World deals 2 damage to each creature.\nII — Each player sacrifices a land.\nIII — Create a 4/4 red Elemental creature token named Dragonmount.

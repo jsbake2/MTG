@@ -1,0 +1,6 @@
+Name:Wisdom's Cure
+ManaCost:1 G
+Types:Instant
+A:SP$ Pump | ValidTgts$ Creature | TgtPrompt$ Select target creature | KW$ Indestructible | SubAbility$ DBUntap | SpellDescription$ Target creature gains indestructible until end of turn. Untap it.
+SVar:DBUntap:DB$ Untap | Defined$ Targeted
+Oracle:Target creature gains indestructible until end of turn. Untap it.

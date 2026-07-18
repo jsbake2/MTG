@@ -1,0 +1,8 @@
+Name:Caravan Master
+ManaCost:1 W
+Types:Creature Human Merchant
+PT:1/3
+T:Mode$ ChangesZone | Origin$ Any | Destination$ Battlefield | ValidCard$ Creature.YouCtrl | TriggerZones$ Battlefield | Execute$ TrigPump | TriggerDescription$ Whenever a creature enters under your control, CARDNAME gets +1/+0 until end of turn.
+SVar:TrigPump:DB$ Pump | Defined$ Self | NumAtt$ +1
+SVar:BuffedBy:Creature
+Oracle:Whenever a creature enters under your control, Caravan Master gets +1/+0 until end of turn.

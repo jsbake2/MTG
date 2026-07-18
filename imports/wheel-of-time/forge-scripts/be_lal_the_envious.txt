@@ -1,0 +1,8 @@
+Name:Be'lal, the Envious
+ManaCost:1 U B
+Types:Legendary Creature Forsaken Channeler
+PT:3/3
+K:Flash
+T:Mode$ ChangesZone | Origin$ Any | Destination$ Battlefield | ValidCard$ Card.Self | Execute$ TrigCounter | TriggerDescription$ When CARDNAME enters, counter target instant or sorcery spell unless its controller pays {3}.
+SVar:TrigCounter:DB$ Counter | TargetType$ Spell | ValidTgts$ Instant,Sorcery | TgtPrompt$ Select target instant or sorcery spell | UnlessCost$ 3
+Oracle:Flash\nWhen Be'lal, the Envious enters, counter target instant or sorcery spell unless its controller pays {3}.

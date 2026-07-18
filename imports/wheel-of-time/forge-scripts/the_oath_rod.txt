@@ -1,0 +1,12 @@
+Name:The Oath Rod
+ManaCost:2
+Types:Legendary Artifact
+# Activated ability: {1}{T} to put an oath counter on any target creature.
+# Card text has no restriction on which creature (own or opponent's).
+# S:Mode$ CantAttack with counters_GE1_OATH filter (Gwafa Hazid pattern) +
+# Target$ You,Planeswalker.YouCtrl (Assault Suit / Archon of Absolution pattern)
+# restricts "can't attack you or planeswalkers you control".
+A:AB$ PutCounter | Cost$ 1 T | ValidTgts$ Creature | TgtPrompt$ Select target creature | CounterType$ OATH | CounterNum$ 1 | SpellDescription$ Put an oath counter on target creature.
+S:Mode$ CantAttack | ValidCard$ Creature.counters_GE1_OATH | Target$ You,Planeswalker.YouCtrl | Description$ Creatures with oath counters on them can't attack you or planeswalkers you control.
+DeckHas:Ability$Counters
+Oracle:{1}, {T}: Put an oath counter on target creature. Creatures with oath counters on them can't attack you or planeswalkers you control.

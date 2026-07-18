@@ -62,6 +62,12 @@ export async function listDecks(ownerId: string): Promise<Deck[]> {
   return decks;
 }
 
+// Every deck id in the system (all owners + precons) — used by the Forge sync
+// bundle so every machine gets every deck. Empty decks are skipped by the caller.
+export async function allDeckIds(): Promise<string[]> {
+  return (await query<{ id: string }>(`SELECT id FROM decks ORDER BY updated_at DESC`)).rows.map((r) => r.id);
+}
+
 export async function getDeckRow(id: string): Promise<DeckRow | null> {
   const r = (await query<DeckRow>(`${DECK_SELECT} WHERE d.id = $1`, [id])).rows[0];
   return r ?? null;

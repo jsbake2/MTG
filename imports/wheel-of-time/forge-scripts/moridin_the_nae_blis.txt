@@ -1,0 +1,15 @@
+Name:Moridin, The Nae'blis
+ManaCost:2 U B R
+Types:Legendary Creature Forsaken
+PT:6/6
+K:Menace
+K:Haste
+T:Mode$ DamageDone | ValidSource$ Card.Self | ValidTarget$ Player | CombatDamage$ True | TriggerZones$ Battlefield | Execute$ TrigSoulCounters | TriggerDescription$ Whenever CARDNAME deals combat damage to a player, put that many soul counters on him.
+SVar:TrigSoulCounters:DB$ PutCounter | Defined$ Self | CounterType$ SOUL | CounterNum$ X
+SVar:X:TriggerCount$DamageAmount
+T:Mode$ Phase | Phase$ Upkeep | ValidPlayer$ You | TriggerZones$ Battlefield | IsPresent$ Card.Self+counters_GE10_SOUL | Execute$ TrigWin | TriggerDescription$ At the beginning of your upkeep, if CARDNAME has ten or more soul counters on it, you win the game.
+SVar:TrigWin:DB$ WinsGame | Defined$ You
+A:AB$ Pump | Cost$ U B R | KW$ Hexproof | Defined$ Self | SpellDescription$ CARDNAME gains hexproof until end of turn.
+SVar:HasCombatEffect:TRUE
+SVar:PlayMain1:TRUE
+Oracle:Menace, haste.\nWhenever Moridin deals combat damage to a player, put that many soul counters on him.\nAt the beginning of your upkeep, if Moridin has ten or more soul counters on it, you win the game.\n{U}{B}{R}: Moridin gains hexproof until end of turn.

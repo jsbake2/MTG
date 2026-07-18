@@ -1,0 +1,9 @@
+Name:War Chief
+ManaCost:1 R
+Types:Creature Human Warrior
+PT:3/2
+T:Mode$ Attacks | ValidCard$ Card.Self | TriggerZones$ Battlefield | Execute$ TrigPump | TriggerDescription$ Whenever CARDNAME attacks, all other creatures get +1/+0 until end of turn.
+SVar:TrigPump:DB$ PumpAll | ValidCards$ Creature.Other | NumAtt$ +1
+A:AB$ Pump | Cost$ R | Defined$ Self | NumAtt$ +1 | SpellDescription$ CARDNAME gets +1/+0 until end of turn.
+SVar:HasAttackEffect:TRUE
+Oracle:Whenever War Chief attacks, all other creatures get +1/+0 until end of turn.\n{R}: War Chief gets +1/+0 until end of turn.

@@ -1,0 +1,7 @@
+Name:Atha'an Miere Navigator
+ManaCost:1 U
+Types:Creature Human Scout
+PT:2/2
+T:Mode$ ChangesZone | Origin$ Any | Destination$ Battlefield | ValidCard$ Card.Self | Execute$ TrigSearch | OptionalDecider$ You | TriggerDescription$ When CARDNAME enters, you may search your library for a land card and put it into your hand. Shuffle.
+SVar:TrigSearch:DB$ ChangeZone | Origin$ Library | Destination$ Hand | ChangeType$ Land | ChangeNum$ 1 | ShuffleNonMandatory$ True
+Oracle:When Atha'an Miere Navigator enters, you may search your library for a land card and put it into your hand. Shuffle.

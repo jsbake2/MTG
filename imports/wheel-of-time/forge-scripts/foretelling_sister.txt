@@ -1,0 +1,10 @@
+Name:Foretelling Sister
+ManaCost:2 U U
+Types:Creature Human Aes Sedai
+PT:2/3
+T:Mode$ Phase | Phase$ Upkeep | ValidPlayer$ You | TriggerZones$ Battlefield | Execute$ TrigScry | TriggerDescription$ At the beginning of your upkeep, scry 2.
+SVar:TrigScry:DB$ Scry | ScryNum$ 2 | ConditionCheckSVar$ X | ConditionSVarCompare$ LT5
+T:Mode$ Phase | Phase$ Upkeep | ValidPlayer$ You | TriggerZones$ Battlefield | Execute$ TrigDraw | TriggerDescription$ Pattern 5 — At the beginning of your upkeep, draw a card instead if your weave total is 5 or more.
+SVar:TrigDraw:DB$ Draw | NumCards$ 1 | ConditionCheckSVar$ X | ConditionSVarCompare$ GE5
+SVar:X:Count$YourCountersWEAVE
+Oracle:At the beginning of your upkeep, scry 2. Pattern 5 — Instead draw a card.

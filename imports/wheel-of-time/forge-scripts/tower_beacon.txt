@@ -1,0 +1,9 @@
+Name:Tower Beacon
+ManaCost:2
+Types:Artifact
+A:AB$ Mana | Cost$ T | Produced$ W | SpellDescription$ Add {W}.
+T:Mode$ CounterAdded | CounterType$ WEAVE | ValidPlayer$ You | TriggerZones$ Battlefield | Execute$ TrigBeacon | TriggerDescription$ Whenever you weave, put a beacon counter on CARDNAME.
+SVar:TrigBeacon:DB$ PutCounter | Defined$ Self | CounterType$ BEACON | CounterNum$ 1
+A:AB$ Draw | Cost$ T SubCounter<2/BEACON> | NumCards$ 1 | SpellDescription$ Draw a card.
+DeckHas:Ability$Counters
+Oracle:{T}: Add {W}. Whenever you weave, put a beacon counter on Tower Beacon. {T}, Remove two beacon counters from Tower Beacon: Draw a card.

@@ -1,0 +1,10 @@
+Name:Fade Battle Commander
+ManaCost:3 B B
+Types:Creature Fade
+PT:3/3
+K:Ward:2
+K:Menace
+T:Mode$ ChangesZone | Origin$ Any | Destination$ Battlefield | ValidCard$ Card.Self | Execute$ TrigToken | TriggerDescription$ When CARDNAME enters, create two 2/2 black Trolloc creature tokens with haste.
+SVar:TrigToken:DB$ Token | TokenAmount$ 2 | TokenScript$ b_2_2_trolloc_haste | TokenOwner$ You
+DeckHas:Ability$Token & Type$Trolloc
+Oracle:Ward {2}, menace\nWhen Fade Battle Commander enters, create two 2/2 black Trolloc creature tokens with haste.

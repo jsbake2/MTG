@@ -1,0 +1,7 @@
+Name:Aes Sedai Circle
+ManaCost:1 W
+Types:Enchantment
+T:Mode$ CounterAdded | CounterType$ WEAVE | ValidPlayer$ You | TriggerZones$ Battlefield | Execute$ TrigToken | TriggerDescription$ Whenever you weave, create a 1/1 white Aes Sedai creature token.
+SVar:TrigToken:DB$ Token | TokenAmount$ 1 | TokenScript$ w_1_1_aes_sedai | TokenOwner$ You
+A:AB$ PumpAll | Cost$ W W | ValidCards$ AesSedai.YouCtrl | NumAtt$ +0 | NumDef$ +1 | SpellDescription$ All Aes Sedai creatures you control get +0/+1 until end of turn.
+Oracle:Whenever you weave, create a 1/1 white Aes Sedai creature token.\n{W}{W}: All Aes Sedai creatures you control get +0/+1 until end of turn.

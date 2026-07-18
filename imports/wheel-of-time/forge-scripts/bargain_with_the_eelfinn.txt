@@ -1,0 +1,7 @@
+Name:Bargain with the Eelfinn
+ManaCost:2 B
+Types:Sorcery
+A:SP$ Draw | NumCards$ 3 | SubAbility$ DBLoseLife | SpellDescription$ Draw three cards. You lose 3 life and exile a card from your hand.
+SVar:DBLoseLife:DB$ LoseLife | LifeAmount$ 3 | Defined$ You | SubAbility$ DBExileFromHand
+SVar:DBExileFromHand:DB$ ChangeZone | Origin$ Hand | Destination$ Exile | ChangeType$ Card | Mandatory$ True | SelectPrompt$ Choose a card in your hand to exile (they always take their price)
+Oracle:Draw three cards. You lose 3 life and exile a card from your hand. (They always take their price.)

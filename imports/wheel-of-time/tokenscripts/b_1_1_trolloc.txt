@@ -1,0 +1,6 @@
+Name:Trolloc Token
+ManaCost:no cost
+Colors:black
+Types:Creature Trolloc
+PT:1/1
+Oracle:

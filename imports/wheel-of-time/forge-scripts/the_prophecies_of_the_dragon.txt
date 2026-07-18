@@ -1,0 +1,9 @@
+Name:The Prophecies of the Dragon
+ManaCost:2 W
+Types:Enchantment
+T:Mode$ Phase | Phase$ Upkeep | ValidPlayer$ You | TriggerZones$ Battlefield | IsPresent$ Creature.Legendary+YouCtrl | PresentZone$ Battlefield | Execute$ TrigScry | TriggerDescription$ At the beginning of your upkeep, if you control a legendary creature, scry 1.
+SVar:TrigScry:DB$ Scry | ScryNum$ 1 | ConditionCheckSVar$ X | ConditionSVarCompare$ LT5
+T:Mode$ Phase | Phase$ Upkeep | ValidPlayer$ You | TriggerZones$ Battlefield | IsPresent$ Creature.Legendary+YouCtrl | PresentZone$ Battlefield | Execute$ TrigDraw | TriggerDescription$ Pattern 5 — At the beginning of your upkeep, if you control a legendary creature and your weave total is 5 or more, draw a card instead.
+SVar:TrigDraw:DB$ Draw | Defined$ You | NumCards$ 1 | ConditionCheckSVar$ X | ConditionSVarCompare$ GE5
+SVar:X:Count$YourCountersWEAVE
+Oracle:At the beginning of your upkeep, if you control a legendary creature, scry 1. Pattern 5 — Instead draw a card.

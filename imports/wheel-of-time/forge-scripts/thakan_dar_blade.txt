@@ -1,0 +1,7 @@
+Name:Thakan'dar Blade
+ManaCost:1 B
+Types:Instant
+A:SP$ Pump | ValidTgts$ Creature.OppCtrl | TgtPrompt$ Select target creature an opponent controls | NumAtt$ -X | NumDef$ -X | IsCurse$ True | SpellDescription$ Target creature an opponent controls gets -2/-2 until end of turn. If it's a Channeler, it gets -3/-3 instead.
+SVar:X:Count$Compare Y GE1.3.2
+SVar:Y:Targeted$Valid Creature.Channeler,Creature.AesSedai,Creature.Ashaman,Creature.WiseOne,Creature.Windfinder,Creature.Damane,Creature.Dreadlord,Creature.Forsaken
+Oracle:Target creature an opponent controls gets -2/-2 until end of turn. If it's a Channeler, it gets -3/-3 instead.

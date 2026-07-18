@@ -1,0 +1,14 @@
+Name:Mat Cauthon, Lord of Luck
+ManaCost:1 B R
+Types:Legendary Creature Human Rogue
+PT:3/2
+T:Mode$ Attacks | ValidCard$ Card.Self | TriggerZones$ Battlefield | Execute$ TrigRevealLoop | TriggerDescription$ Whenever CARDNAME attacks, each opponent reveals the top card of their library. CARDNAME gets +1/+1 until end of turn for each black card revealed this way.
+SVar:TrigRevealLoop:DB$ RepeatEach | RepeatPlayers$ Opponent | RepeatSubAbility$ DBReveal | SubAbility$ DBPump
+SVar:DBReveal:DB$ PeekAndReveal | Defined$ Remembered | PeekAmount$ 1 | NoPeek$ True | RememberRevealed$ True
+SVar:DBPump:DB$ Pump | Defined$ Self | NumAtt$ +X | NumDef$ +X | Duration$ EOT | SubAbility$ DBCleanup
+SVar:DBCleanup:DB$ Cleanup | ClearRemembered$ True
+SVar:X:Remembered$Valid Card.Black
+T:Mode$ SpellCast | ValidCard$ Card | ValidActivatingPlayer$ You | TriggerZones$ Battlefield | OptionalDecider$ You | Execute$ TrigLoot | TriggerDescription$ Whenever you cast a spell, you may pay {R}. If you do, draw a card, then discard a card.
+SVar:TrigLoot:AB$ Draw | Cost$ R | NumCards$ 1 | SubAbility$ DBDiscard
+SVar:DBDiscard:DB$ Discard | Defined$ You | Mode$ TgtChoose | NumCards$ 1
+Oracle:Whenever Mat Cauthon, Lord of Luck attacks, each opponent reveals the top card of their library. Mat Cauthon gets +1/+1 until end of turn for each black card revealed this way.\nWhenever you cast a spell, you may pay {R}. If you do, draw a card, then discard a card.

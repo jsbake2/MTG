@@ -1,0 +1,6 @@
+Name:Warder's Bond
+ManaCost:2
+Types:Artifact
+A:AB$ Pump | Cost$ 1 T | ValidTgts$ Creature.AesSedai+YouCtrl | TgtPrompt$ Select target Aes Sedai you control | NumAtt$ +1 | NumDef$ +1 | KW$ Vigilance | SubAbility$ DBPump2 | SpellDescription$ Target Aes Sedai you control and target Warrior or Soldier you control each get +1/+1 and gain vigilance until end of turn.
+SVar:DBPump2:DB$ Pump | ValidTgts$ Creature.Warrior+YouCtrl,Creature.Soldier+YouCtrl | TgtPrompt$ Select target Warrior or Soldier you control | NumAtt$ +1 | NumDef$ +1 | KW$ Vigilance
+Oracle:{1}, {T}: Target Aes Sedai you control and target Warrior or Soldier you control each get +1/+1 and gain vigilance until end of turn.

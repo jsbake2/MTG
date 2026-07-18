@@ -1,0 +1,7 @@
+Name:The One Power Lens
+ManaCost:2
+Types:Artifact
+A:AB$ Draw | Cost$ T | NumCards$ 1 | SpellDescription$ Draw a card, then discard a card. | SubAbility$ DBDiscard
+SVar:DBDiscard:DB$ Discard | Defined$ You | NumCards$ 1 | Mode$ TgtChoose
+A:AB$ PutCounter | Cost$ 3 U T | Defined$ You | CounterType$ WEAVE | CounterNum$ 2 | SpellDescription$ Weave twice.
+Oracle:{T}: Draw a card, then discard a card.\n{3}{U}, {T}: Weave twice.

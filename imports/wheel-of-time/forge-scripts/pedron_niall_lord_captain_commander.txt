@@ -1,0 +1,11 @@
+Name:Pedron Niall, Lord Captain Commander
+ManaCost:2 W B
+Types:Legendary Creature Human Whitecloak Noble
+PT:2/4
+S:Mode$ Continuous | Affected$ Creature.Whitecloak+Other+YouCtrl | AddPower$ 1 | Description$ Other Whitecloaks you control get +1/+0.
+T:Mode$ DamageDoneOnce | CombatDamage$ True | ValidSource$ Creature.Whitecloak+YouCtrl | ValidTarget$ Player | TriggerZones$ Battlefield | Execute$ TrigDraw | TriggerDescription$ Whenever one or more Whitecloaks you control deal combat damage to a player, you draw a card and that player loses 1 life.
+SVar:TrigDraw:DB$ Draw | SubAbility$ DBLoseLife
+SVar:DBLoseLife:DB$ LoseLife | Defined$ TriggeredTarget | LifeAmount$ 1
+SVar:PlayMain1:TRUE
+DeckHints:Type$Whitecloak
+Oracle:Other Whitecloaks you control get +1/+0.\nWhenever one or more Whitecloaks you control deal combat damage to a player, you draw a card and that player loses 1 life.

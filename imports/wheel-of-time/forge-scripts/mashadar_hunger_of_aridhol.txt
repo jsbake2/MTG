@@ -1,0 +1,9 @@
+Name:Mashadar, Hunger of Aridhol
+ManaCost:3 B B
+Types:Legendary Creature Mist Horror
+PT:5/5
+K:Deathtouch
+S:Mode$ Continuous | Affected$ Card.Self | CanBlockAny$ True | Description$ CARDNAME can block any number of creatures.
+T:Mode$ ChangesZone | Origin$ Battlefield | Destination$ Graveyard | ValidCard$ Creature.DamagedBy | TriggerZones$ Battlefield | Execute$ TrigToken | TriggerDescription$ Whenever a creature dealt damage by CARDNAME this turn dies, create a 1/1 black Mist creature token with deathtouch.
+SVar:TrigToken:DB$ Token | TokenScript$ b_1_1_mist_deathtouch | TokenAmount$ 1 | TokenOwner$ You
+Oracle:Deathtouch\nMashadar, Hunger of Aridhol can block any number of creatures.\nWhenever a creature dealt damage by Mashadar, Hunger of Aridhol this turn dies, create a 1/1 black Mist creature token with deathtouch.

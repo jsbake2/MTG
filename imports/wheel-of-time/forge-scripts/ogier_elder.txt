@@ -1,0 +1,10 @@
+Name:Ogier Elder
+ManaCost:3 G G
+Types:Creature Ogier Scholar
+PT:4/6
+S:Mode$ Continuous | Affected$ Creature.Ogier+Other+YouCtrl | AddPower$ 1 | AddToughness$ 1 | Description$ Other Ogier you control get +1/+1.
+T:Mode$ ChangesZone | Origin$ Any | Destination$ Battlefield | ValidCard$ Card.Self | Execute$ TrigDraw | TriggerDescription$ When CARDNAME enters, draw a card for each Ogier you control.
+SVar:TrigDraw:DB$ Draw | Defined$ You | NumCards$ X
+SVar:X:Count$Valid Ogier.YouCtrl
+DeckHints:Type$Ogier
+Oracle:Other Ogier you control get +1/+1.\nWhen Ogier Elder enters, draw a card for each Ogier you control.

@@ -1,0 +1,6 @@
+Name:Aiel Meditation
+ManaCost:1 G
+Types:Instant
+A:SP$ Pump | ValidTgts$ Creature | NumAtt$ +1 | NumDef$ +2 | SubAbility$ DBLifelink | SpellDescription$ Target creature gets +1/+2 until end of turn. If you control a Wise One, it also gains lifelink until end of turn.
+SVar:DBLifelink:DB$ Pump | Defined$ Targeted | KW$ Lifelink | ConditionPresent$ Creature.WiseOne+YouCtrl | ConditionCompare$ GE1
+Oracle:Target creature gets +1/+2 until end of turn. If you control a Wise One, it also gains lifelink until end of turn.

@@ -1,0 +1,11 @@
+Name:Callandor's Requirement
+ManaCost:1 W W
+Types:Enchantment
+T:Mode$ Phase | Phase$ End of Turn | ValidPlayer$ You | TriggerZones$ Battlefield | IsPresent$ Creature.AesSedai+YouCtrl | PresentCompare$ GE2 | IsPresent2$ Creature.Ashaman+YouCtrl | Execute$ TrigMain | TriggerDescription$ At the beginning of your end step, if you control two or more Aes Sedai and an Asha'man, put a unity counter on CARDNAME and create a 1/1 white Aes Sedai creature token. Then if it has three or more unity counters, you may search your library for a card named Callandor, Sword of Light, put it onto the battlefield, then shuffle.
+SVar:TrigMain:DB$ PutCounter | Defined$ Self | CounterType$ UNITY | CounterNum$ 1 | SubAbility$ DBToken
+SVar:DBToken:DB$ Token | TokenAmount$ 1 | TokenScript$ w_1_1_aes_sedai | TokenOwner$ You | SubAbility$ DBBranch
+SVar:DBBranch:DB$ Branch | BranchConditionSVar$ X | BranchConditionSVarCompare$ GE3 | TrueSubAbility$ DBSearch
+SVar:DBSearch:DB$ ChangeZone | Origin$ Library | Destination$ Battlefield | ChangeType$ Card.namedCallandor; Sword of Light | ChangeNum$ 1 | Optional$ True | ShuffleNonMandatory$ True
+SVar:X:Count$CardCounters.UNITY
+DeckHints:Name$Callandor, Sword of Light & Type$AesSedai|Ashaman
+Oracle:At the beginning of your end step, if you control two or more Aes Sedai and an Asha'man, put a unity counter on Callandor's Requirement and create a 1/1 white Aes Sedai creature token. Then if it has three or more unity counters, you may search your library for a card named Callandor, Sword of Light, put it onto the battlefield, then shuffle.

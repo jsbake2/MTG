@@ -1,0 +1,6 @@
+Name:Flourish
+ManaCost:1 G
+Types:Instant
+A:SP$ Pump | ValidTgts$ Creature | NumAtt$ +0 | NumDef$ +3 | SubAbility$ DBReach | SpellDescription$ Target creature gets +0/+3 until end of turn. If you control a land, it also gains reach until end of turn.
+SVar:DBReach:DB$ Pump | Defined$ Targeted | KW$ Reach | ConditionPresent$ Land.YouCtrl | ConditionCompare$ GE1
+Oracle:Target creature gets +0/+3 until end of turn. If you control a land, it also gains reach until end of turn.

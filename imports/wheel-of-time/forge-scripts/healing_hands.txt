@@ -1,0 +1,6 @@
+Name:Healing Hands
+ManaCost:1 W
+Types:Instant
+A:SP$ Pump | ValidTgts$ Creature | NumDef$ +2 | KW$ Lifelink | SpellDescription$ Target creature gets +0/+2 and gains lifelink until end of turn.
+DeckHas:Ability$LifeGain
+Oracle:Target creature gets +0/+2 and lifelink until end of turn.

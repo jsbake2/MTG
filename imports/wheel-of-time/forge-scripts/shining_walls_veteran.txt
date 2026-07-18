@@ -1,0 +1,8 @@
+Name:Shining Walls Veteran
+ManaCost:2 W
+Types:Creature Human Soldier
+PT:3/3
+K:Vigilance
+S:Mode$ Continuous | Affected$ Card.Self | AddKeyword$ Ward:1 | CheckSVar$ Anath | SVarCompare$ GE1 | Description$ Anathema — CARDNAME has ward {1} as long as an opponent controls a Channeler.
+SVar:Anath:Count$Valid Creature.Channeler+OppCtrl,Creature.AesSedai+OppCtrl,Creature.Ashaman+OppCtrl,Creature.WiseOne+OppCtrl,Creature.Windfinder+OppCtrl,Creature.Damane+OppCtrl,Creature.Dreadlord+OppCtrl,Creature.Forsaken+OppCtrl
+Oracle:Vigilance\nAnathema — Shining Walls Veteran has ward {1} as long as an opponent controls a Channeler.

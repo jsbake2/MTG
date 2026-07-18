@@ -1,0 +1,6 @@
+Name:Severed Flows
+ManaCost:1 U
+Types:Instant
+A:SP$ Counter | TargetType$ Spell | ValidTgts$ Card | TgtPrompt$ Select target spell | UnlessCost$ 2 | SubAbility$ Weave | SpellDescription$ Counter target spell unless its controller pays {2}. Weave.
+SVar:Weave:DB$ PutCounter | Defined$ You | CounterType$ WEAVE | CounterNum$ 1
+Oracle:Counter target spell unless its controller pays {2}. Weave.

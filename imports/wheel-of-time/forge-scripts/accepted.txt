@@ -1,0 +1,8 @@
+Name:Accepted
+ManaCost:1 W
+Types:Creature Human Aes Sedai
+PT:1/2
+A:AB$ Mana | Cost$ T | Produced$ W | Amount$ 1 | ConditionCheckSVar$ X | ConditionSVarCompare$ LT3 | SpellDescription$ Add {W}.
+A:AB$ Mana | Cost$ T | Produced$ W | Amount$ 2 | ConditionCheckSVar$ X | ConditionSVarCompare$ GE3 | SpellDescription$ If you've woven three or more times, add {W}{W}.
+SVar:X:Count$YourCountersWEAVE
+Oracle:{T}: Add {W}. If you've woven three or more times, add {W}{W} instead.

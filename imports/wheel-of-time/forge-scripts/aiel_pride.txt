@@ -1,0 +1,8 @@
+Name:Aiel Pride
+ManaCost:1 R G
+Types:Sorcery
+A:SP$ Token | TokenAmount$ 2 | TokenScript$ r_1_1_aiel_warrior_haste | TokenOwner$ You | RememberTokens$ True | SubAbility$ DBPump | SpellDescription$ Create two 1/1 red Aiel Warrior creature tokens with haste. If you control three or more Aiel, those tokens get +1/+1 and have menace.
+SVar:DBPump:DB$ PumpAll | ValidCards$ Creature.IsRemembered | NumAtt$ +1 | NumDef$ +1 | KW$ Menace | ConditionPresent$ Creature.Aiel+YouCtrl | ConditionCompare$ GE3 | SubAbility$ DBCleanup
+SVar:DBCleanup:DB$ Cleanup | ClearRemembered$ True
+DeckHas:Ability$Token
+Oracle:Create two 1/1 red Aiel Warrior creature tokens with haste. If you control three or more Aiel, those tokens get +1/+1 and have menace.

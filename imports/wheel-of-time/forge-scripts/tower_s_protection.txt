@@ -1,0 +1,7 @@
+Name:Tower's Protection
+ManaCost:1 W U
+Types:Sorcery
+A:SP$ Token | TokenAmount$ 1 | TokenScript$ w_1_1_aes_sedai | TokenOwner$ You | SubAbility$ DBPumpAll | SpellDescription$ Create a 1/1 white Aes Sedai creature token. All creatures you control get +1/+1 and gain lifelink until end of turn.
+SVar:DBPumpAll:DB$ PumpAll | ValidCards$ Creature.YouCtrl | NumAtt$ +1 | NumDef$ +1 | KW$ Lifelink
+DeckHas:Ability$Token
+Oracle:Create a 1/1 white Aes Sedai creature token. All creatures you control get +1/+1 and gain lifelink until end of turn.

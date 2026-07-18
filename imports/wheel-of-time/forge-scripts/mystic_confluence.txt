@@ -1,0 +1,9 @@
+Name:Mystic Confluence
+ManaCost:1 U G
+Types:Sorcery
+A:SP$ Charm | Choices$ DBDraw,DBLand,DBToken | CharmNum$ 2
+SVar:DBDraw:DB$ Draw | Defined$ You | NumCards$ 1 | SpellDescription$ Draw a card.
+SVar:DBLand:DB$ ChangeZone | Origin$ Library | Destination$ Battlefield | ChangeType$ Land | Tapped$ True | ChangeNum$ 1 | SpellDescription$ Search your library for a land and put it onto the battlefield tapped, then shuffle.
+SVar:DBToken:DB$ Token | TokenScript$ g_1_1_wolf | TokenOwner$ You | SpellDescription$ Create a 1/1 green Wolf creature token.
+DeckHas:Ability$Token & Type$Wolf
+Oracle:Choose two — \n• Draw a card.\n• Search your library for a land and put it onto the battlefield tapped, then shuffle.\n• Create a 1/1 green Wolf creature token.

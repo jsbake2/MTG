@@ -1,0 +1,8 @@
+Name:Darkfriend Recruit
+ManaCost:B
+Types:Creature Human Darkfriend
+PT:1/1
+T:Mode$ ChangesZone | Origin$ Any | Destination$ Battlefield | ValidCard$ Card.Self | Execute$ TrigDiscard | TriggerDescription$ When CARDNAME enters, target opponent discards a card.
+SVar:TrigDiscard:DB$ Discard | ValidTgts$ Opponent | NumCards$ 1 | Mode$ TgtChoose
+A:AB$ Pump | Cost$ B | Defined$ Self | NumAtt$ +1 | SpellDescription$ CARDNAME gets +1/+0 until end of turn.
+Oracle:When Darkfriend Recruit enters, target opponent discards a card.\n{B}: Darkfriend Recruit gets +1/+0 until end of turn.

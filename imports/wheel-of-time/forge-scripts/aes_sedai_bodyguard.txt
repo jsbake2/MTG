@@ -1,0 +1,7 @@
+Name:Aes Sedai Bodyguard
+ManaCost:2 W
+Types:Creature Human Soldier
+PT:3/3
+S:Mode$ CantAttack | ValidCard$ Card.Self | IsPresent$ Creature.AesSedai+YouCtrl | PresentCompare$ EQ0 | Description$ CARDNAME can't attack unless you control another Aes Sedai.
+A:AB$ Pump | Cost$ W | Defined$ Self | NumAtt$ +1 | SpellDescription$ CARDNAME gets +1/+0 until end of turn.
+Oracle:Aes Sedai Bodyguard can't attack unless you control another Aes Sedai.\n{W}: Aes Sedai Bodyguard gets +1/+0 until end of turn.

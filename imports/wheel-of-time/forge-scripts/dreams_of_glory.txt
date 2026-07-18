@@ -1,0 +1,9 @@
+Name:Dreams of Glory
+ManaCost:1 U
+Types:Enchantment
+T:Mode$ Phase | Phase$ Upkeep | ValidPlayer$ You | TriggerZones$ Battlefield | Execute$ TrigScry | ConditionCheckSVar$ X | ConditionSVarCompare$ LT3 | TriggerDescription$ At the beginning of your upkeep, scry 1.
+SVar:TrigScry:DB$ Scry | ScryNum$ 1
+T:Mode$ Phase | Phase$ Upkeep | ValidPlayer$ You | TriggerZones$ Battlefield | OptionalDecider$ You | Execute$ TrigDraw | ConditionCheckSVar$ X | ConditionSVarCompare$ GE3 | TriggerDescription$ Pattern 3 — At the beginning of your upkeep, you may draw a card instead.
+SVar:TrigDraw:DB$ Draw | NumCards$ 1
+SVar:X:Count$YourCountersWEAVE
+Oracle:At the beginning of your upkeep, scry 1. Pattern 3 — At the beginning of your upkeep, you may draw a card instead.

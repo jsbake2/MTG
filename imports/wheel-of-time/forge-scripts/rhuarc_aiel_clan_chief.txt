@@ -1,0 +1,15 @@
+Name:Rhuarc, Aiel Clan Chief
+ManaCost:1 R G
+Types:Legendary Creature Aiel Warrior
+PT:3/3
+S:Mode$ Continuous | Affected$ Card.Self | AddPower$ X | AddToughness$ X | Description$ CARDNAME gets +1/+1 for each other creature you control.
+SVar:X:Count$Valid Creature.Other+YouCtrl
+A:AB$ Token | Cost$ R G | TokenAmount$ 1 | TokenScript$ r_1_1_aiel_warrior_haste | TokenOwner$ You | SpellDescription$ Create a 1/1 red Aiel Warrior creature token with haste.
+T:Mode$ DamageDone | ValidSource$ Card.Self | ValidTarget$ Player | CombatDamage$ True | TriggerZones$ Battlefield | Execute$ TrigPutCounter | TriggerDescription$ Whenever CARDNAME deals combat damage, put a +1/+1 counter on target creature.
+SVar:TrigPutCounter:DB$ PutCounter | ValidTgts$ Creature | TgtPrompt$ Select target creature | CounterType$ P1P1 | CounterNum$ 1
+SVar:BuffedBy:Creature
+SVar:HasAttackEffect:TRUE
+SVar:PlayMain1:TRUE
+DeckHas:Ability$Token|Counters
+DeckHints:Type$Aiel
+Oracle:Rhuarc, Aiel Clan Chief gets +1/+1 for each other creature you control.\n{R}{G}: Create a 1/1 red Aiel Warrior creature token with haste.\nWhenever Rhuarc, Aiel Clan Chief deals combat damage, put a +1/+1 counter on target creature.

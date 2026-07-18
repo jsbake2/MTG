@@ -1,0 +1,12 @@
+Name:Gawyn Trakand, First Prince
+ManaCost:1 W R
+Types:Legendary Creature Human Knight
+PT:3/1
+K:First Strike
+K:Haste
+S:Mode$ MustAttack | ValidCreature$ Card.Self | Description$ Gawyn Trakand, First Prince attacks each combat if able.
+T:Mode$ Attacks | ValidCard$ Card.Self | Execute$ TrigPump | TriggerDescription$ Whenever CARDNAME attacks, it gets +1/+0 until end of turn for each other attacking creature.
+SVar:TrigPump:DB$ Pump | Defined$ Self | NumAtt$ +X
+SVar:X:Count$Valid Creature.attacking+Other
+SVar:HasAttackEffect:TRUE
+Oracle:First strike, haste\nGawyn Trakand, First Prince attacks each combat if able.\nWhenever Gawyn Trakand, First Prince attacks, it gets +1/+0 until end of turn for each other attacking creature.

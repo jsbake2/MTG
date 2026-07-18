@@ -1,0 +1,10 @@
+Name:Mazrim Taim, Lord of the Black Tower
+ManaCost:2 B R
+Types:Legendary Creature Human Asha'man
+PT:4/3
+K:Menace
+T:Mode$ Attacks | ValidCard$ Card.Self | TriggerZones$ Battlefield | Execute$ TrigLoseLife | TriggerDescription$ Whenever CARDNAME attacks, each opponent loses 2 life.
+SVar:TrigLoseLife:DB$ LoseLife | Defined$ Player.Opponent | LifeAmount$ 2
+S:Mode$ Continuous | Affected$ Creature.Ashaman+YouCtrl | AddPower$ 1 | Description$ Asha'man you control get +1/+0.
+SVar:HasAttackEffect:TRUE
+Oracle:Menace\nWhenever Mazrim Taim, Lord of the Black Tower attacks, each opponent loses 2 life.\nAsha'man you control get +1/+0.

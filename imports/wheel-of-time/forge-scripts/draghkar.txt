@@ -1,0 +1,10 @@
+Name:Draghkar
+ManaCost:2 B
+Types:Creature Shadowspawn
+PT:2/2
+K:Flying
+T:Mode$ DamageDone | ValidSource$ Card.Self | ValidTarget$ Player | CombatDamage$ True | Execute$ TrigGainLife | TriggerZones$ Battlefield | TriggerDescription$ Whenever CARDNAME deals combat damage to a player, you gain 2 life and that player loses 2 life.
+SVar:TrigGainLife:DB$ GainLife | Defined$ You | LifeAmount$ 2 | SubAbility$ DBLoseLife
+SVar:DBLoseLife:DB$ LoseLife | Defined$ TriggeredTarget | LifeAmount$ 2
+DeckHas:Ability$LifeGain
+Oracle:Flying\nWhenever Draghkar deals combat damage to a player, you gain 2 life and that player loses 2 life.

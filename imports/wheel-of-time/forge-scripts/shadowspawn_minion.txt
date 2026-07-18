@@ -1,0 +1,8 @@
+Name:Shadowspawn Minion
+ManaCost:B
+Types:Creature Shadowspawn
+PT:2/1
+T:Mode$ SpellCast | ValidCard$ Card.Black | ValidActivatingPlayer$ You | TriggerZones$ Battlefield | Execute$ TrigPump | TriggerDescription$ Whenever you cast a black spell, CARDNAME gets +1/+0 until end of turn.
+SVar:TrigPump:DB$ Pump | Defined$ Self | NumAtt$ +1
+SVar:BuffedBy:Card.Black
+Oracle:Whenever you cast a black spell, Shadowspawn Minion gets +1/+0 until end of turn.

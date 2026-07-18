@@ -1,0 +1,7 @@
+Name:Scry Adept
+ManaCost:U
+Types:Creature Human AesSedai
+PT:1/1
+T:Mode$ Attacks | ValidCard$ Card.Self | TriggerZones$ Battlefield | Execute$ TrigScry | TriggerDescription$ Whenever CARDNAME attacks, scry 1.
+SVar:TrigScry:DB$ Scry | ScryNum$ 1
+Oracle:Whenever Scry Adept attacks, scry 1.

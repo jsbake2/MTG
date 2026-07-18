@@ -1,0 +1,9 @@
+Name:Pack Leader
+ManaCost:1 G
+Types:Creature Wolf
+PT:2/2
+S:Mode$ Continuous | Affected$ Creature.Wolf+Other+YouCtrl | AddPower$ 1 | Description$ Other Wolves you control get +1/+0.
+A:AB$ Token | Cost$ G | TokenScript$ g_1_1_wolf | TokenOwner$ You | SpellDescription$ Create a 1/1 green Wolf creature token.
+DeckHints:Type$Wolf
+DeckHas:Ability$Token
+Oracle:Other Wolves you control get +1/+0.\n{G}: Create a 1/1 green Wolf creature token.

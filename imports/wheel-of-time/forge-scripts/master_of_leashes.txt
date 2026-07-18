@@ -1,0 +1,8 @@
+Name:Master of Leashes
+ManaCost:U B
+Types:Creature Human Channeler
+PT:2/2
+T:Mode$ CounterAdded | CounterType$ LEASH | ValidCard$ Creature | TriggerZones$ Battlefield | Execute$ TrigLeash | TriggerDescription$ Whenever you leash a creature, create a 1/1 blue Damane creature token.
+SVar:TrigLeash:DB$ Token | TokenAmount$ 1 | TokenScript$ u_1_1_damane | TokenOwner$ You
+DeckHas:Ability$Token
+Oracle:Whenever you leash a creature, create a 1/1 blue Damane creature token.

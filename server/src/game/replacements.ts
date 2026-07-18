@@ -24,14 +24,20 @@ const WORD_NUM: Record<string, number> = { a: 1, an: 1, one: 1, two: 2, three: 3
 // "This creature enters with N +1/+1 (or -1/-1) counters on it" (CR 614.1c).
 // Returns null for variable amounts (X / "a number of"), which need the cast
 // context and fall back to the player setting counters manually.
-export function entersWithCounters(oracleText: string | null): { kind: "+1/+1" | "-1/-1"; count: number } | null {
+export function entersWithCounters(
+  oracleText: string | null,
+): { kind: "+1/+1" | "-1/-1"; count: number; xScaled?: boolean } | null {
   if (!oracleText) return null;
   const m = oracleText.toLowerCase().match(/enters (?:the battlefield )?with (\w+) (\+1\/\+1|-1\/-1) counters?/);
   if (!m) return null;
   const w = m[1]!;
+  const kind = m[2] === "+1/+1" ? "+1/+1" : "-1/-1";
+  // "enters with X +1/+1 counters" — the count is the X chosen as the spell was
+  // cast; the caller resolves it from the object's xValue.
+  if (w === "x") return { kind, count: 0, xScaled: true };
   const count = /^\d+$/.test(w) ? parseInt(w, 10) : (WORD_NUM[w] ?? 0);
-  if (count <= 0) return null; // X / unknown → player sets it
-  return { kind: m[2] === "+1/+1" ? "+1/+1" : "-1/-1", count };
+  if (count <= 0) return null; // unknown → player sets it
+  return { kind, count };
 }
 
 // Is there a conditional/optional "enters tapped" the player should decide?

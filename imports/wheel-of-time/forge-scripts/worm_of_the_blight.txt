@@ -1,0 +1,7 @@
+Name:Worm of the Blight
+ManaCost:4 B B
+Types:Creature Wurm
+PT:6/4
+K:Trample
+S:Mode$ CantBlock | ValidCard$ Card.Self | Description$ CARDNAME can't block.
+Oracle:Trample\nWorm of the Blight can't block.

@@ -1,0 +1,10 @@
+Name:Aiel Warriors' Bond
+ManaCost:1 R G
+Types:Sorcery
+A:SP$ Token | TokenAmount$ 2 | TokenScript$ r_1_1_aiel_warrior_haste | TokenOwner$ You | RememberTokens$ True | SubAbility$ DBCounters | SpellDescription$ Create two 1/1 red Aiel Warrior creature tokens with haste. They get +1/+1 for each other creature you control.
+SVar:DBCounters:DB$ PutCounter | Defined$ Remembered | CounterType$ P1P1 | CounterNum$ X | SubAbility$ DBCleanup
+SVar:DBCleanup:DB$ Cleanup | ClearRemembered$ True
+SVar:X:Count$Valid Creature.YouCtrl+!IsRemembered
+SVar:PlayMain1:TRUE
+DeckHas:Ability$Token|Counters
+Oracle:Create two 1/1 red Aiel Warrior creature tokens with haste. They get +1/+1 for each other creature you control.

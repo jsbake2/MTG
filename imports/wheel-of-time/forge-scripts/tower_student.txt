@@ -1,0 +1,8 @@
+Name:Tower Student
+ManaCost:W
+Types:Creature Human Aes Sedai
+PT:1/1
+T:Mode$ CounterAddedOnce | ValidPlayer$ You | TriggerZones$ Battlefield | CounterType$ WEAVE | Execute$ TrigPump | TriggerDescription$ Whenever you weave, CARDNAME gets +1/+1 until end of turn.
+SVar:TrigPump:DB$ Pump | Defined$ Self | NumAtt$ +1 | NumDef$ +1
+A:AB$ Pump | Cost$ W | Defined$ Self | NumDef$ +1 | SpellDescription$ CARDNAME gets +0/+1 until end of turn.
+Oracle:Whenever you weave, Tower Student gets +1/+1 until end of turn.\n{W}: Tower Student gets +0/+1 until end of turn.

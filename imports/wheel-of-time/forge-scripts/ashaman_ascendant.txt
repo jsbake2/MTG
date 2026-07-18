@@ -1,0 +1,9 @@
+Name:Asha'man Ascendant
+ManaCost:1 R
+Types:Creature Human Asha'man
+PT:3/2
+T:Mode$ SpellCast | ValidCard$ Card.Red | ValidActivatingPlayer$ You | TriggerZones$ Battlefield | Execute$ TrigPump | TriggerDescription$ Whenever you cast a red spell, CARDNAME gets +1/+0 until end of turn.
+SVar:TrigPump:DB$ Pump | Defined$ Self | NumAtt$ +1
+A:AB$ Token | Cost$ R R R | TokenScript$ r_2_2_dragon | TokenAmount$ 1 | TokenOwner$ You | SpellDescription$ Create a 2/2 red Dragon creature token.
+DeckHas:Ability$Token
+Oracle:Whenever you cast a red spell, Asha'man Ascendant gets +1/+0 until end of turn.\n{R}{R}{R}: Create a 2/2 red Dragon creature token.

@@ -1,0 +1,8 @@
+Name:White Tower Alliance
+ManaCost:1 W
+Types:Enchantment
+T:Mode$ SpellCast | ValidCard$ Card.White | ValidActivatingPlayer$ You | TriggerZones$ Battlefield | Execute$ TrigToken | TriggerDescription$ Whenever you cast a white spell, create a 1/1 white Aes Sedai creature token.
+SVar:TrigToken:DB$ Token | TokenAmount$ 1 | TokenScript$ w_1_1_aes_sedai | TokenOwner$ You
+S:Mode$ Continuous | Affected$ Creature.AesSedai | AddToughness$ 1 | Description$ All Aes Sedai creatures get +0/+1.
+DeckHas:Ability$Token
+Oracle:Whenever you cast a white spell, create a 1/1 white Aes Sedai creature token. All Aes Sedai creatures get +0/+1.

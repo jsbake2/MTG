@@ -1,0 +1,6 @@
+Name:Pattern Breaks
+ManaCost:1 W
+Types:Sorcery
+A:SP$ Destroy | ValidTgts$ Artifact,Enchantment | TgtPrompt$ Select target artifact or enchantment | SubAbility$ Weave | SpellDescription$ Destroy target artifact or enchantment. Weave.
+SVar:Weave:DB$ PutCounter | Defined$ You | CounterType$ WEAVE | CounterNum$ 1
+Oracle:Destroy target artifact or enchantment. Weave.

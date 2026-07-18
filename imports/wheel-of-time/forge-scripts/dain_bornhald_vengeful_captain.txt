@@ -1,0 +1,7 @@
+Name:Dain Bornhald, Vengeful Captain
+ManaCost:W W
+Types:Legendary Creature Human Whitecloak Knight
+PT:2/2
+K:First Strike
+S:Mode$ Continuous | Affected$ Card.Self | AddPower$ 2 | IsPresent$ Wolf.OppCtrl | Description$ CARDNAME gets +2/+0 as long as an opponent controls a Wolf.
+Oracle:First strike\nDain Bornhald, Vengeful Captain gets +2/+0 as long as an opponent controls a Wolf.

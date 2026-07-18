@@ -1,0 +1,11 @@
+Name:Balthamel, the Leering Mask
+ManaCost:2 R G
+Types:Legendary Creature Forsaken
+PT:4/3
+K:Menace
+R:Event$ Counter | ValidCard$ Card.Self | ValidSA$ Spell | Layer$ CantHappen | Description$ CARDNAME can't be countered.
+T:Mode$ Attacks | ValidCard$ Card.Self | TriggerZones$ Battlefield | Execute$ TrigDiscard | TriggerDescription$ Whenever CARDNAME attacks, defending player discards a card.
+SVar:TrigDiscard:DB$ Discard | Defined$ TriggeredDefendingPlayer | Mode$ TgtChoose | NumCards$ 1
+SVar:HasAttackEffect:TRUE
+DeckHas:Ability$Discard
+Oracle:Menace\nBalthamel, the Leering Mask can't be countered.\nWhenever Balthamel, the Leering Mask attacks, defending player discards a card.

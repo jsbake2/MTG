@@ -1,0 +1,24 @@
+Name:Unraveling Shadow
+ManaCost:1 B
+Types:Instant
+# Modal spell — Charm DSL for "Choose one".
+# Mode 1: Destroy target creature with power 2 or less (Cruel Cut idiom).
+# Mode 2: Leash target creature with power 2 or less.
+#   Leash prototype (confidence: low/medium — escalating upkeep tax).
+#   GainControl is permanent at resolution. A LEASH counter is placed on the
+#   stolen creature. Each subsequent upkeep a delayed trigger adds another
+#   LEASH counter and offers paying {2} x (# of LEASH counters) or the owner
+#   regains control. Count$CardCounters.LEASH/Twice models linear scaling
+#   (2, 4, 6, ...) not true doubling; full exponential needs Java-side support.
+#   "Can't be leashed again until your next turn" is omitted — no DSL hook.
+A:SP$ Charm | Choices$ DBDestroy,DBLeash
+SVar:DBDestroy:DB$ Destroy | ValidTgts$ Creature.powerLE2 | TgtPrompt$ Select target creature with power 2 or less | SpellDescription$ Destroy target creature with power 2 or less.
+SVar:DBLeash:DB$ GainControl | ValidTgts$ Creature.powerLE2 | TgtPrompt$ Select target creature with power 2 or less to leash | RememberControlled$ True | SubAbility$ DBLeashCounter | SpellDescription$ Leash target creature with power 2 or less.
+SVar:DBLeashCounter:DB$ PutCounter | Defined$ Remembered | CounterType$ LEASH | CounterNum$ 1 | SubAbility$ DBDelay
+SVar:DBDelay:DB$ DelayedTrigger | Mode$ Phase | Phase$ Upkeep | ValidPlayer$ You | Execute$ TrigLeash | RememberObjects$ Remembered | TriggerDescription$ At the beginning of your upkeep, pay this creature's leash cost or its owner regains control.
+SVar:TrigLeash:DB$ PutCounter | Defined$ DelayTriggerRemembered | CounterType$ LEASH | CounterNum$ 1 | SubAbility$ DBPayOrReturn
+SVar:DBPayOrReturn:DB$ GainControl | Defined$ DelayTriggerRemembered | NewController$ Owner | UnlessCost$ Y | UnlessPayer$ You | UnlessResolveSubs$ WhenNotPaid | SubAbility$ DBRearm
+SVar:DBRearm:DB$ DelayedTrigger | Mode$ Phase | Phase$ Upkeep | ValidPlayer$ You | Execute$ TrigLeash | RememberObjects$ DelayTriggerRemembered | TriggerDescription$ At the beginning of your upkeep, pay this creature's leash cost or its owner regains control.
+SVar:Y:Count$CardCounters.LEASH/Twice
+AI:RemoveDeck:All
+Oracle:Choose one —\n• Destroy target creature with power 2 or less.\n• Leash target creature with power 2 or less. (You gain control of it. At the beginning of your upkeep, pay its leash cost — {2}, doubling each time you pay — or it returns to its owner and can't be leashed again until your next turn.)

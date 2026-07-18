@@ -1,0 +1,6 @@
+Name:Fade Ward2 Token
+ManaCost:no cost
+Colors:black
+Types:Creature Fade Ward2
+PT:1/1
+Oracle:

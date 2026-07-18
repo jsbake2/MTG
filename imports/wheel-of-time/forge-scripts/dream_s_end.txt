@@ -1,0 +1,6 @@
+Name:Dream's End
+ManaCost:1 U
+Types:Instant
+A:SP$ ChangeZone | ValidTgts$ Creature | TgtPrompt$ Select target creature | Origin$ Battlefield | Destination$ Library | LibraryPosition$ 0 | DefinedPlayer$ You | SubAbility$ DBDraw | SpellDescription$ Return target creature to the top of your library. Draw a card.
+SVar:DBDraw:DB$ Draw | NumCards$ 1
+Oracle:Return target creature to the top of your library. Draw a card.

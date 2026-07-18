@@ -1,0 +1,7 @@
+Name:Green Ajah Growth
+ManaCost:2 G
+Types:Enchantment
+T:Mode$ SpellCast | ValidCard$ Card.Green | ValidActivatingPlayer$ You | ActivatorThisTurnCast$ EQ1 | TriggerZones$ Battlefield | Execute$ TrigWolf | TriggerDescription$ Whenever you cast your first green spell each turn, create a 1/1 green Wolf creature token.
+SVar:TrigWolf:DB$ Token | TokenScript$ g_1_1_wolf | TokenOwner$ You
+DeckHas:Ability$Token
+Oracle:Whenever you cast your first green spell each turn, create a 1/1 green Wolf creature token.

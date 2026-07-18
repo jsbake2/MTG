@@ -4,6 +4,7 @@ import type { Ability, CardDetailResponse, Deck, EffectMode, GameObject, PlayerS
 import { TURN_STEPS, compileEffects, parseAbilities } from "@mtg/shared";
 import { api } from "@/api/client";
 import { useReportIssue } from "@/store/reportIssue";
+import { useCardDetail } from "@/store/cardDetail";
 import { useAuth } from "@/store/auth";
 import { constructionMatches, useLegalDeckIds } from "@/lib/deckLegality";
 import { useTable, type TableConn } from "@/game/useTable";
@@ -33,6 +34,11 @@ const STEP_LABELS: Record<string, string> = {
 export function TablePage() {
   const { id = "" } = useParams();
   const t = useTable(id);
+  // Test hook: expose the client's authoritative state for the Playwright
+  // playtest driver to read (harmless in prod; just a snapshot on window).
+  useEffect(() => {
+    (window as unknown as { __mtg?: unknown }).__mtg = { state: t.state, you: t.you, hands: t.hands, manaChoice: t.manaChoice };
+  }, [t.state, t.you, t.hands, t.manaChoice]);
   if (t.state)
     return (
       <>
@@ -219,6 +225,15 @@ function Lobby({ t }: { t: TableConn }) {
               Leave seat
             </button>
           )}
+          {isHost && lobby.seats.length < lobby.maxPlayers && (
+            <button
+              className="btn-ghost"
+              title="Add a computer opponent (plays a curated engine-supported deck)"
+              onClick={() => api.post(`/api/tables/${t.tableId}/bot`, {}).catch((e) => alert(e?.message ?? "Couldn't add AI opponent"))}
+            >
+              🤖 Add AI opponent
+            </button>
+          )}
           {isHost ? (
             <button className="btn-primary ml-auto" onClick={() => t.start()} disabled={lobby.seats.length < 1}>
               Start game
@@ -337,6 +352,27 @@ function GameBoard({ t, state }: { t: TableConn; state: TableState }) {
       setHoveredCard({ id: card.id, name: card.name, x: e.clientX, y: e.clientY });
     }
   };
+
+  // The hover preview clears on the card's own mouseleave — but that never fires
+  // if the card unmounts, moves, or a menu opens over it, leaving the preview
+  // stuck (it's pointer-events-none, so it can't be clicked away). Guarantee a
+  // way out: Escape, any click, or scroll/zoom always dismisses it.
+  const previewUp = hoveredCard !== null;
+  useEffect(() => {
+    if (!previewUp) return;
+    const clear = () => setHoveredCard(null);
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") clear();
+    };
+    window.addEventListener("pointerdown", clear, true);
+    window.addEventListener("wheel", clear, { passive: true });
+    window.addEventListener("keydown", onKey);
+    return () => {
+      window.removeEventListener("pointerdown", clear, true);
+      window.removeEventListener("wheel", clear);
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [previewUp]);
 
   // Generic targeting: collect N targets then fire `send`.
   function beginTargeting(name: string, specs: { kind: string; label: string }[], send: (targets: string[]) => void) {
@@ -476,10 +512,8 @@ function GameBoard({ t, state }: { t: TableConn; state: TableState }) {
           Turn {state.turnNumber} · {STEP_LABELS[state.step]}
         </span>
         <TurnTimer startedAt={state.turnStartedAt} limit={turnLimitSeconds} isMine={isActive} sound={sound} />
-        <span className="text-xs text-table-muted">{state.players.find((p) => p.seat === state.activeSeat)?.name}'s turn</span>
-        <span className="rounded bg-table-panel2 border border-table-border/60 px-2 py-0.5 text-xs text-table-muted flex items-center gap-1.5 ml-2">
-          <span className="h-1.5 w-1.5 rounded-full bg-table-accent animate-pulse" />
-          Priority: <span className="font-semibold text-table-accentSoft">{state.players.find((p) => p.seat === state.prioritySeat)?.name}</span>
+        <span className="text-xs text-table-muted">
+          <span className="font-semibold text-table-accentSoft">{state.players.find((p) => p.seat === state.activeSeat)?.name}</span>'s turn
         </span>
         {state.status === "finished" && (
           <span className="rounded bg-table-accent px-2 py-0.5 text-black">
@@ -764,6 +798,7 @@ function GameBoard({ t, state }: { t: TableConn; state: TableState }) {
         />
       )}
       {sel && <CardMenu sel={sel} state={state} you={you} t={t} onCast={beginCast} onActivate={onActivate} onClose={() => setSel(null)} />}
+      {t.manaChoice && <ManaPicker t={t} />}
       <RollOverlay roll={state.lastRoll} />
       {modePicker && (
         <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/60 p-4" onClick={() => setModePicker(null)}>
@@ -825,7 +860,7 @@ function GameBoard({ t, state }: { t: TableConn; state: TableState }) {
         >
           <div className="rounded-lg border border-table-border bg-table-panel/95 p-1.5 shadow-2xl backdrop-blur-md animate-fade-in">
             <img
-              src={`/api/cards/${hoveredCard.id}/image`}
+              src={`/api/cards/${hoveredCard.id}/image?v=4`}
               alt={hoveredCard.name}
               className="w-56 rounded-md shadow-lg card-aspect"
             />
@@ -927,22 +962,24 @@ function PlayerStrip({
   const gy = objectsByZone[`graveyard:${p.seat}`] ?? [];
   const ex = objectsByZone[`exile:${p.seat}`] ?? [];
   const active = state.activeSeat === p.seat;
-  const hasPriority = state.prioritySeat === p.seat;
 
   return (
     <div className={`panel p-3 border-2 ${targeting ? "cursor-crosshair ring-2 ring-red-500/60" : ""} ${active ? "border-table-accent shadow-lg shadow-table-accent/5" : "border-table-border/60"} ${p.hasLost ? "opacity-40" : ""}`}>
       <div className="mb-1 flex items-center gap-2 text-sm">
-        <button disabled={!targeting} onClick={() => onTargetPlayer?.()} className="flex items-center gap-2">
+        {/* Whose turn it is: a clean glowing border around the avatar + name. */}
+        <button
+          disabled={!targeting}
+          onClick={() => onTargetPlayer?.()}
+          className={`flex items-center gap-2 rounded-full py-0.5 pl-0.5 pr-2 transition-all ${
+            active
+              ? "bg-table-accent/10 ring-2 ring-table-accent shadow-[0_0_14px] shadow-table-accent/50"
+              : "ring-2 ring-transparent"
+          }`}
+        >
           <Avatar cardId={p.avatarCardId} name={p.name} size={28} ring={active} />
           <span className={`h-2 w-2 rounded-full ${p.connected ? "bg-green-400" : "bg-gray-500"}`} />
-          <span className="font-semibold">{p.name}</span>
+          <span className={`font-semibold ${active ? "text-table-accentSoft" : ""}`}>{p.name}</span>
         </button>
-        {active && (
-          <span className="rounded bg-amber-500/20 px-1 py-0.5 text-[9px] font-bold uppercase tracking-wider text-amber-200 border border-amber-500/40">Active</span>
-        )}
-        {hasPriority && (
-          <span className="animate-pulse rounded bg-table-accent/20 px-1 py-0.5 text-[9px] font-bold uppercase tracking-wider text-table-accentSoft border border-table-accent/40">Priority</span>
-        )}
         <div className="flex items-center gap-1">
           <span className={`life-diamond text-sm font-bold text-white ${p.life <= 5 ? "animate-pulse border-red-500 shadow-red-500/55 shadow-[0_0_12px]" : ""}`} title="Life (controlled by the game engine)">
             <span>{p.life}</span>
@@ -950,9 +987,14 @@ function PlayerStrip({
         </div>
         <span className="text-xs text-table-muted flex gap-2 ml-1">
           <span title="Cards in hand">✋{p.handCount}</span>
-          <button className="hover:text-table-accentSoft" onClick={() => onBrowse(`library:${p.seat}`, `${p.name}'s Library`)} title="Search/View library">
-            📚{p.libraryCount}
-          </button>
+          {/* Only your own library is browsable — an opponent's is hidden. */}
+          {p.seat === you ? (
+            <button className="hover:text-table-accentSoft" onClick={() => onBrowse(`library:${p.seat}`, `${p.name}'s Library`)} title="Search/View your library">
+              📚{p.libraryCount}
+            </button>
+          ) : (
+            <span title="Opponent's library is hidden">📚{p.libraryCount}</span>
+          )}
           <button className="hover:text-table-accentSoft" onClick={() => onBrowse(`graveyard:${p.seat}`, `${p.name}'s Graveyard`)} title="View graveyard">
             🪦{gy.length}
           </button>
@@ -1164,7 +1206,23 @@ function GameCard({
             ))}
           </div>
         )}
-        {o.ptOverride && (
+        {/* Effective P/T for creatures — printed ± counters/pumps, computed
+            server-side. Glows green/red when it differs from the printed base. */}
+        {o.effPower != null && o.effToughness != null && (() => {
+          const buffed = o.basePower != null && (o.effPower !== o.basePower || o.effToughness !== o.baseToughness);
+          const up = o.basePower != null && o.effPower >= o.basePower && o.effToughness >= (o.baseToughness ?? 0);
+          const cls = !buffed
+            ? "bg-black/85 text-white"
+            : up
+              ? "bg-emerald-600 text-white ring-1 ring-emerald-300 shadow-[0_0_8px] shadow-emerald-400/60"
+              : "bg-rose-700 text-white ring-1 ring-rose-300 shadow-[0_0_8px] shadow-rose-400/60";
+          return (
+            <span className={`absolute bottom-0 right-0 rounded px-1 text-[11px] font-extrabold tabular-nums ${cls}`} title={buffed && o.basePower != null ? `base ${o.basePower}/${o.baseToughness}` : undefined}>
+              {o.effPower}/{o.effToughness}
+            </span>
+          );
+        })()}
+        {o.effPower == null && o.ptOverride && (
           <span className="absolute bottom-0 right-0 rounded bg-black/80 px-1 text-[10px] font-bold text-white">
             {o.ptOverride.power}/{o.ptOverride.toughness}
           </span>
@@ -1219,7 +1277,7 @@ function PhaseControls({ state, t, isActive, hasPriority, you }: { state: TableS
       <button className="btn-ghost !py-1" onClick={() => t.send({ type: "pass_priority", seat: you })} disabled={!hasPriority}>
         Pass{hasPriority ? " ▸" : ""}
       </button>
-      <button className="btn-primary !py-1" onClick={() => t.send({ type: "advance_step" })} disabled={!isActive}>
+      <button className="btn-primary !py-1" onClick={() => t.send({ type: "advance_step" })} disabled={!hasPriority} title={hasPriority ? "Advance to the next step" : "Waiting — you don't have priority"}>
         Next step
       </button>
       <button className="btn-ghost !py-1" onClick={() => t.send({ type: "end_turn" })} disabled={!isActive} title="Skip through the rest of your turn to the next player">
@@ -1232,6 +1290,73 @@ function PhaseControls({ state, t, isActive, hasPriority, you }: { state: TableS
       )}
       {/* Draw and untap happen automatically on the draw/untap steps — the manual
           versions live in the ⚙ Manual override panel so they can't be spammed. */}
+    </div>
+  );
+}
+
+// Pick which mana sources to tap when a cast can be paid more than one way. The
+// server only asks when the choice is real (duals / surplus of mixed sources);
+// forced payments auto-tap and never reach here.
+function ManaPicker({ t }: { t: TableConn }) {
+  const mc = t.manaChoice!;
+  const [picked, setPicked] = useState<Set<string>>(new Set());
+  const need = mc.cost.pips.length + mc.cost.generic;
+  const pickedMana = mc.sources.filter((s) => picked.has(s.id)).reduce((n, s) => n + s.amount, 0);
+  const toggle = (id: string) =>
+    setPicked((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  const swatch = (c: string) => (
+    <span key={c} className="inline-flex h-4 w-4 items-center justify-center rounded-full text-[9px] font-bold" style={{ background: MANA_HEX[c] ?? "#666", color: MANA_FG[c] ?? "#fff" }}>
+      {c}
+    </span>
+  );
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4" onClick={() => t.clearManaChoice()}>
+      <div className="panel w-full max-w-md p-4" onClick={(e) => e.stopPropagation()}>
+        <h3 className="font-display text-lg text-table-accentSoft">Pay for {mc.cardName}</h3>
+        <div className="mt-1 flex items-center gap-1.5 text-sm text-table-muted">
+          Cost:
+          {mc.cost.generic > 0 && <span className="rounded-full bg-table-panel2 px-2 py-0.5 text-xs font-bold text-table-ink">{mc.cost.generic}</span>}
+          {mc.cost.pips.map((c, i) => (
+            <span key={i}>{swatch(c)}</span>
+          ))}
+          <span className="ml-auto text-xs">selected {pickedMana}/{need}</span>
+        </div>
+        <div className="mt-3 grid grid-cols-1 gap-1">
+          {mc.sources.map((s) => {
+            const on = picked.has(s.id);
+            return (
+              <button
+                key={s.id}
+                onClick={() => toggle(s.id)}
+                className={`flex items-center gap-2 rounded-md border px-2 py-1.5 text-left text-sm ${on ? "border-table-accent bg-table-accent/10" : "border-table-border hover:bg-table-panel2"}`}
+              >
+                <span className={`h-3 w-3 rounded-sm border ${on ? "border-table-accent bg-table-accent" : "border-table-border"}`} />
+                <span className="flex-1 truncate">{s.name}</span>
+                <span className="flex items-center gap-0.5">{s.colors.map(swatch)}{s.amount > 1 && <span className="text-[10px] text-table-muted">×{s.amount}</span>}</span>
+              </button>
+            );
+          })}
+        </div>
+        <div className="mt-3 flex gap-2">
+          <button
+            className="btn-primary"
+            disabled={pickedMana < need}
+            onClick={() => {
+              t.send({ type: "cast", objectId: mc.objectId, x: mc.x, manaSources: [...picked] });
+              t.clearManaChoice();
+            }}
+          >
+            Cast
+          </button>
+          <button className="btn-ghost" onClick={() => t.clearManaChoice()}>
+            Cancel
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
@@ -1275,7 +1400,7 @@ function ManualOverridePanel({ me, t, you }: { me: PlayerState; t: TableConn; yo
       <ManaControl p={me} t={t} />
 
       <div className="flex items-center gap-1">
-        <button className="chip hover:border-table-accent" onClick={() => t.send({ type: "draw", seat: you, count: 1 })}>Draw 1</button>
+        <button className="chip hover:border-table-accent" onClick={() => t.send({ type: "override", description: "Manual draw 1", inner: { type: "draw", seat: you, count: 1 } })} title="Force-draw one card (bypasses the guided draw limit; logged)">Draw 1</button>
         <button className="chip hover:border-table-accent" onClick={() => t.send({ type: "untap_all", seat: you })}>Untap all</button>
         <button className="chip hover:border-table-accent" onClick={() => t.send({ type: "shuffle", seat: you })}>Shuffle</button>
       </div>
@@ -1700,6 +1825,7 @@ function CardMenu({
         </>
       )}
       <div className="my-1 border-t border-table-border" />
+      {o.cardId && <Item label="⚙️ Engine details" onClick={() => useCardDetail.getState().open(o.cardId!)} />}
       <Item label="🐞 Report issue" onClick={() => useReportIssue.getState().openReport({ cardId: o.cardId, oracleId: o.oracleId, cardName: o.name })} />
     </div>
   );

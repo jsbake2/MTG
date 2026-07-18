@@ -42,6 +42,8 @@ COPY --from=build --chown=app:app /app/shared/package.json ./shared/package.json
 COPY --from=build --chown=app:app /app/shared/dist ./shared/dist
 COPY --from=build --chown=app:app /app/server/package.json ./server/package.json
 COPY --from=build --chown=app:app /app/server/dist ./server/dist
+# Bundled fonts for the card-frame compositor (the slim image ships none).
+COPY --from=build --chown=app:app /app/server/assets ./server/assets
 COPY --from=build --chown=app:app /app/client/dist ./client/dist
 COPY --from=build --chown=app:app /app/package.json ./package.json
 

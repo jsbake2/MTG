@@ -1,0 +1,8 @@
+Name:Endless Growth II
+ManaCost:1 G
+Types:Enchantment
+T:Mode$ SpellCast | ValidCard$ Card.Green | ValidActivatingPlayer$ You | TriggerZones$ Battlefield | Execute$ TrigPumpAll | TriggerDescription$ Whenever you cast a green spell, all green creatures get +1/+1 until end of turn.
+SVar:TrigPumpAll:DB$ PumpAll | ValidCards$ Creature.Green | NumAtt$ +1 | NumDef$ +1
+A:AB$ Token | Cost$ G G | TokenScript$ g_1_1_wolf | TokenOwner$ You | SpellDescription$ Create a 1/1 green Wolf creature token.
+DeckHas:Ability$Token
+Oracle:Whenever you cast a green spell, all green creatures get +1/+1 until end of turn.\n{G}{G}: Create a 1/1 green Wolf creature token.

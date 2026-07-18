@@ -1,0 +1,10 @@
+Name:Gareth Bryne, Great Captain
+ManaCost:2 W
+Types:Legendary Creature Human Soldier
+PT:3/3
+S:Mode$ Continuous | Affected$ Creature.Soldier+YouCtrl+Other | AddPower$ 1 | Description$ Other Soldiers you control get +1/+0.
+T:Mode$ Attacks | ValidCard$ Card.Self | Execute$ TrigToken | TriggerDescription$ Whenever CARDNAME attacks, create a 1/1 white Soldier creature token that's tapped and attacking.
+SVar:TrigToken:DB$ Token | TokenAmount$ 1 | TokenScript$ w_1_1_soldier | TokenOwner$ You | TokenTapped$ True | TokenAttacking$ True
+SVar:HasAttackEffect:TRUE
+DeckHints:Type$Soldier
+Oracle:Other Soldiers you control get +1/+0.\nWhenever Gareth Bryne, Great Captain attacks, create a 1/1 white Soldier creature token that's tapped and attacking.

@@ -1,0 +1,7 @@
+Name:Shadow's Whisper
+ManaCost:1 B
+Types:Sorcery
+A:SP$ Discard | Defined$ Player.Opponent | NumCards$ 1 | Mode$ TgtChoose | SubAbility$ DBToken | SpellDescription$ Each opponent discards a card. Create a 1/1 black Shadowspawn creature token.
+SVar:DBToken:DB$ Token | TokenScript$ b_1_1_shadowspawn | TokenOwner$ You
+DeckHas:Ability$Discard|Token
+Oracle:Each opponent discards a card. Create a 1/1 black Shadowspawn creature token.

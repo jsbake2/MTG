@@ -1,0 +1,9 @@
+Name:Wolfhound Companion
+ManaCost:2 G
+Types:Creature Wolf
+PT:1/1
+T:Mode$ ChangesZone | Origin$ Any | Destination$ Battlefield | ValidCard$ Card.Self | Execute$ TrigToken | TriggerDescription$ When CARDNAME enters, create a 1/1 green Wolf creature token.
+SVar:TrigToken:DB$ Token | TokenScript$ g_1_1_wolf | TokenOwner$ You
+DeckHas:Ability$Token
+DeckHints:Type$Wolf
+Oracle:When Wolfhound Companion enters, create a 1/1 green Wolf creature token.

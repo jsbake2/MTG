@@ -1,0 +1,7 @@
+Name:Accepted Fighter
+ManaCost:1 W
+Types:Creature Human Aes Sedai
+PT:2/1
+T:Mode$ Attacks | ValidCard$ Card.Self | OptionalDecider$ You | Execute$ Weave | TriggerDescription$ Whenever CARDNAME attacks, you may weave.
+SVar:Weave:DB$ PutCounter | Defined$ You | CounterType$ WEAVE | CounterNum$ 1
+Oracle:Whenever Accepted Fighter attacks, you may weave.

@@ -1,0 +1,12 @@
+Name:The Wheel Turns Again
+ManaCost:W U B R G
+Types:Sorcery
+A:SP$ Token | TokenAmount$ 1 | TokenScript$ c_5_5_construct | TokenOwner$ You | SubAbility$ DBTutor | SpellDescription$ Create a 5/5 colorless Construct creature token. Search your library for a card, put it into your hand, then shuffle. Then if you've woven ten or more times and you control a creature of each color, you win the game.
+SVar:DBTutor:DB$ ChangeZone | Origin$ Library | Destination$ Hand | ChangeType$ Card | ChangeNum$ 1 | Mandatory$ True | SubAbility$ DBBranch
+SVar:DBBranch:DB$ Branch | BranchConditionSVar$ Weave | BranchConditionSVarCompare$ GE10 | TrueSubAbility$ DBWinGame
+SVar:DBWinGame:DB$ WinsGame | Defined$ You | ConditionCheckSVar$ Colors | ConditionSVarCompare$ GE5
+SVar:Weave:Count$YourCountersWEAVE
+SVar:Colors:Count$Valid Creature.YouCtrl$Colors
+DeckHas:Ability$Token
+AI:RemoveDeck:Random
+Oracle:Create a 5/5 colorless Construct creature token. Search your library for a card, put it into your hand, then shuffle. Then if you've woven ten or more times and you control a creature of each color, you win the game.

@@ -1,0 +1,7 @@
+Name:Cuendillar Guardian
+ManaCost:4
+Types:Artifact Creature Construct
+PT:3/5
+S:Mode$ Continuous | Affected$ Card.Self | AddKeyword$ Indestructible | IsPresent$ Card.Self+untapped | Description$ CARDNAME has indestructible as long as it's untapped.
+DeckHas:Keyword$Indestructible
+Oracle:Cuendillar Guardian has indestructible as long as it's untapped.

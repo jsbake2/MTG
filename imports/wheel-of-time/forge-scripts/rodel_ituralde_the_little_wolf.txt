@@ -1,0 +1,9 @@
+Name:Rodel Ituralde, the Little Wolf
+ManaCost:2 W
+Types:Legendary Creature Human Soldier
+PT:2/4
+S:Mode$ Continuous | Affected$ Creature.attackingYou | AddPower$ -1 | Description$ Creatures attacking you get -1/-0.
+T:Mode$ Attacks | ValidCard$ Creature | Attacked$ You | TriggerZones$ Battlefield | Execute$ TrigPutCounter | TriggerDescription$ Whenever a creature attacks you, put a +1/+1 counter on CARDNAME.
+SVar:TrigPutCounter:DB$ PutCounter | Defined$ Self | CounterType$ P1P1 | CounterNum$ 1
+DeckHas:Ability$Counters
+Oracle:Creatures attacking you get -1/-0.\nWhenever a creature attacks you, put a +1/+1 counter on Rodel Ituralde, the Little Wolf.

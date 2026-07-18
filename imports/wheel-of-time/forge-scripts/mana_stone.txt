@@ -1,0 +1,6 @@
+Name:Mana Stone
+ManaCost:2
+Types:Artifact
+A:AB$ Mana | Cost$ T | Produced$ C | SpellDescription$ Add {C}.
+A:AB$ Mana | Cost$ 4 T | Produced$ Any | RestrictValid$ Spell.Channeler,Spell.AesSedai,Spell.Ashaman,Spell.WiseOne,Spell.Windfinder,Spell.Damane,Spell.Dreadlord,Spell.Forsaken,Activated.Channeler+inZoneBattlefield,Activated.AesSedai+inZoneBattlefield,Activated.Ashaman+inZoneBattlefield,Activated.WiseOne+inZoneBattlefield,Activated.Windfinder+inZoneBattlefield,Activated.Damane+inZoneBattlefield,Activated.Dreadlord+inZoneBattlefield,Activated.Forsaken+inZoneBattlefield | SpellDescription$ Add one mana of any color. Spend this mana only to cast Channeler spells or activate abilities of Channelers.
+Oracle:{T}: Add {C}.\n{4}, {T}: Add one mana of any color. Spend this mana only to cast Channeler spells or activate abilities of Channelers.

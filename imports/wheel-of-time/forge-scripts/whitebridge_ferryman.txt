@@ -1,0 +1,7 @@
+Name:Whitebridge Ferryman
+ManaCost:1 U
+Types:Creature Human Sailor
+PT:2/1
+S:Mode$ CantBlockBy | ValidAttacker$ Card.Self | CheckSVar$ X | SVarCompare$ GE3 | Description$ Pattern 3 — CARDNAME can't be blocked.
+SVar:X:Count$YourCountersWEAVE
+Oracle:Pattern 3 — Whitebridge Ferryman can't be blocked.

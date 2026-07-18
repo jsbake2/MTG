@@ -1,0 +1,6 @@
+Name:Stand Against the Shadow
+ManaCost:2 W
+Types:Instant
+A:SP$ PumpAll | ValidCards$ Creature.YouCtrl | KW$ Indestructible | SubAbility$ Weave | SpellDescription$ Creatures you control gain indestructible until end of turn. Weave.
+SVar:Weave:DB$ PutCounter | Defined$ You | CounterType$ WEAVE | CounterNum$ 1
+Oracle:Creatures you control gain indestructible until end of turn. Weave.

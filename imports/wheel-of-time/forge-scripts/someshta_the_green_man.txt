@@ -1,0 +1,11 @@
+Name:Someshta, the Green Man
+ManaCost:3 G G
+Types:Legendary Creature Nym
+PT:5/7
+K:Vigilance
+T:Mode$ ChangesZone | Origin$ Any | Destination$ Battlefield | ValidCard$ Card.Self | Execute$ TrigPutCounters | TriggerDescription$ When CARDNAME enters, put a +1/+1 counter on each other creature you control.
+SVar:TrigPutCounters:DB$ PutCounterAll | ValidCards$ Creature.Other+YouCtrl | CounterType$ P1P1 | CounterNum$ 1
+T:Mode$ ChangesZone | Origin$ Battlefield | Destination$ Graveyard | ValidCard$ Card.Self | Execute$ TrigDestroy | TriggerDescription$ When CARDNAME dies, destroy target Forsaken or Shadowspawn.
+SVar:TrigDestroy:DB$ Destroy | ValidTgts$ Creature.Forsaken,Creature.Shadowspawn | TgtPrompt$ Select target Forsaken or Shadowspawn
+DeckHas:Ability$Counters
+Oracle:Vigilance\nWhen Someshta, the Green Man enters, put a +1/+1 counter on each other creature you control.\nWhen Someshta, the Green Man dies, destroy target Forsaken or Shadowspawn.

@@ -1,0 +1,8 @@
+Name:Egeanin Tamarath, Ship Captain
+ManaCost:1 W U
+Types:Legendary Creature Human Soldier
+PT:2/2
+T:Mode$ ChangesZone | Origin$ Any | Destination$ Battlefield | ValidCard$ Card.Self | Execute$ TrigGainControl | TriggerDescription$ When CARDNAME enters, gain control of target Equipment, then you may attach it to CARDNAME.
+SVar:TrigGainControl:DB$ GainControl | ValidTgts$ Equipment | TgtPrompt$ Select target Equipment | SubAbility$ DBAttach
+SVar:DBAttach:DB$ Attach | Object$ ParentTarget | Defined$ Self | Optional$ True
+Oracle:When Egeanin Tamarath, Ship Captain enters, gain control of target Equipment, then you may attach it to her.

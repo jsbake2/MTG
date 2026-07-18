@@ -1,0 +1,8 @@
+Name:Palace Guards
+ManaCost:1 W
+Types:Creature Human Soldier
+PT:2/2
+T:Mode$ Attacks | ValidCard$ Card.Self | TriggerZones$ Battlefield | Execute$ TrigLoseLife | TriggerDescription$ Whenever CARDNAME attacks, each opponent loses 1 life.
+SVar:TrigLoseLife:DB$ LoseLife | Defined$ Player.Opponent | LifeAmount$ 1
+SVar:HasAttackEffect:TRUE
+Oracle:Whenever Palace Guards attacks, each opponent loses 1 life.

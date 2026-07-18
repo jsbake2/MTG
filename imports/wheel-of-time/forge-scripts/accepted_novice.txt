@@ -1,0 +1,8 @@
+Name:Accepted Novice
+ManaCost:2 W
+Types:Creature Human Aes Sedai
+PT:1/1
+T:Mode$ SpellCast | ValidCard$ Card.nonCreature | ValidActivatingPlayer$ You | ActivationLimit$ 1 | TriggerZones$ Battlefield | Execute$ TrigToken | TriggerDescription$ Whenever you cast your first noncreature spell each turn, create a 1/1 white Aes Sedai creature token.
+SVar:TrigToken:DB$ Token | TokenAmount$ 1 | TokenScript$ w_1_1_aes_sedai | TokenOwner$ You
+DeckHas:Ability$Token
+Oracle:Whenever you cast your first noncreature spell each turn, create a 1/1 white Aes Sedai creature token.

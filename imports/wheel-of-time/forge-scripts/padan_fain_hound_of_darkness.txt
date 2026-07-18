@@ -1,0 +1,10 @@
+Name:Padan Fain, Hound of Darkness
+ManaCost:2 B B
+Types:Legendary Creature Human Darkfriend
+PT:4/3
+K:Deathtouch
+T:Mode$ ChangesZone | Origin$ Battlefield | Destination$ Graveyard | ValidCard$ Creature.Other | TriggerZones$ Battlefield | Execute$ TrigPutCounter | TriggerDescription$ Whenever another creature dies, put a +1/+1 counter on CARDNAME.
+SVar:TrigPutCounter:DB$ PutCounter | Defined$ Self | CounterType$ P1P1 | CounterNum$ 1
+S:Mode$ CantSacrifice | ValidCard$ Card.Self | Description$ CARDNAME can't be sacrificed.
+S:Mode$ Continuous | Affected$ Card.Self | RemoveType$ Darkfriend | Description$ CARDNAME isn't a Darkfriend. (He belongs to something older now.)
+Oracle:Deathtouch\nWhenever another creature dies, put a +1/+1 counter on Padan Fain.\nFain can't be sacrificed, and he isn't a Darkfriend while an opponent's effect refers to Darkfriends. (He belongs to something older now.)

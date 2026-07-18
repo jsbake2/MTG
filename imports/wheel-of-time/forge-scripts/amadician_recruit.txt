@@ -1,0 +1,7 @@
+Name:Amadician Recruit
+ManaCost:W
+Types:Creature Human Whitecloak Soldier
+PT:1/1
+S:Mode$ Continuous | Affected$ Card.Self | AddPower$ 1 | AddToughness$ 1 | CheckSVar$ Anath | SVarCompare$ GE1 | Description$ Anathema — CARDNAME gets +1/+1 as long as an opponent controls a Channeler.
+SVar:Anath:Count$Valid Creature.Channeler+OppCtrl,Creature.AesSedai+OppCtrl,Creature.Ashaman+OppCtrl,Creature.WiseOne+OppCtrl,Creature.Windfinder+OppCtrl,Creature.Damane+OppCtrl,Creature.Dreadlord+OppCtrl,Creature.Forsaken+OppCtrl
+Oracle:Anathema — Amadician Recruit gets +1/+1 as long as an opponent controls a Channeler.

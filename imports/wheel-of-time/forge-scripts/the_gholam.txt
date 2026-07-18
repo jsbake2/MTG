@@ -1,0 +1,11 @@
+Name:The Gholam
+ManaCost:2 B B
+Types:Legendary Creature Gholam
+PT:4/4
+K:Menace
+R:Event$ DamageDone | Prevent$ True | ActiveZones$ Battlefield | ValidSource$ Spell | ValidTarget$ Card.Self | Description$ Prevent all damage that would be dealt to CARDNAME by spells.
+R:Event$ DamageDone | Prevent$ True | ActiveZones$ Battlefield | ValidSource$ Creature.Channeler+inZoneBattlefield,Creature.AesSedai+inZoneBattlefield,Creature.Ashaman+inZoneBattlefield,Creature.WiseOne+inZoneBattlefield,Creature.Windfinder+inZoneBattlefield,Creature.Damane+inZoneBattlefield,Creature.Dreadlord+inZoneBattlefield,Creature.Forsaken+inZoneBattlefield | ValidTarget$ Card.Self | Description$ Prevent all damage that would be dealt to CARDNAME by Channelers.
+T:Mode$ DamageDone | ValidSource$ Card.Self | ValidTarget$ Creature | CombatDamage$ True | TriggerZones$ Battlefield | Execute$ TrigDestroy | TriggerDescription$ Whenever CARDNAME deals combat damage to a creature, destroy that creature.
+SVar:TrigDestroy:DB$ Destroy | Defined$ TriggeredTargetLKICopy | NoRegen$ False
+SVar:HasCombatEffect:TRUE
+Oracle:Menace\nPrevent all damage that would be dealt to The Gholam by spells and by Channelers.\nWhenever The Gholam deals combat damage to a creature, destroy that creature.

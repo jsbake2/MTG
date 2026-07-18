@@ -1,0 +1,21 @@
+Name:Shaidar Haran, The Hand
+ManaCost:3 B R
+Types:Legendary Creature Forsaken Avatar
+PT:5/4
+K:Menace
+# Trigger 1: Whenever you leash a creature (LEASH counter added to any creature),
+# Shaidar Haran gets +2/+0 until end of turn.
+# Leash idiom: CounterAdded on LEASH matches the chain established in leash_bearer.txt
+# and leash_master.txt. ValidCard$ Creature (any creature, not just opponents') matches
+# "whenever you leash" — the LEASH counter is only placed by your Leash abilities.
+T:Mode$ CounterAdded | CounterType$ LEASH | ValidCard$ Creature | TriggerZones$ Battlefield | Execute$ TrigLeashPump | TriggerDescription$ Whenever you leash a creature, CARDNAME gets +2/+0 until end of turn.
+SVar:TrigLeashPump:DB$ Pump | Defined$ Self | NumAtt$ +2 | NumDef$ +0
+# Trigger 2: Whenever a creature you control dies, create a 1/1 black Trolloc token.
+# Pattern from Dictate of Erebos + Abzan Ascendancy; token script from trolloc_horde.txt.
+T:Mode$ ChangesZone | Origin$ Battlefield | Destination$ Graveyard | ValidCard$ Creature.YouCtrl | TriggerZones$ Battlefield | Execute$ TrigTrolloc | TriggerDescription$ Whenever a creature you control dies, create a 1/1 black Trolloc creature token.
+SVar:TrigTrolloc:DB$ Token | TokenAmount$ 1 | TokenScript$ b_1_1_trolloc | TokenOwner$ You
+# Activated: {B}{R} — CARDNAME gets +1/+0 until end of turn.
+# Copied verbatim from Pavel Maliki (same cost, same self-pump).
+A:AB$ Pump | Cost$ B R | Defined$ Self | NumAtt$ +1 | SpellDescription$ CARDNAME gets +1/+0 until end of turn.
+DeckHas:Ability$Token & Type$Trolloc
+Oracle:Menace\nWhenever you leash a creature, Shaidar Haran, The Hand gets +2/+0 until end of turn.\nWhenever a creature you control dies, create a 1/1 black Trolloc creature token.\n{B}{R}: Shaidar Haran, The Hand gets +1/+0 until end of turn.

@@ -1,0 +1,6 @@
+Name:Volatile Energy
+ManaCost:1 R
+Types:Instant
+A:SP$ DealDamage | ValidTgts$ Creature | TgtPrompt$ Select target creature | NumDmg$ 3 | SubAbility$ DBAnimate | SpellDescription$ CARDNAME deals 3 damage to target creature. If a creature is dealt damage this way, it becomes a 1/1 red Elemental with haste.
+SVar:DBAnimate:DB$ Animate | Defined$ ParentTarget | Power$ 1 | Toughness$ 1 | Colors$ Red | OverwriteColors$ True | Types$ Elemental | RemoveCreatureTypes$ True | RemoveAllAbilities$ True | Keywords$ Haste | Duration$ Permanent
+Oracle:Volatile Energy deals 3 damage to target creature. If a creature is dealt damage this way, it becomes a 1/1 red Elemental with haste.

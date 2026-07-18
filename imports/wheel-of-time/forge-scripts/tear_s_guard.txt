@@ -1,0 +1,8 @@
+Name:Tear's Guard
+ManaCost:1 U
+Types:Creature Human Soldier
+PT:1/1
+K:Menace
+A:AB$ Effect | Cost$ U | RememberObjects$ Self | ExileOnMoved$ Battlefield | StaticAbilities$ Unblockable | SpellDescription$ CARDNAME can't be blocked this turn.
+SVar:Unblockable:Mode$ CantBlockBy | ValidAttacker$ Card.IsRemembered | Description$ EFFECTSOURCE can't be blocked this turn.
+Oracle:Menace\n{U}: Tear's Guard can't be blocked this turn.

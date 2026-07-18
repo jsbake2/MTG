@@ -1,0 +1,14 @@
+Name:Leash of Dominion
+ManaCost:2 U B
+Types:Instant
+A:SP$ GainControl | ValidTgts$ Creature.OppCtrl | TgtPrompt$ Select target creature an opponent controls | RememberControlled$ True | SubAbility$ DBLeashCounter | SpellDescription$ Leash target creature. (You gain control of it. At the beginning of your upkeep, pay its leash cost — {2}, doubling each time you pay — or it returns to its owner and can't be leashed again until your next turn.) It must attack this turn if able.
+SVar:DBLeashCounter:DB$ PutCounter | Defined$ Remembered | CounterType$ LEASH | CounterNum$ 1 | SubAbility$ DBEffect
+SVar:DBEffect:DB$ Effect | RememberObjects$ Remembered | Triggers$ TrigUpkeep | StaticAbilities$ MustAttackNow | ForgetOnMoved$ Battlefield | Duration$ Permanent | SubAbility$ DBCleanup
+SVar:MustAttackNow:Mode$ MustAttack | ValidCreature$ Card.IsRemembered | Description$ That creature attacks this turn if able.
+SVar:TrigUpkeep:Mode$ Phase | Phase$ Upkeep | ValidPlayer$ You | Execute$ DBPayOrReturn | TriggerZones$ Command | TriggerDescription$ At the beginning of your upkeep, pay {2} for each leash counter on the leashed creature or return it to its owner's control.
+SVar:DBPayOrReturn:DB$ GainControl | Defined$ Remembered | NewController$ CardOwner | UnlessCost$ GenericX | UnlessPayer$ You | SubAbility$ DBAddLeashCounter
+SVar:GenericX:Remembered$CardCounters.LEASH/Times.2
+SVar:DBAddLeashCounter:DB$ PutCounter | Defined$ Remembered | CounterType$ LEASH | CounterNum$ 1
+SVar:DBCleanup:DB$ Cleanup | ClearRemembered$ True
+AI:RemoveDeck:All
+Oracle:Leash target creature. (You gain control of it. At the beginning of your upkeep, pay its leash cost — {2}, doubling each time you pay — or it returns to its owner and can't be leashed again until your next turn.) It must attack this turn if able.

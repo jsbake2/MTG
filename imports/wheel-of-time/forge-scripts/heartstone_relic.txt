@@ -1,0 +1,6 @@
+Name:Heartstone Relic
+ManaCost:3
+Types:Artifact
+K:Indestructible
+A:AB$ Mana | Cost$ T | Produced$ Any | SpellDescription$ Add one mana of any color.
+Oracle:Cuendillar — Heartstone Relic has indestructible.\n{T}: Add one mana of any color.

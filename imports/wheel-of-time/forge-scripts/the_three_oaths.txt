@@ -1,0 +1,16 @@
+Name:The Three Oaths
+ManaCost:1 W W
+Types:Enchantment
+# Continuous static 1: creatures you control get +0/+2
+S:Mode$ Continuous | Affected$ Creature.YouCtrl | AddToughness$ 2 | Description$ Creatures you control get +0/+2.
+# Continuous static 2: creatures you control have vigilance
+S:Mode$ Continuous | Affected$ Creature.YouCtrl | AddKeyword$ Vigilance | Secondary$ True | Description$ Creatures you control have vigilance.
+# Continuous static 3: creatures you control can't attack a player unless that player attacked you (or a permanent you controlled) since your last turn.
+# Modeled after Arboria's CantAttack | Target$ Player.!IsRemembered pattern and O-Kagachi's attackedYouTheirLastTurn property.
+# "A permanent you controlled" in this context means planeswalkers (the only legal attack targets besides players);
+# no confirmed Forge property for "attacked your planeswalker their last turn" exists in the catalog,
+# so attackedYouTheirLastTurn is the best single-property approximation. See notes.
+S:Mode$ CantAttack | ValidCard$ Creature.YouCtrl | Target$ Player.!attackedYouTheirLastTurn | Description$ Creatures you control can't attack a player unless that player attacked you or a permanent you controlled since your last turn.
+SVar:NonStackingEffect:True
+SVar:PlayMain1:TRUE
+Oracle:Creatures you control get +0/+2 and have vigilance.\nCreatures you control can't attack a player unless that player attacked you or a permanent you controlled since your last turn.

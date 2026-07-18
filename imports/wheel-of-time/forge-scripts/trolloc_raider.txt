@@ -1,0 +1,10 @@
+Name:Trolloc Raider
+ManaCost:2 B
+Types:Creature Trolloc
+PT:2/2
+K:Haste
+K:Menace
+T:Mode$ Attacks | ValidCard$ Card.Self | Execute$ TrigLoseLife | TriggerDescription$ Whenever CARDNAME attacks, defending player loses 1 life.
+SVar:TrigLoseLife:DB$ LoseLife | Defined$ TriggeredDefendingPlayer | LifeAmount$ 1
+SVar:HasAttackEffect:TRUE
+Oracle:Haste, menace\nWhenever Trolloc Raider attacks, defending player loses 1 life.

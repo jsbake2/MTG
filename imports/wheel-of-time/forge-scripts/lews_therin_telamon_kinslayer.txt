@@ -1,0 +1,10 @@
+Name:Lews Therin Telamon, Kinslayer
+ManaCost:2 W U R
+Types:Legendary Creature Human Channeler
+PT:5/5
+T:Mode$ CounterAdded | CounterType$ WEAVE | ValidPlayer$ You | TriggerZones$ Battlefield | Execute$ TrigPump | TriggerDescription$ Whenever you weave, CARDNAME gets +1/+0 until end of turn.
+SVar:TrigPump:DB$ Pump | Defined$ Self | NumAtt$ +1 | NumDef$ +0
+A:AB$ PutCounter | Cost$ T | Defined$ You | CounterType$ WEAVE | CounterNum$ 2 | SubAbility$ DBDamage | SpellDescription$ Weave twice. Then if you've woven ten or more times, CARDNAME deals 2 damage to you and each opponent.
+SVar:DBDamage:DB$ DamageAll | ValidPlayers$ Player | NumDmg$ 2 | ConditionCheckSVar$ X | ConditionSVarCompare$ GE10 | ValidDescription$ you and each opponent
+SVar:X:Count$YourCountersWEAVE
+Oracle:Whenever you weave, Lews Therin Telamon, Kinslayer gets +1/+0 until end of turn.\n{T}: Weave twice. Then if you've woven ten or more times, Lews Therin Telamon, Kinslayer deals 2 damage to you and each opponent.

@@ -1,0 +1,6 @@
+Name:Tuatha'an Peacekeeper
+ManaCost:2 G
+Types:Creature Human Nomad
+PT:0/4
+S:Mode$ Continuous | Affected$ Creature.attackingYou | AddPower$ -1 | Description$ Creatures attacking you get -1/-0.
+Oracle:Creatures attacking you get -1/-0.

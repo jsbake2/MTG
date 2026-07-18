@@ -1,0 +1,6 @@
+Name:Shadowspawn Horde
+ManaCost:2 B
+Types:Sorcery
+A:SP$ Token | TokenAmount$ 3 | TokenScript$ b_1_1_shadowspawn | TokenOwner$ You | SpellDescription$ Create three 1/1 black Shadowspawn creature tokens.
+DeckHas:Ability$Token
+Oracle:Create three 1/1 black Shadowspawn tokens.

@@ -1,0 +1,8 @@
+Name:Tower Guard
+ManaCost:1 W
+Types:Creature Human Soldier
+PT:2/2
+T:Mode$ ChangesZone | Origin$ Any | Destination$ Battlefield | ValidCard$ Creature.YouCtrl | TriggerZones$ Battlefield | Execute$ TrigPump | TriggerDescription$ Whenever a creature enters under your control, CARDNAME gets +1/+1 until end of turn.
+SVar:TrigPump:DB$ Pump | Defined$ Self | NumAtt$ +1 | NumDef$ +1
+DeckHints:Type$Soldier
+Oracle:Whenever a creature enters under your control, Tower Guard gets +1/+1 until end of turn.

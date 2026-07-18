@@ -1,0 +1,9 @@
+Name:Channeler's Bond
+ManaCost:U G
+Types:Enchantment
+T:Mode$ SpellCast | ValidCard$ Card | ValidActivatingPlayer$ You | IsPresent$ Creature.Channeler+YouCtrl,Creature.AesSedai+YouCtrl,Creature.Ashaman+YouCtrl,Creature.WiseOne+YouCtrl,Creature.Windfinder+YouCtrl,Creature.Damane+YouCtrl,Creature.Dreadlord+YouCtrl,Creature.Forsaken+YouCtrl | TriggerZones$ Battlefield | Execute$ TrigCounter | TriggerDescription$ Whenever you cast a spell, if you control a Channeler, put a +1/+1 counter on target creature.
+SVar:TrigCounter:DB$ PutCounter | ValidTgts$ Creature | TgtPrompt$ Select target creature | CounterType$ P1P1 | CounterNum$ 1
+T:Mode$ DamageDone | ValidSource$ Creature.Channeler,Creature.AesSedai,Creature.Ashaman,Creature.WiseOne,Creature.Windfinder,Creature.Damane,Creature.Dreadlord,Creature.Forsaken | ValidTarget$ Player,Permanent | TriggerZones$ Battlefield | Execute$ TrigDraw | TriggerDescription$ Whenever a Channeler deals damage, you draw a card.
+SVar:TrigDraw:DB$ Draw | Defined$ You
+DeckHas:Ability$Counters
+Oracle:Whenever you cast a spell, if you control a Channeler, put a +1/+1 counter on target creature. Whenever a Channeler deals damage, you draw a card.

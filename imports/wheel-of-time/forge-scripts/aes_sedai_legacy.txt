@@ -1,0 +1,9 @@
+Name:Aes Sedai Legacy
+ManaCost:3 W W
+Types:Enchantment
+T:Mode$ ChangesZone | Origin$ Any | Destination$ Battlefield | ValidCard$ Creature.AesSedai | TriggerZones$ Battlefield | Execute$ TrigToken | TriggerDescription$ Whenever an Aes Sedai enters, create a 1/1 white Aes Sedai creature token.
+SVar:TrigToken:DB$ Token | TokenAmount$ 1 | TokenScript$ w_1_1_aes_sedai | TokenOwner$ You
+A:AB$ PumpAll | Cost$ W W W | ValidCards$ Creature.AesSedai | NumAtt$ +2 | NumDef$ +2 | SubAbility$ DBGainLife | SpellDescription$ All Aes Sedai get +2/+2 until end of turn and you gain 3 life.
+SVar:DBGainLife:DB$ GainLife | Defined$ You | LifeAmount$ 3
+DeckHas:Ability$Token
+Oracle:Whenever an Aes Sedai enters, create a 1/1 white Aes Sedai creature token.\n{W}{W}{W}: All Aes Sedai get +2/+2 until end of turn and you gain 3 life.

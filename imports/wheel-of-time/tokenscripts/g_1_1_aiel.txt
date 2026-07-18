@@ -1,0 +1,6 @@
+Name:Aiel Token
+ManaCost:no cost
+Colors:green
+Types:Creature Aiel
+PT:1/1
+Oracle:

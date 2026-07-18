@@ -1,0 +1,10 @@
+Name:Honored Dead
+ManaCost:1 W
+Types:Creature Human Spirit
+PT:2/2
+T:Mode$ Attacks | ValidCard$ Card.Self | Execute$ TrigGainLife | TriggerDescription$ Whenever CARDNAME attacks, you gain 1 life.
+SVar:TrigGainLife:DB$ GainLife | Defined$ You | LifeAmount$ 1
+SVar:HasAttackEffect:TRUE
+A:AB$ Pump | Cost$ W | Defined$ Self | NumAtt$ +1 | SpellDescription$ CARDNAME gets +1/+0 until end of turn.
+DeckHas:Ability$LifeGain
+Oracle:Whenever Honored Dead attacks, you gain 1 life.\n{W}: Honored Dead gets +1/+0 until end of turn.

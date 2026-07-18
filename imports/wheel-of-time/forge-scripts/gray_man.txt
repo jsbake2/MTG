@@ -1,0 +1,8 @@
+Name:Gray Man
+ManaCost:2 B
+Types:Creature Human Assassin
+PT:2/1
+S:Mode$ CantBlockBy | ValidAttacker$ Creature.Self | Description$ Gray Man can't be blocked.
+T:Mode$ DamageDone | ValidSource$ Card.Self | ValidTarget$ Player | CombatDamage$ True | TriggerZones$ Battlefield | Execute$ TrigSac | TriggerDescription$ Whenever CARDNAME deals combat damage to a player, that player sacrifices a creature of their choice.
+SVar:TrigSac:DB$ SacrificeAll | Defined$ Targeted | ValidTgts$ Creature.ControlledBy TriggeredTarget | TgtPrompt$ Select target creature that player controls
+Oracle:Gray Man can't be blocked. Whenever Gray Man deals combat damage to a player, that player sacrifices a creature of their choice.

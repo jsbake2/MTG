@@ -1,0 +1,10 @@
+Name:Birgitte Silverbow
+ManaCost:1 W R
+Types:Legendary Creature Human Archer
+PT:2/2
+K:Reach
+K:First Strike
+T:Mode$ Attacks | ValidCard$ Card.Self | TriggerZones$ Battlefield | Execute$ TrigDealDamage | TriggerDescription$ Whenever CARDNAME attacks, she deals 1 damage to up to one target creature.
+SVar:TrigDealDamage:DB$ DealDamage | ValidTgts$ Creature | TgtPrompt$ Select up to one target creature | TargetMin$ 0 | TargetMax$ 1 | NumDmg$ 1
+A:AB$ Pump | Cost$ W R | Defined$ Self | NumAtt$ +1 | SpellDescription$ CARDNAME gets +1/+0 until end of turn.
+Oracle:Reach, first strike.\nWhenever Birgitte Silverbow attacks, she deals 1 damage to up to one target creature.\n{W}{R}: Birgitte Silverbow gets +1/+0 until end of turn.

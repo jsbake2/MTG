@@ -1,0 +1,10 @@
+Name:Trolloc General
+ManaCost:2 B B
+Types:Creature Trolloc
+PT:3/3
+K:Menace
+S:Mode$ Continuous | Affected$ Creature.Trolloc+Other+YouCtrl | AddPower$ 1 | AddToughness$ 1 | Description$ Other Trollocs you control get +1/+1.
+T:Mode$ ChangesZone | Origin$ Any | Destination$ Battlefield | ValidCard$ Card.Self,Creature.Trolloc+!token+Other+YouCtrl | TriggerZones$ Battlefield | Execute$ TrigToken | TriggerDescription$ Whenever CARDNAME or another nontoken Trolloc you control enters, create a 1/1 black Trolloc creature token with haste and menace.
+SVar:TrigToken:DB$ Token | TokenAmount$ 1 | TokenScript$ b_1_1_trolloc_haste_menace | TokenOwner$ You
+DeckHas:Ability$Token & Type$Trolloc
+Oracle:Menace\nOther Trollocs you control get +1/+1.\nWhenever Trolloc General or another nontoken Trolloc you control enters, create a 1/1 black Trolloc creature token with haste and menace.

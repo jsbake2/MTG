@@ -1,0 +1,6 @@
+Name:Two Rivers Woodsman
+ManaCost:1 G
+Types:Creature Human Archer
+PT:2/2
+K:Reach
+Oracle:Reach

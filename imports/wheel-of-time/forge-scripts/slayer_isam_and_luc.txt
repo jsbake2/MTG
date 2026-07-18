@@ -1,0 +1,9 @@
+Name:Slayer, Isam and Luc
+ManaCost:1 B G
+Types:Legendary Creature Human Assassin
+PT:3/2
+K:Deathtouch
+T:Mode$ ChangesZone | Origin$ Any | Destination$ Battlefield | ValidCard$ Card.Self | Execute$ TrigDestroy | TriggerDescription$ When CARDNAME enters, destroy target Wolf or Spirit.
+SVar:TrigDestroy:DB$ Destroy | ValidTgts$ Creature.Wolf,Creature.Spirit | TgtPrompt$ Select target Wolf or Spirit
+A:AB$ ChangeZone | Cost$ 1 B | Origin$ Battlefield | Destination$ Hand | Defined$ Self | SpellDescription$ Return CARDNAME to his owner's hand. (He steps in and out of the dream.)
+Oracle:Deathtouch\nWhen Slayer enters, destroy target Wolf or Spirit.\n{1}{B}: Return Slayer to his owner's hand. (He steps in and out of the dream.)

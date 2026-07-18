@@ -1,0 +1,6 @@
+Name:Aiel Herbalist
+ManaCost:1 G
+Types:Creature Human Aiel WiseOne
+PT:2/2
+A:AB$ Pump | Cost$ G | Defined$ Self | NumDef$ +1 | SpellDescription$ CARDNAME gets +0/+1 until end of turn.
+Oracle:{G}: Aiel Herbalist gets +0/+1 until end of turn.

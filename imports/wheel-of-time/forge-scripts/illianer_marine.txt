@@ -1,0 +1,6 @@
+Name:Illianer Marine
+ManaCost:2 U
+Types:Creature Human Soldier
+PT:2/3
+K:Vigilance
+Oracle:Vigilance

@@ -46,14 +46,14 @@ export type EffectOp =
   | { op: "counter"; what: EffectWho }
   | { op: "tap"; what: EffectWho }
   | { op: "untap"; what: EffectWho }
-  | { op: "plus_counter"; what: EffectWho; count: number; kind: "+1/+1" | "-1/-1" }
+  | { op: "plus_counter"; what: EffectWho; count: number; kind: "+1/+1" | "-1/-1"; xScaled?: boolean }
   | { op: "pump"; what: EffectWho; power: number; toughness: number }
   | { op: "grant"; what: EffectWho; keyword: string }
   | { op: "regenerate"; what: EffectWho }
   | { op: "gain_control"; what: EffectWho }
   | { op: "tuck"; what: EffectWho; top: boolean }
   | { op: "add_mana"; mana: Record<string, number> }
-  | { op: "token"; who: EffectWho; count: number; power: number; toughness: number; name: string; colors: string[] }
+  | { op: "token"; who: EffectWho; count: number; power: number; toughness: number; name: string; colors: string[]; xScaled?: boolean }
   | { op: "mill"; who: EffectWho; count: number }
   // Mass (no single target) effects over a filtered set of permanents.
   | { op: "mass_damage"; filter: MassFilter; amount: number; xScaled?: boolean }
@@ -61,7 +61,7 @@ export type EffectOp =
   | { op: "mass_exile"; filter: MassFilter }
   | { op: "mass_pump"; filter: MassFilter; power: number; toughness: number }
   | { op: "mass_grant"; filter: MassFilter; keyword: string }
-  | { op: "mass_counter"; filter: MassFilter; count: number; kind: "+1/+1" | "-1/-1" }
+  | { op: "mass_counter"; filter: MassFilter; count: number; kind: "+1/+1" | "-1/-1"; xScaled?: boolean }
   | { op: "tap_all"; filter: MassFilter; tapped: boolean }
   // Recognized but choice-heavy — engine prompts the player to finish.
   | { op: "manual"; hint: string };
@@ -189,8 +189,8 @@ const PATTERNS: Pattern[] = [
   { re: /(creatures you control[a-z' ]*?)\s+gains?\s+([a-z ,]+)/i, build: (m) => { const kw = grantKeyword(m[2]); return kw ? { op: "mass_grant", filter: massFilter(m[1]!), keyword: kw } : null; } },
 
   // --- Counters (+1/+1, -1/-1) single + mass ---
-  { re: /put\s+(\d+|a|one|two|three|four|five)\s+(\+1\/\+1|-1\/-1) counters?\s+on\s+(target [a-z ]*?creature)/i, build: (m) => ({ op: "plus_counter", count: num(m[1]), kind: m[2] as "+1/+1" | "-1/-1", what: who(m[3]!) }) },
-  { re: /put\s+(\d+|a|one|two|three|four|five)\s+(\+1\/\+1|-1\/-1) counters?\s+on\s+each\s+(creature[a-z ]*)/i, build: (m) => ({ op: "mass_counter", count: num(m[1]), kind: m[2] as "+1/+1" | "-1/-1", filter: massFilter(m[3]!) }) },
+  { re: /put\s+(\d+|a|one|two|three|four|five|x)\s+(\+1\/\+1|-1\/-1) counters?\s+on\s+(target [a-z ]*?creature)/i, build: (m) => ({ op: "plus_counter", count: num(m[1]), xScaled: isX(m[1]), kind: m[2] as "+1/+1" | "-1/-1", what: who(m[3]!) }) },
+  { re: /put\s+(\d+|a|one|two|three|four|five|x)\s+(\+1\/\+1|-1\/-1) counters?\s+on\s+each\s+(creature[a-z ]*)/i, build: (m) => ({ op: "mass_counter", count: num(m[1]), xScaled: isX(m[1]), kind: m[2] as "+1/+1" | "-1/-1", filter: massFilter(m[3]!) }) },
 
   // --- Draw / Life / Mill ---
   { re: /(you|target player|each player|target opponent)?\s*draws?\s+(\d+|a|one|two|three|four|five|six|seven|x)\s+cards?/i, build: (m) => ({ op: "draw", who: who(m[1] ?? "you"), count: num(m[2]), xScaled: isX(m[2]) }) },
@@ -205,7 +205,7 @@ const PATTERNS: Pattern[] = [
       const colorWords = (m[4] ?? "").toLowerCase();
       const colors = Object.entries(COLORS).filter(([w]) => colorWords.includes(w)).map(([, c]) => c);
       const name = (m[5] ?? "Creature").trim().replace(/\b\w/g, (c) => c.toUpperCase());
-      return { op: "token", who: { scope: "you" }, count: num(m[1]), power: parseInt(m[2]!, 10), toughness: parseInt(m[3]!, 10), name: `${name} Token`, colors };
+      return { op: "token", who: { scope: "you" }, count: num(m[1]), xScaled: isX(m[1]), power: parseInt(m[2]!, 10), toughness: parseInt(m[3]!, 10), name: `${name} Token`, colors };
     },
   },
 

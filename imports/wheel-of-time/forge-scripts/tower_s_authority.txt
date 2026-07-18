@@ -1,0 +1,8 @@
+Name:Tower's Authority
+ManaCost:2 W W
+Types:Enchantment
+S:Mode$ Continuous | Affected$ Creature.AesSedai+YouCtrl | AddPower$ 1 | AddToughness$ 1 | Description$ Aes Sedai you control get +1/+1.
+S:Mode$ Continuous | Affected$ Creature.AesSedai+YouCtrl | AddKeyword$ Vigilance & Lifelink | CheckSVar$ X | SVarCompare$ GE5 | Secondary$ True | Description$ Pattern 5 — Aes Sedai you control also have vigilance and lifelink.
+SVar:X:Count$YourCountersWEAVE
+SVar:PlayMain1:TRUE
+Oracle:Aes Sedai you control get +1/+1.\nPattern 5 — They also have vigilance and lifelink.

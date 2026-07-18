@@ -1,0 +1,8 @@
+Name:The Cleansing of Saidin
+ManaCost:3 W W
+Types:Sorcery
+A:SP$ ChangeZoneAll | ChangeType$ Aura.AttachedTo Creature.YouCtrl | Origin$ Battlefield | Destination$ Exile | SubAbility$ DBExileBlackEnch | SpellDescription$ Exile all Auras attached to creatures you control and all black enchantments. Put two +1/+1 counters on each Asha'man you control. Weave three times.
+SVar:DBExileBlackEnch:DB$ ChangeZoneAll | ChangeType$ Enchantment.Black | Origin$ Battlefield | Destination$ Exile | SubAbility$ DBCounters
+SVar:DBCounters:DB$ PutCounterAll | ValidCards$ Creature.Ashaman+YouCtrl | CounterType$ P1P1 | CounterNum$ 2 | SubAbility$ Weave
+SVar:Weave:DB$ PutCounter | Defined$ You | CounterType$ WEAVE | CounterNum$ 3
+Oracle:Exile all Auras attached to creatures you control and all black enchantments. Put two +1/+1 counters on each Asha'man you control. Weave three times.

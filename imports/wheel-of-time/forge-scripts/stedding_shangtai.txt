@@ -1,0 +1,7 @@
+Name:Stedding Shangtai
+Types:Land
+A:AB$ Mana | Cost$ T | Produced$ C | Amount$ 1 | SpellDescription$ Add {C}.
+A:AB$ Pump | Cost$ 1 T | ValidTgts$ Creature | TgtPrompt$ Select target creature | KW$ Hexproof | Defined$ Targeted | SubAbility$ DBEffect | SpellDescription$ Target creature gains hexproof until end of turn. Its controller can't weave this turn.
+SVar:DBEffect:DB$ Effect | StaticAbilities$ CantWeave | RememberObjects$ Targeted | ExileOnMoved$ Battlefield | Duration$ UntilEndOfTurn
+SVar:CantWeave:Mode$ CantPutCounter | ValidPlayer$ Player.controlsCard.IsRemembered | CounterType$ WEAVE | Description$ That creature's controller can't weave this turn.
+Oracle:{T}: Add {C}. {1}, {T}: Target creature gains hexproof until end of turn. Its controller can't weave this turn. (Within a stedding, the One Power simply is not.)

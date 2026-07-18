@@ -1,0 +1,13 @@
+Name:Machin Shin, the Black Wind
+ManaCost:3 U B
+Types:Legendary Creature Elemental Horror
+PT:4/4
+K:Flying
+T:Mode$ Attacks | ValidCard$ Card.Self | Execute$ TrigDiscard | TriggerZones$ Battlefield | TriggerDescription$ Whenever CARDNAME attacks, defending player discards a card and loses 2 life.
+SVar:TrigDiscard:DB$ Discard | Defined$ TriggeredDefendingPlayer | NumCards$ 1 | Mode$ TgtChoose | SubAbility$ DBLoseLife
+SVar:DBLoseLife:DB$ LoseLife | Defined$ TriggeredDefendingPlayer | LifeAmount$ 2
+S:Mode$ CantBlockBy | ValidAttacker$ Creature.Self | CheckSVar$ H | SVarCompare$ EQ0 | Description$ CARDNAME can't be blocked as long as defending player has no cards in hand.
+SVar:H:Count$ValidHand Card.OppOwn
+SVar:HasAttackEffect:TRUE
+DeckHas:Ability$Discard
+Oracle:Flying\nWhenever Machin Shin, the Black Wind attacks, defending player discards a card and loses 2 life.\nMachin Shin, the Black Wind can't be blocked as long as defending player has no cards in hand.

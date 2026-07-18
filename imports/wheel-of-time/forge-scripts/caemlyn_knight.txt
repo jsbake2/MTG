@@ -1,0 +1,10 @@
+Name:Caemlyn Knight
+ManaCost:1 W
+Types:Creature Human Knight
+PT:2/2
+K:First Strike
+T:Mode$ Attacks | ValidCard$ Card.Self | Execute$ TrigGainLife | TriggerDescription$ Whenever CARDNAME attacks, you gain 1 life.
+SVar:TrigGainLife:DB$ GainLife | Defined$ You | LifeAmount$ 1
+SVar:HasAttackEffect:TRUE
+DeckHas:Ability$LifeGain
+Oracle:First strike\nWhenever Caemlyn Knight attacks, you gain 1 life.

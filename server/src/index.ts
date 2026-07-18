@@ -15,6 +15,8 @@ import { tablesRouter } from "./game/routes.js";
 import { adminRouter } from "./admin/routes.js";
 import { rulingsRouter } from "./rulings/routes.js";
 import { issuesRouter } from "./issues/routes.js";
+import { forgeRouter } from "./forge/routes.js";
+import { customRouter } from "./custom/routes.js";
 import { getLeaderboard } from "./game/results.js";
 import { attachWebSocket } from "./game/ws.js";
 import { seedStarterDecks } from "./seed/starterDecks.js";
@@ -35,10 +37,16 @@ async function main() {
   await runMigrations();
   await ensureAdmin();
   await seedStarterDecks();
+  // Ensure every custom card is mirrored into the main pool (Browse/deck builder).
+  try {
+    const { backfillCustomPool } = await import("./custom/pool.js");
+    const n = await backfillCustomPool();
+    if (n) console.log(`[custom] mirrored ${n} custom card(s) into the card pool`);
+  } catch (e) { console.error("[custom] pool backfill failed", e); }
 
   const app = express();
   app.disable("x-powered-by");
-  app.use(express.json({ limit: "2mb" }));
+  app.use(express.json({ limit: "8mb" }));
   app.use(sessionMiddleware);
 
   app.get("/api/health", (_req, res) => res.json({ ok: true }));
@@ -50,6 +58,8 @@ async function main() {
   app.use("/api/admin", adminRouter);
   app.use("/api/rulings", rulingsRouter);
   app.use("/api/issues", issuesRouter);
+  app.use("/api/forge", forgeRouter);
+  app.use("/api/custom", customRouter);
   app.get("/api/leaderboard", requireAuth, async (_req, res) => {
     res.json({ leaderboard: await getLeaderboard() });
   });

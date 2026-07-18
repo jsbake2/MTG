@@ -1,0 +1,5 @@
+Name:Dragon's Fire
+ManaCost:2 R
+Types:Instant
+A:SP$ DealDamage | ValidTgts$ Creature,Player | TgtPrompt$ Select target creature or player | NumDmg$ 3 | SpellDescription$ CARDNAME deals 3 damage to target creature or player.
+Oracle:Dragon's Fire deals 3 damage to target creature or player.

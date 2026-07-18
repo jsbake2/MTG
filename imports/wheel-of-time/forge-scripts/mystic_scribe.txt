@@ -1,0 +1,8 @@
+Name:Mystic Scribe
+ManaCost:1 U
+Types:Creature Human AesSedai
+PT:1/2
+T:Mode$ Drawn | ValidCard$ Card.YouCtrl | TriggerZones$ Battlefield | Execute$ TrigCounter | TriggerDescription$ Whenever you draw a card, put a +1/+1 counter on CARDNAME.
+SVar:TrigCounter:DB$ PutCounter | Defined$ Self | CounterType$ P1P1 | CounterNum$ 1
+A:AB$ Draw | Cost$ U U | NumCards$ 2 | SpellDescription$ Draw two cards.
+Oracle:Whenever you draw a card, put a +1/+1 counter on Mystic Scribe.\n{U}{U}: Draw two cards.

@@ -1,0 +1,9 @@
+Name:Holy Ground
+ManaCost:1 W
+Types:Enchantment
+T:Mode$ ChangesZone | TriggerZones$ Battlefield | ValidCard$ Creature.YouCtrl | Origin$ Any | Destination$ Battlefield | ConditionCheckSVar$ X | ConditionSVarCompare$ LT3 | Execute$ TrigGainLife1 | TriggerDescription$ Whenever a creature you control enters, you gain 1 life.
+SVar:TrigGainLife1:DB$ GainLife | Defined$ You | LifeAmount$ 1
+T:Mode$ ChangesZone | TriggerZones$ Battlefield | ValidCard$ Creature.YouCtrl | Origin$ Any | Destination$ Battlefield | ConditionCheckSVar$ X | ConditionSVarCompare$ GE3 | Execute$ TrigGainLife2 | TriggerDescription$ Pattern 3 — Whenever a creature you control enters, you gain 2 life instead.
+SVar:TrigGainLife2:DB$ GainLife | Defined$ You | LifeAmount$ 2
+SVar:X:Count$YourCountersWEAVE
+Oracle:Whenever a creature you control enters, you gain 1 life. Pattern 3 — Instead you gain 2 life.

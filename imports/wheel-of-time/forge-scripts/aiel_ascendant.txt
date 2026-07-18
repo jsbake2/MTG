@@ -1,0 +1,7 @@
+Name:Aiel Ascendant
+ManaCost:2 R
+Types:Sorcery
+A:SP$ Token | TokenAmount$ 3 | TokenScript$ r_1_1_aiel_warrior_haste | TokenOwner$ You | SubAbility$ DBCounters | SpellDescription$ Create three 1/1 red Aiel Warrior tokens with haste. If you control an Aiel, put a +1/+1 counter on each.
+SVar:DBCounters:DB$ PutCounterAll | ValidCards$ Creature.YouCtrl | CounterType$ P1P1 | CounterNum$ 1 | ConditionPresent$ Creature.Aiel+YouCtrl | ConditionCompare$ GE1
+DeckHas:Ability$Token|Counters
+Oracle:Create three 1/1 red Aiel Warrior tokens with haste. If you control an Aiel, put a +1/+1 counter on each.

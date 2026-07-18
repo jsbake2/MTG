@@ -1,0 +1,9 @@
+Name:Weaver's Craft
+ManaCost:1 U
+Types:Enchantment
+T:Mode$ CounterAdded | CounterType$ WEAVE | ValidPlayer$ You | TriggerZones$ Battlefield | Execute$ TrigSearch | TriggerDescription$ Whenever you weave, you may search your library for a card and put it on top of your library. Shuffle.
+SVar:TrigSearch:DB$ ChangeZone | Origin$ Library | Destination$ Library | LibraryPosition$ 0 | ChangeType$ Card | ChangeNum$ 1 | Optional$ True | SubAbility$ DBShuffle
+SVar:DBShuffle:DB$ Shuffle | Defined$ You
+A:AB$ Token | Cost$ U U | TokenAmount$ 1 | TokenScript$ u_1_1_aes_sedai | TokenOwner$ You | SpellDescription$ Create a 1/1 blue Aes Sedai creature token.
+DeckHas:Ability$Token
+Oracle:Whenever you weave, you may search your library for a card and put it on top of your library. Shuffle.\n{U}{U}: Create a 1/1 blue Aes Sedai creature token.

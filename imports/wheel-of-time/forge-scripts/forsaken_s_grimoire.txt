@@ -1,0 +1,13 @@
+Name:Forsaken's Grimoire
+ManaCost:3
+Types:Artifact
+A:AB$ Mana | Cost$ T | Produced$ B | SpellDescription$ Add {B}.
+# "Whenever you leash a creature" = whenever a LEASH counter is added to any creature
+# you control (or you control the leash action). ValidCard$ Creature here catches the
+# leashed creature receiving its first LEASH counter; the trigger fires for the
+# controller of this artifact (You). Idiom matches leash_bearer.txt.
+T:Mode$ CounterAdded | CounterType$ LEASH | ValidCard$ Creature | TriggerZones$ Battlefield | Execute$ TrigDiscard | TriggerDescription$ Whenever you leash a creature, target opponent discards a card.
+SVar:TrigDiscard:DB$ Discard | ValidTgts$ Opponent | TgtPrompt$ Select target opponent | NumCards$ 1 | Mode$ TgtChoose
+AI:RemoveDeck:All
+DeckHas:Ability$Discard
+Oracle:{T}: Add {B}.\nWhenever you leash a creature, target opponent discards a card.

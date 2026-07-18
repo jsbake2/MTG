@@ -1,0 +1,11 @@
+Name:Forsaken Graendal
+ManaCost:3 U B
+Types:Legendary Creature Forsaken
+PT:4/4
+T:Mode$ Phase | Phase$ Upkeep | ValidPlayer$ You | TriggerZones$ Battlefield | Execute$ TrigDiscard | TriggerDescription$ At the beginning of your upkeep, each opponent discards a card.
+SVar:TrigDiscard:DB$ Discard | Defined$ Opponent | Mode$ TgtChoose | NumCards$ 1
+T:Mode$ ChangesZone | Origin$ Any | Destination$ Battlefield | ValidCard$ Creature.YouCtrl | TriggerZones$ Battlefield | Execute$ TrigDrain | TriggerDescription$ Whenever a creature enters under your control, target opponent loses 2 life.
+SVar:TrigDrain:DB$ LoseLife | LifeAmount$ 2 | ValidTgts$ Opponent | TgtPrompt$ Select target opponent
+A:AB$ Pump | Cost$ U B U B | Defined$ Self | KW$ Hexproof | SpellDescription$ CARDNAME gains hexproof until end of turn.
+DeckHas:Ability$Discard
+Oracle:At the beginning of your upkeep, each opponent discards a card.\nWhenever a creature enters under your control, target opponent loses 2 life.\n{U}{B}{U}{B}: Forsaken Graendal gains hexproof until end of turn.

@@ -1,0 +1,8 @@
+Name:Purge the Shadow
+ManaCost:2 W B
+Types:Sorcery
+A:SP$ Destroy | ValidTgts$ Creature | TgtPrompt$ Select target creature | SubAbility$ DBGainLife | SpellDescription$ Destroy target creature. If it was a Channeler, you gain 3 life. Otherwise, you lose 2 life.
+SVar:DBGainLife:DB$ GainLife | Defined$ You | LifeAmount$ 3 | ConditionCheckSVar$ IsChanneler | ConditionSVarCompare$ GE1 | SubAbility$ DBLoseLife
+SVar:DBLoseLife:DB$ LoseLife | Defined$ You | LifeAmount$ 2 | ConditionCheckSVar$ IsChanneler | ConditionSVarCompare$ EQ0
+SVar:IsChanneler:Targeted$Valid Creature.Channeler,Creature.AesSedai,Creature.Ashaman,Creature.WiseOne,Creature.Windfinder,Creature.Damane,Creature.Dreadlord,Creature.Forsaken
+Oracle:Destroy target creature. If it was a Channeler, you gain 3 life. Otherwise, you lose 2 life.

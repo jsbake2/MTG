@@ -1,0 +1,8 @@
+Name:Black Ajah Member
+ManaCost:2 B
+Types:Creature Human Darkfriend
+PT:2/2
+T:Mode$ Discarded | ValidCard$ Card.YouCtrl | TriggerZones$ Battlefield | Execute$ TrigPump | TriggerDescription$ Whenever you discard a card, CARDNAME gets +1/+0 until end of turn.
+SVar:TrigPump:DB$ Pump | Defined$ Self | NumAtt$ +1 | NumDef$ +0
+A:AB$ DealDamage | Cost$ B Discard<1/Card> | NumDmg$ 1 | Defined$ Player.Opponent | SpellDescription$ CARDNAME deals 1 damage to each opponent.
+Oracle:Whenever you discard a card, Black Ajah Member gets +1/+0 until end of turn.\n{B}: Discard a card. Black Ajah Member deals 1 damage to each opponent.

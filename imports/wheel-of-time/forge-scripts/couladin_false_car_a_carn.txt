@@ -1,0 +1,12 @@
+Name:Couladin, False Car'a'carn
+ManaCost:2 R
+Types:Legendary Creature Human Aiel Warrior
+PT:3/2
+K:Haste
+T:Mode$ Attacks | ValidCard$ Card.Self | TriggerZones$ Battlefield | Execute$ TrigPump | TriggerDescription$ Whenever CARDNAME attacks, other Aiel you control get +1/+0 until end of turn, and CARDNAME deals 1 damage to you.
+SVar:TrigPump:DB$ PumpAll | ValidCards$ Creature.Aiel+Other+YouCtrl | NumAtt$ +1 | SubAbility$ DBDamage
+SVar:DBDamage:DB$ DealDamage | Defined$ You | NumDmg$ 1
+SVar:HasAttackEffect:TRUE
+SVar:PlayMain1:TRUE
+DeckHints:Type$Aiel
+Oracle:Haste\nWhenever Couladin, False Car'a'carn attacks, other Aiel you control get +1/+0 until end of turn, and Couladin, False Car'a'carn deals 1 damage to you.

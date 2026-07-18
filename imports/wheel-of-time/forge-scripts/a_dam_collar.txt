@@ -1,0 +1,42 @@
+Name:A'dam Collar
+ManaCost:2
+Types:Artifact Equipment
+# A'dam Collar — Confidence: medium/low. See notes.
+#
+# APPROACH: The equipped creature gains a {T} activated ability that Leashes a creature
+# with mana value 2 or less. The Leash ability is defined via AddAbility$ on the
+# Continuous static; the SubAbility SVar chain (DBLeashCounter, DBDelay, etc.) is
+# defined at the card's top level so Forge can resolve them from the Equipment's
+# context when the granted ability fires.
+#
+# LEASH MECHANIC NOTES (inherited from collar_training.txt / leash_bearer.txt):
+# - COST SCALING: The card says "{2}, doubling each time you pay" (true exponential:
+#   2, 4, 8, ...). Forge's Count math cannot natively double; "/Twice" multiplies
+#   linearly (LEASH*2 -> 2, 4, 6, 8, ...). This is the closest DSL approximation.
+# - "CAN'T BE LEASHED AGAIN UNTIL YOUR NEXT TURN": no Forge hook for when a
+#   delayed trigger fires and control reverts. Omitted; players enforce manually.
+# - The delayed-trigger re-arm loop (DBRearm) works as long as the leashed creature
+#   stays on the battlefield; if it leaves, the trigger chain naturally ends.
+#
+# EQUIP SUL'DAM {0}: "Sul'dam" is a WoT custom subtype. Forge's restricted equip
+# syntax is K:Equip:COST:ValidFilter:DisplayName. The filter uses no apostrophe
+# (SulDam) consistent with Forge's no-apostrophe rule for subtypes in predicates.
+#
+# AddAbility$ + SubAbility$ chain: Forge resolves SubAbility$ SVars from the
+# source card (the Equipment). This is the same pattern used in Citizen's Crowbar
+# (AddAbility$ ABDestroy + top-level SVar referenced) and Lobe Lobber.
+S:Mode$ Continuous | Affected$ Creature.EquippedBy | AddAbility$ AdamLeashAB | Description$ Equipped creature has "{T}: Leash target creature with mana value 2 or less. (You gain control of it. At the beginning of your upkeep, pay its leash cost — {2}, doubling each time you pay — or it returns to its owner and can't be leashed again until your next turn.)"
+SVar:AdamLeashAB:AB$ GainControl | Cost$ T | ValidTgts$ Creature.cmcLE2+OppCtrl | TgtPrompt$ Select target creature with mana value 2 or less an opponent controls | RememberControlled$ True | SubAbility$ DBLeashCounter | SpellDescription$ Leash target creature with mana value 2 or less. (You gain control of it. At the beginning of your upkeep, pay its leash cost — {2}, doubling each time you pay — or it returns to its owner and can't be leashed again until your next turn.)
+SVar:DBLeashCounter:DB$ PutCounter | Defined$ Remembered | CounterType$ LEASH | CounterNum$ 1 | SubAbility$ DBDelay
+SVar:DBDelay:DB$ DelayedTrigger | Mode$ Phase | Phase$ Upkeep | ValidPlayer$ You | Execute$ TrigLeash | RememberObjects$ Remembered | TriggerDescription$ At the beginning of your upkeep, pay this creature's leash cost or its owner regains control. | SubAbility$ DBCleanup
+SVar:DBCleanup:DB$ Cleanup | ClearRemembered$ True
+SVar:TrigLeash:DB$ PutCounter | Defined$ DelayTriggerRemembered | CounterType$ LEASH | CounterNum$ 1 | SubAbility$ DBPayOrReturn
+SVar:DBPayOrReturn:DB$ GainControl | Defined$ DelayTriggerRemembered | NewController$ Owner | UnlessCost$ Y | UnlessPayer$ You | UnlessResolveSubs$ WhenNotPaid | SubAbility$ DBRearm
+SVar:DBRearm:DB$ DelayedTrigger | Mode$ Phase | Phase$ Upkeep | ValidPlayer$ You | Execute$ TrigLeash | RememberObjects$ DelayTriggerRemembered | TriggerDescription$ At the beginning of your upkeep, pay this creature's leash cost or its owner regains control.
+SVar:Y:Count$CardCounters.LEASH/Twice
+K:Equip:0:Creature.YouCtrl+SulDam:Sul'dam
+K:Equip:2
+AI:RemoveDeck:All
+Oracle:Equipped creature has "{T}: Leash target creature with mana value 2 or less. (You gain control of it. At the beginning of your upkeep, pay its leash cost — {2}, doubling each time you pay — or it returns to its owner and can't be leashed again until your next turn.)"
+Equip {2}
+Equip Sul'dam {0}

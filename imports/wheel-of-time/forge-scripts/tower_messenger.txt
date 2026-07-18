@@ -1,0 +1,7 @@
+Name:Tower Messenger
+ManaCost:1 U
+Types:Creature Human Scout
+PT:1/2
+T:Mode$ ChangesZone | Origin$ Any | Destination$ Battlefield | ValidCard$ Card.Self | Execute$ TrigScry | TriggerDescription$ When CARDNAME enters, scry 1.
+SVar:TrigScry:DB$ Scry | ScryNum$ 1
+Oracle:When Tower Messenger enters, scry 1.

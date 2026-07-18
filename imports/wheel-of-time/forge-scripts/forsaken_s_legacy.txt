@@ -1,0 +1,8 @@
+Name:Forsaken's Legacy
+ManaCost:1 B
+Types:Enchantment
+T:Mode$ DamageDone | ValidSource$ Creature.YouCtrl | ValidTarget$ Player | CombatDamage$ True | TriggerZones$ Battlefield | Execute$ TrigDiscard | TriggerDescription$ Whenever a creature you control deals combat damage, target opponent discards a card.
+SVar:TrigDiscard:DB$ Discard | ValidTgts$ Opponent | NumCards$ 1 | Mode$ TgtChoose
+A:AB$ Token | Cost$ B B | TokenScript$ b_1_1_shadowspawn | TokenOwner$ You | SpellDescription$ Create a 1/1 black Shadowspawn creature token.
+DeckHas:Ability$Token|Discard
+Oracle:Whenever a creature you control deals combat damage, target opponent discards a card.\n{B}{B}: Create a 1/1 black Shadowspawn creature token.

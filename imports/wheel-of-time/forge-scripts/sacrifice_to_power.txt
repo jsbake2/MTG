@@ -1,0 +1,8 @@
+Name:Sacrifice to Power
+ManaCost:1 B
+Types:Sorcery
+A:SP$ Sacrifice | SacValid$ Creature | SubAbility$ DBGainLife | SpellDescription$ Sacrifice a creature. You gain 2 life and draw a card.
+SVar:DBGainLife:DB$ GainLife | Defined$ You | LifeAmount$ 2 | SubAbility$ DBDraw
+SVar:DBDraw:DB$ Draw | Defined$ You | NumCards$ 1
+DeckHas:Ability$LifeGain
+Oracle:Sacrifice a creature. You gain 2 life and draw a card.

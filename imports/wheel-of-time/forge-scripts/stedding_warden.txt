@@ -1,0 +1,8 @@
+Name:Stedding Warden
+ManaCost:3 G
+Types:Creature Ogier
+PT:2/5
+K:Ward:1
+S:Mode$ Continuous | Affected$ Creature.Ogier+Other+YouCtrl | AddKeyword$ Ward:1 | Description$ Other Ogier you control have ward {1}.
+DeckHints:Type$Ogier
+Oracle:Ward {1} (Whenever this creature becomes the target of a spell or ability an opponent controls, counter it unless that player pays {1}.)\nOther Ogier you control have ward {1}.

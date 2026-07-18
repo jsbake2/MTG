@@ -1,0 +1,3 @@
+Name:Plains
+Types:Basic Land Plains
+Oracle:({T}: Add {W}.)

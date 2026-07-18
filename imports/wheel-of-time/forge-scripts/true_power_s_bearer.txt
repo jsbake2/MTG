@@ -1,0 +1,11 @@
+Name:True Power's Bearer
+ManaCost:3 B B
+Types:Legendary Creature Forsaken Channeler
+PT:5/4
+K:Menace
+S:Mode$ Continuous | Affected$ Creature.EnchantedBy Aura.YouCtrl | AddKeyword$ Deathtouch | Description$ Auras you control have "Enchanted creature has deathtouch."
+T:Mode$ ChangesZone | Origin$ Battlefield | Destination$ Graveyard | ValidCard$ Creature.YouCtrl+EnchantedBy | TriggerZones$ Battlefield | Execute$ TrigDrain | TriggerDescription$ Whenever an enchanted creature you control dies, each opponent loses 3 life and you draw a card.
+SVar:TrigDrain:DB$ LoseLife | Defined$ Player.Opponent | LifeAmount$ 3 | SubAbility$ DBDraw
+SVar:DBDraw:DB$ Draw | Defined$ You | NumCards$ 1
+DeckHints:Type$Aura
+Oracle:Menace\nAuras you control have "Enchanted creature has deathtouch."\nWhenever an enchanted creature you control dies, each opponent loses 3 life and you draw a card.

@@ -1,0 +1,9 @@
+Name:Darkhound Pack
+ManaCost:2 B
+Types:Creature Darkhound
+PT:3/2
+K:Menace
+T:Mode$ SpellCast | ValidCard$ Card.Black | ValidActivatingPlayer$ You | TriggerZones$ Battlefield | Execute$ TrigPumpAll | TriggerDescription$ Whenever you cast a black spell, all Darkhounds get +1/+0 until end of turn.
+SVar:TrigPumpAll:DB$ PumpAll | ValidCards$ Darkhound | NumAtt$ +1
+SVar:BuffedBy:Card.Black
+Oracle:Menace\nWhenever you cast a black spell, all Darkhounds get +1/+0 until end of turn.

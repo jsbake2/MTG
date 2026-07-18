@@ -1,0 +1,10 @@
+Name:Cut the Weave
+ManaCost:1 U U
+Types:Instant
+A:SP$ Counter | TargetType$ Spell | TgtPrompt$ Select target spell | ValidTgts$ Card | SubAbility$ DBBranchA | SpellDescription$ Counter target spell. If it was a Channeler spell or its controller wove this turn, draw a card.
+SVar:DBBranchA:DB$ Branch | BranchConditionSVar$ IsChanneler | BranchConditionSVarCompare$ GE1 | TrueSubAbility$ DBDraw | FalseSubAbility$ DBBranchB
+SVar:DBBranchB:DB$ Branch | BranchConditionSVar$ WovedThisTurn | BranchConditionSVarCompare$ GE1 | TrueSubAbility$ DBDraw
+SVar:DBDraw:DB$ Draw
+SVar:IsChanneler:Targeted$Valid Creature.Channeler,Creature.AesSedai,Creature.Ashaman,Creature.WiseOne,Creature.Windfinder,Creature.Damane,Creature.Dreadlord,Creature.Forsaken
+SVar:WovedThisTurn:TargetedController$Counters.WEAVE
+Oracle:Counter target spell. If it was a Channeler spell or its controller wove this turn, draw a card.

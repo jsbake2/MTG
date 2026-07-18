@@ -1,0 +1,9 @@
+Name:Siuan Sanche, Amyrlin Deposed
+ManaCost:1 W U
+Types:Legendary Creature Human Aes Sedai
+PT:2/3
+S:Mode$ ReduceCost | ValidCard$ Creature.AesSedai | Type$ Spell | Activator$ You | Amount$ 1 | Description$ Aes Sedai spells you cast cost {1} less to cast.
+A:AB$ Draw | Cost$ W U T | NumCards$ 1 | SubAbility$ DBDiscard | SpellDescription$ Draw a card, then discard a card. Weave.
+SVar:DBDiscard:DB$ Discard | Defined$ You | NumCards$ 1 | Mode$ TgtChoose | SubAbility$ Weave
+SVar:Weave:DB$ PutCounter | Defined$ You | CounterType$ WEAVE | CounterNum$ 1
+Oracle:Aes Sedai spells you cast cost {1} less to cast.\n{W}{U}, {T}: Draw a card, then discard a card. Weave.

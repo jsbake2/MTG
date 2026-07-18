@@ -1,0 +1,10 @@
+Name:Aran'gar, Reborn in Shadow
+ManaCost:1 B R
+Types:Legendary Creature Forsaken
+PT:4/2
+K:Lifelink
+T:Mode$ SpellCast | ValidCard$ Card.Black,Card.Red | ValidActivatingPlayer$ You | TriggerZones$ Battlefield | Execute$ TrigDiscard | TriggerDescription$ Whenever you cast a black or red spell, each opponent discards a card.
+SVar:TrigDiscard:DB$ Discard | Defined$ Player.Opponent | Mode$ TgtChoose
+A:AB$ Pump | Cost$ B R | Defined$ Self | NumAtt$ +1 | NumDef$ +1 | SpellDescription$ CARDNAME gets +1/+1 until end of turn.
+DeckHas:Ability$Discard
+Oracle:Lifelink\nWhenever you cast a black or red spell, each opponent discards a card.\n{B}{R}: Aran'gar gets +1/+1 until end of turn.

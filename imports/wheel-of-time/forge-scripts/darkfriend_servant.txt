@@ -1,0 +1,8 @@
+Name:Darkfriend Servant
+ManaCost:1 B
+Types:Creature Human Darkfriend
+PT:1/2
+A:AB$ Mana | Cost$ T | Produced$ B | Amount$ 1 | ConditionCheckSVar$ X | ConditionSVarCompare$ LT3 | SpellDescription$ Add {B}.
+A:AB$ Mana | Cost$ T | Produced$ B | Amount$ 2 | ConditionCheckSVar$ X | ConditionSVarCompare$ GE3 | SpellDescription$ If you've woven three or more times, add {B}{B}.
+SVar:X:Count$YourCountersWEAVE
+Oracle:{T}: Add {B}. If you've woven three or more times, add {B}{B} instead.

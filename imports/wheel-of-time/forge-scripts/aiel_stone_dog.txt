@@ -1,0 +1,6 @@
+Name:Aiel Stone Dog
+ManaCost:2 G
+Types:Creature Human Aiel Warrior
+PT:2/3
+K:Vigilance
+Oracle:Vigilance

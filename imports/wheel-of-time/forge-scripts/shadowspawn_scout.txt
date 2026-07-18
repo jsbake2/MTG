@@ -1,0 +1,9 @@
+Name:Shadowspawn Scout
+ManaCost:B
+Types:Creature Shadowspawn
+PT:1/1
+T:Mode$ ChangesZone | Origin$ Any | Destination$ Battlefield | ValidCard$ Card.Self | Execute$ TrigLoot | TriggerDescription$ When CARDNAME enters, draw a card, then discard a card.
+SVar:TrigLoot:DB$ Draw | NumCards$ 1 | Defined$ You | SubAbility$ DBDiscard
+SVar:DBDiscard:DB$ Discard | Defined$ You | Mode$ TgtChoose | NumCards$ 1
+DeckHas:Ability$Discard
+Oracle:When Shadowspawn Scout enters, draw a card, then discard a card.

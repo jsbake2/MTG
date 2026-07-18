@@ -1,0 +1,5 @@
+Name:Taint Spreads
+ManaCost:1 B
+Types:Instant
+A:SP$ PumpAll | ValidTgts$ Opponent | ValidCards$ Creature | NumAtt$ -1 | NumDef$ -1 | IsCurse$ True | SpellDescription$ Each creature target opponent controls gets -1/-1 until end of turn.
+Oracle:Each creature target opponent controls gets -1/-1 until end of turn.

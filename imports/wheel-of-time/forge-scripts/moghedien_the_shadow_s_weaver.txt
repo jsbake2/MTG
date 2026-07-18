@@ -1,0 +1,13 @@
+Name:Moghedien, The Shadow's Weaver
+ManaCost:2 U B
+Types:Legendary Creature Forsaken
+PT:3/3
+S:Mode$ CantBlockBy | ValidAttacker$ Card.Self | CheckSVar$ X | SVarCompare$ GE1 | Description$ CARDNAME can't be blocked as long as you control another creature.
+T:Mode$ DamageDone | ValidSource$ Card.Self | ValidTarget$ Player | CombatDamage$ True | TriggerZones$ Battlefield | Execute$ TrigLoot | TriggerDescription$ Whenever CARDNAME deals combat damage to a player, draw a card, then discard a card.
+SVar:TrigLoot:DB$ Draw | Defined$ You | NumCards$ 1 | SubAbility$ DBDiscard
+SVar:DBDiscard:DB$ Discard | Defined$ You | Mode$ TgtChoose | NumCards$ 1
+A:AB$ Effect | Cost$ U B | RememberObjects$ Self | ExileOnMoved$ Battlefield | StaticAbilities$ Unblockable | SpellDescription$ CARDNAME can't be blocked until end of turn.
+SVar:Unblockable:Mode$ CantBlockBy | ValidAttacker$ Card.IsRemembered | Description$ EFFECTSOURCE can't be blocked this turn.
+SVar:X:Count$Valid Creature.YouCtrl+StrictlyOther
+DeckHas:Ability$Discard
+Oracle:Moghedien, The Shadow's Weaver can't be blocked as long as you control another creature.\nWhenever Moghedien, The Shadow's Weaver deals combat damage to a player, draw a card, then discard a card.\n{U}{B}: Moghedien, The Shadow's Weaver can't be blocked until end of turn.

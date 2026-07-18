@@ -1,0 +1,10 @@
+Name:Portal Stone
+ManaCost:3
+Types:Artifact
+T:Mode$ ChangesZone | Origin$ Any | Destination$ Battlefield | ValidCard$ Creature.YouCtrl | TriggerZones$ Battlefield | Execute$ TrigJourney | TriggerDescription$ Whenever a creature you control enters, put a journey counter on CARDNAME.
+SVar:TrigJourney:DB$ PutCounter | Defined$ Self | CounterType$ JOURNEY | CounterNum$ 1
+A:AB$ ChangeZone | Cost$ 2 T SubCounter<3/JOURNEY> | ValidTgts$ Creature.YouCtrl | TgtPrompt$ Select target creature you control | Origin$ Battlefield | Destination$ Exile | RememberChanged$ True | SubAbility$ DBReturn | SpellDescription$ Exile target creature you control, then return it to the battlefield under its controller's control.
+SVar:DBReturn:DB$ ChangeZone | Defined$ Remembered | Origin$ All | Destination$ Battlefield | GainControl$ True | SubAbility$ DBCleanup
+SVar:DBCleanup:DB$ Cleanup | ClearRemembered$ True
+DeckHas:Ability$Counters|Blink
+Oracle:{2}, {T}, Remove three journey counters from Portal Stone: Exile target creature you control, then return it to the battlefield under its controller's control. (Whenever a creature you control enters, put a journey counter on Portal Stone.)

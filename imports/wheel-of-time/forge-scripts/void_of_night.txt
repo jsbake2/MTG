@@ -1,0 +1,6 @@
+Name:Void of Night
+ManaCost:2 B
+Types:Enchantment
+T:Mode$ SpellCast | ValidCard$ Card.Black | ValidActivatingPlayer$ You | TriggerZones$ Battlefield | Execute$ TrigPump | TriggerDescription$ Whenever you cast a black spell, all creatures get -1/-0 until end of turn.
+SVar:TrigPump:DB$ PumpAll | ValidCards$ Creature | NumAtt$ -1
+Oracle:Whenever you cast a black spell, all creatures get -1/-0 until end of turn.

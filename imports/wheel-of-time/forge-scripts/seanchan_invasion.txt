@@ -1,0 +1,10 @@
+Name:Seanchan Invasion
+ManaCost:2 W B
+Types:Sorcery
+A:SP$ Token | TokenAmount$ 1 | TokenScript$ w_2_2_soldier | TokenOwner$ You | SubAbility$ DBGainControl | SpellDescription$ Create a 2/2 white Soldier creature token. You gain control of target creature until end of turn. That creature can't attack its owner.
+SVar:DBGainControl:DB$ GainControl | ValidTgts$ Creature | TgtPrompt$ Select target creature | LoseControl$ EOT | RememberControlled$ True | SubAbility$ DBEffect
+SVar:DBEffect:DB$ Effect | RememberObjects$ Remembered | StaticAbilities$ CantAttOwner | ForgetOnMoved$ Battlefield | Duration$ UntilEndOfTurn | SubAbility$ DBCleanup
+SVar:CantAttOwner:Mode$ CantAttack | ValidCard$ Card.IsRemembered | Target$ Player.CardOwner | Description$ That creature can't attack its owner.
+SVar:DBCleanup:DB$ Cleanup | ClearRemembered$ True
+DeckHas:Ability$Token
+Oracle:Create a 2/2 white Soldier creature token. You gain control of target creature until end of turn. That creature can't attack its owner.

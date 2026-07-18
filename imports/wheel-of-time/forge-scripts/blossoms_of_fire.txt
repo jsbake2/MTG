@@ -1,0 +1,5 @@
+Name:Blossoms of Fire
+ManaCost:2 R R
+Types:Instant
+A:SP$ DealDamage | ValidTgts$ Any | TgtPrompt$ Select any target to distribute damage to | NumDmg$ 4 | TargetMin$ 1 | TargetMax$ 4 | DividedAsYouChoose$ 4 | SpellDescription$ CARDNAME deals 4 damage divided as you choose among one, two, three, or four targets.
+Oracle:Blossoms of Fire deals 4 damage divided as you choose among one, two, three, or four targets.

@@ -1,0 +1,8 @@
+Name:Caemlyn's Heart
+ManaCost:3
+Types:Artifact
+T:Mode$ Phase | Phase$ End of Turn | ValidPlayer$ You | TriggerZones$ Battlefield | CheckSVar$ X | SVarCompare$ GE3 | Execute$ TrigToken | TriggerDescription$ At the beginning of your end step, if you control three or more Soldiers, create a 1/1 white Soldier creature token.
+SVar:TrigToken:DB$ Token | TokenScript$ w_1_1_soldier | TokenOwner$ You
+SVar:X:Count$Valid Creature.Soldier+YouCtrl
+DeckHas:Ability$Token & Type$Soldier
+Oracle:At the beginning of your end step, if you control three or more Soldiers, create a 1/1 white Soldier creature token.

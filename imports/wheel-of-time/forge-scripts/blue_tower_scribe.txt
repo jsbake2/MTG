@@ -1,0 +1,8 @@
+Name:Blue Tower Scribe
+ManaCost:U
+Types:Creature Human Aes Sedai
+PT:1/1
+T:Mode$ SpellCast | ValidCard$ Card.Blue | ValidActivatingPlayer$ You | TriggerZones$ Battlefield | Execute$ TrigDraw | TriggerDescription$ Whenever you cast a blue spell, draw a card, then discard a card.
+SVar:TrigDraw:DB$ Draw | Defined$ You | NumCards$ 1 | SubAbility$ DBDiscard
+SVar:DBDiscard:DB$ Discard | Defined$ You | NumCards$ 1 | Mode$ TgtChoose
+Oracle:Whenever you cast a blue spell, draw a card, then discard a card.

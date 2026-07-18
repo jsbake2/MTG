@@ -1,0 +1,7 @@
+Name:Shadowspawn Token
+ManaCost:no cost
+Colors:black
+Types:Creature Shadowspawn
+PT:2/2
+K:Menace
+Oracle:

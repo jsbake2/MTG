@@ -1,0 +1,7 @@
+Name:Asha'man Talisman
+ManaCost:2
+Types:Artifact
+A:AB$ Mana | Cost$ T | Produced$ R | SpellDescription$ Add {R}.
+T:Mode$ SpellCast | ValidCard$ Card.Red | ValidActivatingPlayer$ You | ActivationLimit$ 1 | TriggerZones$ Battlefield | Execute$ Weave | TriggerDescription$ Whenever you cast a red spell, weave. This ability triggers only once each turn.
+SVar:Weave:DB$ PutCounter | Defined$ You | CounterType$ WEAVE | CounterNum$ 1
+Oracle:{T}: Add {R}. Whenever you cast a red spell, weave. This ability triggers only once each turn.

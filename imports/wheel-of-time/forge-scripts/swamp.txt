@@ -1,0 +1,3 @@
+Name:Swamp
+Types:Basic Land Swamp
+Oracle:({T}: Add {B}.)

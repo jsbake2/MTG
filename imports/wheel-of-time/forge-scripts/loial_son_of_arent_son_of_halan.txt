@@ -1,0 +1,10 @@
+Name:Loial, Son of Arent Son of Halan
+ManaCost:2 G G
+Types:Legendary Creature Ogier Scholar
+PT:3/6
+K:Reach
+K:Vigilance
+T:Mode$ ChangesZone | Origin$ Any | Destination$ Battlefield | ValidCard$ Card.Self | Execute$ TrigDraw | TriggerDescription$ When CARDNAME enters, draw a card.
+SVar:TrigDraw:DB$ Draw | Defined$ You | NumCards$ 1
+S:Mode$ Continuous | Affected$ Creature.Ogier+Other+YouCtrl | AddToughness$ 2 | Description$ Other Ogier you control get +0/+2.
+Oracle:Reach, vigilance.\nWhen Loial, Son of Arent Son of Halan enters, draw a card.\nOther Ogier you control get +0/+2.

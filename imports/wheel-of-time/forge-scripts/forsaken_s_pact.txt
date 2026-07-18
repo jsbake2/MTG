@@ -1,0 +1,9 @@
+Name:Forsaken's Pact
+ManaCost:2 B
+Types:Enchantment
+T:Mode$ SpellCast | ValidCard$ Card.Black | ValidActivatingPlayer$ You | TriggerZones$ Battlefield | Execute$ TrigLoseLife | TriggerDescription$ Whenever you cast a black spell, target opponent loses 1 life.
+SVar:TrigLoseLife:DB$ LoseLife | ValidTgts$ Opponent | LifeAmount$ 1
+A:AB$ Pump | Cost$ 2 B | ValidTgts$ Creature | KW$ Deathtouch | SpellDescription$ Target creature gains deathtouch until end of turn.
+DeckNeeds:Color$Black
+DeckHas:Ability$LifeGain
+Oracle:Whenever you cast a black spell, target opponent loses 1 life.\n{2}{B}: Target creature gains deathtouch until end of turn.

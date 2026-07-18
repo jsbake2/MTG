@@ -1,6 +1,6 @@
-// CLI entry for importing the card catalog. Run migrations first, then import.
 import { runMigrations } from "../db/migrate.js";
 import { importCards } from "./scryfall.js";
+import { seedWheelOfTime } from "./seedWot.js";
 import { pool } from "../db/pool.js";
 
 function parseArgs(argv: string[]): { file?: string; type?: string } {
@@ -15,10 +15,16 @@ function parseArgs(argv: string[]): { file?: string; type?: string } {
 async function main() {
   const args = parseArgs(process.argv.slice(2));
   await runMigrations();
+  if (args.type === "wot_only") {
+    await seedWheelOfTime();
+    await pool.end();
+    return;
+  }
   console.log("[import] starting card import", args.file ? `from ${args.file}` : `(scryfall ${args.type ?? "default_cards"})`);
   const t0 = Date.now();
   const { count, source } = await importCards(args);
   console.log(`[import] imported ${count} cards from ${source} in ${((Date.now() - t0) / 1000).toFixed(1)}s`);
+  await seedWheelOfTime();
   await pool.end();
 }
 

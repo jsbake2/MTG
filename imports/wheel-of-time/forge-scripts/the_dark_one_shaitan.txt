@@ -1,0 +1,17 @@
+Name:The Dark One, Shaitan
+ManaCost:3 U B R
+Types:Legendary Creature Forsaken Avatar
+PT:8/8
+K:Menace
+K:Trample
+T:Mode$ CounterAdded | CounterType$ WEAVE | ValidPlayer$ You | TriggerZones$ Battlefield | Execute$ TrigWeaveCounter | TriggerDescription$ Whenever you weave, put a power counter on CARDNAME.
+SVar:TrigWeaveCounter:DB$ PutCounter | Defined$ Self | CounterType$ POWER | CounterNum$ 1
+T:Mode$ ChangesController | ValidCard$ Creature.YouCtrl | ValidOriginalController$ Opponent | TriggerZones$ Battlefield | Execute$ TrigLeashCounter | TriggerDescription$ Whenever you leash a creature, put a power counter on CARDNAME.
+SVar:TrigLeashCounter:DB$ PutCounter | Defined$ Self | CounterType$ POWER | CounterNum$ 1
+T:Mode$ SpellCast | ValidCard$ Card.Black | ValidActivatingPlayer$ You | TriggerZones$ Battlefield | Execute$ TrigCastCounter | TriggerDescription$ Whenever you cast a black spell, put a power counter on CARDNAME.
+SVar:TrigCastCounter:DB$ PutCounter | Defined$ Self | CounterType$ POWER | CounterNum$ 1
+A:AB$ Token | Cost$ U B R | TokenAmount$ 1 | TokenScript$ b_2_2_shadowspawn | TokenOwner$ You | SpellDescription$ Create a 2/2 black Shadowspawn creature token.
+T:Mode$ Phase | Phase$ Upkeep | ValidPlayer$ You | TriggerZones$ Battlefield | Execute$ TrigWinGame | TriggerDescription$ At the beginning of your upkeep, if CARDNAME has ten or more power counters, you win the game.
+SVar:TrigWinGame:DB$ WinsGame | Defined$ You | ConditionCheckSVar$ PowerCtrs | ConditionSVarCompare$ GE10
+SVar:PowerCtrs:Count$CardCounters.POWER
+Oracle:Menace, trample.\nWhenever you weave, put a power counter on The Dark One, Shaitan.\nWhenever you leash a creature, put a power counter on The Dark One, Shaitan.\nWhenever you cast a black spell, put a power counter on The Dark One, Shaitan.\n{U}{B}{R}: Create a 2/2 black Shadowspawn creature token.\nAt the beginning of your upkeep, if The Dark One, Shaitan has ten or more power counters, you win the game.

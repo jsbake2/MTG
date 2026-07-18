@@ -1,0 +1,9 @@
+Name:Compulsion Curse
+ManaCost:1 B
+Types:Enchantment Aura
+K:Enchant:Creature.YouCtrl:creature you control
+SVar:AttachAILogic:Pump
+A:AB$ Effect | Cost$ B B | ValidTgts$ Player.Opponent | TgtPrompt$ Choose target opponent | StaticAbilities$ STCantBeCast | RememberObjects$ Targeted | SubAbility$ DBPump | SpellDescription$ Enchanted creature gets +1/+0 until end of turn and target opponent can't cast spells until end of turn.
+SVar:STCantBeCast:Mode$ CantBeCast | ValidCard$ Card | Caster$ Player.IsRemembered | Description$ Target opponent can't cast spells until end of turn.
+SVar:DBPump:DB$ Pump | Defined$ Enchanted | NumAtt$ +1
+Oracle:Enchant creature you control\n{B}{B}: Enchanted creature gets +1/+0 until end of turn and target opponent can't cast spells until end of turn.

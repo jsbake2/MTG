@@ -1,0 +1,8 @@
+Name:Asha'man Mage
+ManaCost:1 R
+Types:Creature Human Ashaman
+PT:2/2
+A:AB$ DealDamage | Cost$ R | ValidTgts$ Creature,Player | TgtPrompt$ Select target creature or player | NumDmg$ 1 | SubAbility$ DBToken | SpellDescription$ CARDNAME deals 1 damage to target creature or player. Create a 1/1 red Dragon creature token.
+SVar:DBToken:DB$ Token | TokenScript$ wot_r_1_1_dragon | TokenOwner$ You
+DeckHas:Ability$Token
+Oracle:{R}: Asha'man Mage deals 1 damage to target creature or player. Create a 1/1 red Dragon token.

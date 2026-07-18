@@ -1,0 +1,7 @@
+Name:White Tower Librarian
+ManaCost:1 U
+Types:Creature Human Scholar
+PT:1/4
+A:AB$ Draw | Cost$ T | ConditionCheckSVar$ X | ConditionSVarCompare$ GE3 | NumCards$ 1 | SpellDescription$ Pattern 3 — Draw a card. (Activate only if your weave total is 3 or more.)
+SVar:X:Count$YourCountersWEAVE
+Oracle:Pattern 3 — {T}: Draw a card.

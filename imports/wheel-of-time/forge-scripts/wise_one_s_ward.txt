@@ -1,0 +1,6 @@
+Name:Wise One's Ward
+ManaCost:1 G
+Types:Instant
+A:SP$ Pump | ValidTgts$ Creature | TgtPrompt$ Select target creature | NumAtt$ +2 | NumDef$ +2 | KW$ Hexproof | SubAbility$ Weave | SpellDescription$ Target creature gets +2/+2 and gains hexproof until end of turn. Weave.
+SVar:Weave:DB$ PutCounter | Defined$ You | CounterType$ WEAVE | CounterNum$ 1
+Oracle:Target creature gets +2/+2 and gains hexproof until end of turn. Weave.

@@ -1,0 +1,6 @@
+Name:Red Ajah Passion
+ManaCost:2 R
+Types:Enchantment
+T:Mode$ SpellCast | ValidCard$ Card.Red | ValidActivatingPlayer$ You | TriggerZones$ Battlefield | Execute$ TrigDmg | TriggerDescription$ Whenever you cast a red spell, CARDNAME deals 1 damage to each opponent.
+SVar:TrigDmg:DB$ DealDamage | Defined$ Player.Opponent | NumDmg$ 1
+Oracle:Whenever you cast a red spell, Red Ajah Passion deals 1 damage to each opponent.

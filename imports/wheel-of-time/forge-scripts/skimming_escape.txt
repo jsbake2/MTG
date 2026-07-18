@@ -1,0 +1,6 @@
+Name:Skimming Escape
+ManaCost:1 U
+Types:Instant
+A:SP$ ChangeZone | ValidTgts$ Creature | TgtPrompt$ Select target creature | Origin$ Battlefield | Destination$ Hand | SubAbility$ Weave | SpellDescription$ Return target creature to its owner's hand. Weave.
+SVar:Weave:DB$ PutCounter | Defined$ You | CounterType$ WEAVE | CounterNum$ 1
+Oracle:Return target creature to its owner's hand. Weave.

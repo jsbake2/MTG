@@ -1,0 +1,21 @@
+Name:Collar Training
+ManaCost:2 U
+Types:Sorcery
+# Leash — prototype (confidence: low; see notes).
+# GainControl is permanent. A LEASH counter is put on the stolen creature at resolution.
+# A recurring delayed-trigger chain fires each of your upkeeps: add a LEASH counter,
+# then offer the accumulated cost (LEASH counters x2) or the owner regains control.
+# If paid, a new delayed trigger re-arms for next upkeep. If not paid, control ends.
+# "Can't be leashed again until your next turn" is omitted (no sorcery DSL hook).
+# Scry 1 fires once at resolution (SubAbility on DBDelay, which is created at cast).
+# Count$CardCounters.LEASH/Twice models linear scaling (2,4,6,...) not true exponential.
+A:SP$ GainControl | ValidTgts$ Creature.cmcLE2 | TgtPrompt$ Select target creature with mana value 2 or less | RememberControlled$ True | SubAbility$ DBLeashCounter | SpellDescription$ Leash target creature with mana value 2 or less. Scry 1.
+SVar:DBLeashCounter:DB$ PutCounter | Defined$ Remembered | CounterType$ LEASH | CounterNum$ 1 | SubAbility$ DBDelay
+SVar:DBDelay:DB$ DelayedTrigger | Mode$ Phase | Phase$ Upkeep | ValidPlayer$ You | Execute$ TrigLeash | RememberObjects$ Remembered | TriggerDescription$ At the beginning of your upkeep, pay this creature's leash cost or its owner regains control. | SubAbility$ DBScry
+SVar:DBScry:DB$ Scry | ScryNum$ 1
+SVar:TrigLeash:DB$ PutCounter | Defined$ DelayTriggerRemembered | CounterType$ LEASH | CounterNum$ 1 | SubAbility$ DBPayOrReturn
+SVar:DBPayOrReturn:DB$ GainControl | Defined$ DelayTriggerRemembered | NewController$ Owner | UnlessCost$ Y | UnlessPayer$ You | UnlessResolveSubs$ WhenNotPaid | SubAbility$ DBRearm
+SVar:DBRearm:DB$ DelayedTrigger | Mode$ Phase | Phase$ Upkeep | ValidPlayer$ You | Execute$ TrigLeash | RememberObjects$ DelayTriggerRemembered | TriggerDescription$ At the beginning of your upkeep, pay this creature's leash cost or its owner regains control.
+SVar:Y:Count$CardCounters.LEASH/Twice
+AI:RemoveDeck:All
+Oracle:Leash target creature with mana value 2 or less. (You gain control of it. At the beginning of your upkeep, pay its leash cost — {2}, doubling each time you pay — or it returns to its owner and can't be leashed again until your next turn.)\nScry 1.

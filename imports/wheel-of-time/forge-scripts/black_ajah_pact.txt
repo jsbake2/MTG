@@ -1,0 +1,10 @@
+Name:Black Ajah Pact
+ManaCost:1 B B
+Types:Enchantment
+A:AB$ GainControl | Cost$ B B Sac<1/Creature> | ValidTgts$ Creature.OppCtrl | TgtPrompt$ Select target creature an opponent controls | SorcerySpeed$ True | SubAbility$ DBDrain | SpellDescription$ Leash target creature. (You gain control of it. At the beginning of your upkeep, pay {2} — doubling each time you pay — or it returns to its owner and can't be leashed again until your next turn.)
+SVar:DBDrain:DB$ LoseLife | Defined$ Player.Opponent | LifeAmount$ 2 | SubAbility$ DBGainLife
+SVar:DBGainLife:DB$ GainLife | Defined$ You | LifeAmount$ 2
+T:Mode$ Phase | Phase$ Upkeep | ValidPlayer$ You | TriggerZones$ Battlefield | Execute$ TrigLeashCost | TriggerDescription$ At the beginning of your upkeep, for each creature an opponent owns that you control, pay {2} or that creature's owner gains control of it.
+SVar:TrigLeashCost:DB$ GainControlVariant | AllValid$ Creature.OppOwn+YouCtrl | ChangeController$ CardOwner | UnlessCost$ 2 | UnlessPayer$ You
+AI:RemoveDeck:All
+Oracle:Whenever you leash a creature, each opponent loses 2 life and you gain 2 life.\n{B}{B}, Sacrifice a creature: Leash target creature. (You gain control of it. At the beginning of your upkeep, pay its leash cost — {2}, doubling each time you pay — or it returns to its owner and can't be leashed again until your next turn.)

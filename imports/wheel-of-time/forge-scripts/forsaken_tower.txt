@@ -1,0 +1,7 @@
+Name:Forsaken Tower
+ManaCost:1 B B
+Types:Enchantment
+S:Mode$ Continuous | Affected$ Creature.Black | AddPower$ 1 | Description$ All black creatures get +1/+0.
+S:Mode$ Continuous | Affected$ Creature.counters_GE1_LEASH+YouCtrl | AddColor$ Black | Description$ Creatures you control with a leash counter on them are black in addition to their other colors.
+SVar:PlayMain1:TRUE
+Oracle:All black creatures get +1/+0.\nWhenever you leash a creature, that creature becomes black in addition to its other colors.

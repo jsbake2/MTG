@@ -1,0 +1,9 @@
+Name:Callandor, Sword of Light
+ManaCost:3
+Types:Legendary Artifact
+A:AB$ Charm | Cost$ tapXType<2/AesSedai> tapXType<1/Ashaman> | Choices$ DBDragon,DBDraw,DBDamage | SorcerySpeed$ True | PrecostDesc$ Form the Circle — | AdditionalDescription$ Activate only as a sorcery.
+SVar:DBDragon:DB$ Token | TokenScript$ r_3_3_dragon_flying | TokenOwner$ You | SpellDescription$ Create a 3/3 red Dragon creature token with flying.
+SVar:DBDraw:DB$ Draw | NumCards$ 2 | SpellDescription$ Draw two cards.
+SVar:DBDamage:DB$ DealDamage | ValidTgts$ Any | NumDmg$ 5 | SpellDescription$ Callandor, Sword of Light deals 5 damage to any target.
+DeckHints:Type$AesSedai|Ashaman
+Oracle:Form the Circle — Tap two untapped Aes Sedai you control and an untapped Asha'man you control: Choose one —\n• Create a 3/3 red Dragon creature token with flying.\n• Draw two cards.\n• Callandor, Sword of Light deals 5 damage to any target.\nActivate only as a sorcery.

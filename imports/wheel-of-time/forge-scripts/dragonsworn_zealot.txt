@@ -1,0 +1,7 @@
+Name:Dragonsworn Zealot
+ManaCost:1 R
+Types:Creature Human Warrior
+PT:2/1
+T:Mode$ ChangesZone | Origin$ Battlefield | Destination$ Graveyard | ValidCard$ Card.Self | Execute$ TrigDamage | TriggerDescription$ When CARDNAME dies, it deals 1 damage to any target.
+SVar:TrigDamage:DB$ DealDamage | ValidTgts$ Any | NumDmg$ 1
+Oracle:When Dragonsworn Zealot dies, it deals 1 damage to any target.

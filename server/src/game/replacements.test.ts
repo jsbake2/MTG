@@ -33,8 +33,8 @@ test("enters with +1/+1 counters", () => {
   assert.deepEqual(entersWithCounters("This creature enters with two -1/-1 counters on it."), { kind: "-1/-1", count: 2 });
 });
 
-test("enters with X / variable counters falls back (null)", () => {
-  assert.equal(entersWithCounters("This creature enters with X +1/+1 counters on it."), null);
+test("enters with X counters is flagged xScaled (count resolved from xValue at cast)", () => {
+  assert.deepEqual(entersWithCounters("This creature enters with X +1/+1 counters on it."), { kind: "+1/+1", count: 0, xScaled: true });
   assert.equal(entersWithCounters("Flying"), null);
   assert.equal(entersWithCounters(null), null);
 });

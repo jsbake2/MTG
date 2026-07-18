@@ -1,0 +1,9 @@
+Name:Seanchan Enslaver
+ManaCost:2 U B
+Types:Creature Human Damane Master
+PT:3/2
+T:Mode$ CounterAdded | CounterType$ LEASH | ValidCard$ Creature | TriggerZones$ Battlefield | Execute$ TrigLeash | TriggerDescription$ Whenever you leash a creature, create a 1/1 blue Damane creature token and you weave.
+SVar:TrigLeash:DB$ Token | TokenAmount$ 1 | TokenScript$ u_1_1_damane | TokenOwner$ You | SubAbility$ Weave
+SVar:Weave:DB$ PutCounter | Defined$ You | CounterType$ WEAVE | CounterNum$ 1
+DeckHas:Ability$Token
+Oracle:Whenever you leash a creature, create a 1/1 blue Damane creature token and you weave.

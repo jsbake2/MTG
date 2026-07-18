@@ -68,11 +68,32 @@ export interface SetInfo {
   count: number;
 }
 
+// The guided-engine's compiled understanding of a card: which behaviors were
+// recognized (tags), how far coverage got (status), the structured effect ops
+// the engine will run, and any clauses left unmodeled. Surfaced in the card
+// details view so players can see what the engine does with a card.
+export interface CardRulesInfo {
+  status: string; // covered | partial | blocked | vanilla
+  coverage: string | null;
+  source: string;
+  tags: string[];
+  ops: unknown[];
+  etb: unknown[];
+  triggers: unknown[];
+  abilities: unknown[];
+  modes: unknown[] | null;
+  unmodeled: string[];
+  version: number;
+  testsPassing: boolean;
+}
+
 export interface CardDetailResponse {
   card: Card;
   // Other printings of the same oracle card (for alternate-art selection).
   printings: CardSummary[];
   decks?: Array<{ id: string; name: string; isPrecon: boolean; quantity: number; board: string }>;
+  // The engine's tags + compiled rule code for this card (null if untagged).
+  rules?: CardRulesInfo | null;
 }
 
 // ---- Decks ----

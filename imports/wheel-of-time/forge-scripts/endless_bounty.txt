@@ -1,0 +1,9 @@
+Name:Endless Bounty
+ManaCost:2 G
+Types:Sorcery
+A:SP$ Token | TokenAmount$ 2 | TokenScript$ g_1_1_wolf | TokenOwner$ You | RememberTokens$ True | SubAbility$ DBPutCounter | SpellDescription$ Create two 1/1 green Wolf creature tokens. For each land you control, put a +1/+1 counter on each of them.
+SVar:DBPutCounter:DB$ PutCounter | Defined$ Remembered | CounterType$ P1P1 | CounterNum$ X | SubAbility$ DBCleanup
+SVar:DBCleanup:DB$ Cleanup | ClearRemembered$ True
+SVar:X:Count$Valid Land.YouCtrl
+DeckHas:Ability$Token|Counters
+Oracle:Create two 1/1 green Wolf creature tokens. For each land you control, put a +1/+1 counter on each of them.

@@ -1,0 +1,9 @@
+Name:Seal of the Dark One
+ManaCost:2
+Types:Artifact
+T:Mode$ CounterAdded | CounterType$ LEASH | ValidCard$ Creature | TriggerZones$ Battlefield | Execute$ TrigSeal | TriggerDescription$ Whenever you leash a creature or cast a black spell, put a seal counter on CARDNAME.
+T:Mode$ SpellCast | ValidCard$ Card.Black | ValidActivatingPlayer$ You | TriggerZones$ Battlefield | Execute$ TrigSeal | Secondary$ True | TriggerDescription$ Whenever you leash a creature or cast a black spell, put a seal counter on CARDNAME.
+SVar:TrigSeal:DB$ PutCounter | Defined$ Self | CounterType$ SEAL | CounterNum$ 1
+A:AB$ Token | Cost$ B R SubCounter<3/SEAL> | TokenAmount$ 1 | TokenScript$ b_3_3_shadowspawn_menace | TokenOwner$ You | SpellDescription$ Create a 3/3 black Shadowspawn creature token with menace.
+DeckHas:Ability$Token|Counters
+Oracle:Whenever you leash a creature or cast a black spell, put a seal counter on Seal of the Dark One.\n{B}{R}, Remove three seal counters from it: Create a 3/3 black Shadowspawn creature token with menace.

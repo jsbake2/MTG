@@ -1,0 +1,10 @@
+Name:Tarmon Gai'don
+ManaCost:4 B R
+Types:Sorcery
+A:SP$ DestroyAll | ValidCards$ Creature | RememberDestroyed$ True | SubAbility$ DBRepeat | SpellDescription$ Destroy all creatures. For each creature destroyed this way, its controller loses 1 life.
+SVar:DBRepeat:DB$ RepeatEach | RepeatPlayers$ Player | RepeatSubAbility$ DBLoseLife | SubAbility$ DBCleanup
+SVar:DBLoseLife:DB$ LoseLife | LifeAmount$ X | Defined$ Player.IsRemembered
+SVar:DBCleanup:DB$ Cleanup | ClearRemembered$ True
+SVar:X:RememberedLKI$Valid Card.RememberedPlayerCtrl
+AI:RemoveDeck:All
+Oracle:Destroy all creatures. For each creature destroyed this way, its controller loses 1 life.

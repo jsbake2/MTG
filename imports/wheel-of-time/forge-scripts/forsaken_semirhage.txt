@@ -1,0 +1,9 @@
+Name:Forsaken Semirhage
+ManaCost:3 B R
+Types:Creature Forsaken Avatar
+PT:5/4
+K:Menace
+T:Mode$ CounterAdded | CounterType$ LEASH | ValidCard$ Creature | TriggerZones$ Battlefield | Execute$ TrigLeash | TriggerDescription$ Whenever you leash a creature, CARDNAME gets +1/+0 until end of turn.
+SVar:TrigLeash:DB$ Pump | Defined$ Self | NumAtt$ +1
+A:AB$ Pump | Cost$ B R | Defined$ Self | KW$ Indestructible | SpellDescription$ CARDNAME gains indestructible until end of turn.
+Oracle:Menace\nWhenever you leash a creature, Forsaken Semirhage gets +1/+0 until end of turn.\n{B}{R}: Forsaken Semirhage gains indestructible until end of turn.

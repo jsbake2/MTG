@@ -1,0 +1,5 @@
+Name:Shadow's Grasp
+ManaCost:B
+Types:Instant
+A:SP$ Pump | ValidTgts$ Creature | TgtPrompt$ Select target creature | NumAtt$ -2 | NumDef$ -1 | IsCurse$ True | SpellDescription$ Target creature gets -2/-1 until end of turn.
+Oracle:Target creature gets -2/-1 until end of turn.

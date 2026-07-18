@@ -1,0 +1,10 @@
+Name:Darkhound Stalker
+ManaCost:1 B
+Types:Creature Darkhound
+PT:1/3
+K:Menace
+A:AB$ Pump | Cost$ B | Defined$ Self | NumAtt$ +1 | SpellDescription$ CARDNAME gets +1/+0 until end of turn.
+T:Mode$ ChangesZone | Origin$ Battlefield | Destination$ Graveyard | ValidCard$ Card.Self,Creature.Other | TriggerZones$ Battlefield | OptionalDecider$ You | Execute$ TrigToken | TriggerDescription$ Whenever a creature dies, you may create a 1/1 black Shadowspawn creature token.
+SVar:TrigToken:DB$ Token | TokenAmount$ 1 | TokenScript$ b_1_1_shadowspawn | TokenOwner$ You
+DeckHas:Ability$Token
+Oracle:Menace\n{B}: Darkhound Stalker gets +1/+0 until end of turn.\nWhenever a creature dies, you may create a 1/1 black Shadowspawn creature token.

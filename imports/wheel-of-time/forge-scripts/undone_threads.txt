@@ -1,0 +1,6 @@
+Name:Undone Threads
+ManaCost:2 U
+Types:Instant
+A:SP$ Counter | TargetType$ Spell | ValidTgts$ Creature | TgtPrompt$ Select target creature spell | SubAbility$ Weave | SpellDescription$ Counter target creature spell. Weave.
+SVar:Weave:DB$ PutCounter | Defined$ You | CounterType$ WEAVE | CounterNum$ 1
+Oracle:Counter target creature spell. Weave.

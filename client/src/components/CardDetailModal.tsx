@@ -1,11 +1,109 @@
 import { useEffect, useState } from "react";
-import type { CardDetailResponse } from "@mtg/shared";
+import type { CardDetailResponse, CardRulesInfo } from "@mtg/shared";
 import { api } from "@/api/client";
 import { CardImage } from "@/components/CardTile";
 import { ManaCost } from "@/components/ManaCost";
 import { useReportIssue } from "@/store/reportIssue";
 
 const LEGAL_FORMATS = ["standard", "pioneer", "modern", "pauper", "legacy", "vintage", "commander"];
+
+const RULE_STATUS: Record<string, { label: string; cls: string; blurb: string }> = {
+  covered: { label: "Covered", cls: "bg-green-900/50 text-green-200 border-green-500/30", blurb: "The engine fully models this card." },
+  partial: { label: "Partial", cls: "bg-amber-900/50 text-amber-200 border-amber-500/30", blurb: "Some of this card's text is modeled; the rest is handled manually." },
+  blocked: { label: "Manual", cls: "bg-red-900/40 text-red-200 border-red-500/30", blurb: "Not modeled yet — play this card's effects manually." },
+  vanilla: { label: "Vanilla", cls: "bg-table-panel2 text-table-muted border-table-border", blurb: "No rules text to model." },
+};
+
+// The engine's tags + optional compiled effect code for a card.
+function RulesPanel({ rules }: { rules: CardRulesInfo }) {
+  const [showCode, setShowCode] = useState(false);
+  const st = RULE_STATUS[rules.status] ?? { label: rules.status, cls: "bg-table-panel2 text-table-muted border-table-border", blurb: "" };
+  // Each compiled bucket that actually has content, for the raw-code view.
+  const codeBuckets: Array<[string, unknown[]]> = [
+    ["ops", rules.ops],
+    ["etb", rules.etb],
+    ["triggers", rules.triggers],
+    ["abilities", rules.abilities],
+    ...(rules.modes && rules.modes.length ? ([["modes", rules.modes]] as Array<[string, unknown[]]>) : []),
+  ];
+  const hasCode = codeBuckets.some(([, v]) => Array.isArray(v) && v.length > 0);
+
+  return (
+    <div className="mt-4 rounded-lg border border-table-border/60 bg-table-bg/40 p-3">
+      <div className="mb-2 flex items-center justify-between">
+        <div className="text-xs font-semibold uppercase tracking-wide text-table-muted">Engine rules &amp; tags</div>
+        <span className={`rounded border px-2 py-0.5 text-[11px] font-semibold ${st.cls}`} title={st.blurb}>
+          {st.label}
+        </span>
+      </div>
+
+      {rules.tags.length > 0 ? (
+        <div className="flex flex-wrap gap-1.5">
+          {rules.tags.map((t) => (
+            <span key={t} className="rounded bg-table-accent/15 px-2 py-0.5 text-xs font-medium text-table-accentSoft ring-1 ring-table-accent/25">
+              {t}
+            </span>
+          ))}
+        </div>
+      ) : (
+        <div className="text-xs text-table-muted">No behavior tags — {st.blurb || "handled manually."}</div>
+      )}
+
+      {rules.unmodeled.length > 0 && (
+        <div className="mt-3">
+          <div className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-amber-300/80">Handled manually</div>
+          <ul className="list-disc space-y-0.5 pl-4 text-xs text-table-muted">
+            {rules.unmodeled.map((c, i) => (
+              <li key={i}>{c}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      <div className="mt-3">
+        <button className="chip text-xs hover:border-table-accent" onClick={() => setShowCode((v) => !v)}>
+          {showCode ? "▾ Hide engine code" : "▸ Show engine code"}
+        </button>
+        {showCode && (
+          <div className="mt-2 space-y-2">
+            {!hasCode && (
+              <div className="text-xs text-table-muted">
+                No compiled effect code for this card — it's <b>{st.label.toLowerCase()}</b>
+                {rules.unmodeled.length > 0 ? " and handled manually (see above)." : "."}
+              </div>
+            )}
+            {codeBuckets
+              .filter(([, v]) => Array.isArray(v) && v.length > 0)
+              .map(([name, v]) => (
+                <div key={name}>
+                  <div className="mb-0.5 text-[11px] font-semibold uppercase tracking-wide text-table-muted">{name}</div>
+                  <pre className="overflow-x-auto rounded bg-black/50 p-2 text-[11px] leading-snug text-emerald-200/90">
+                    {JSON.stringify(v, null, 2)}
+                  </pre>
+                </div>
+              ))}
+            {/* Full raw record so there's always something to inspect. */}
+            <div>
+              <div className="mb-0.5 text-[11px] font-semibold uppercase tracking-wide text-table-muted">raw</div>
+              <pre className="overflow-x-auto rounded bg-black/50 p-2 text-[11px] leading-snug text-sky-200/90">
+                {JSON.stringify(
+                  { status: rules.status, tags: rules.tags, ops: rules.ops, etb: rules.etb, triggers: rules.triggers, abilities: rules.abilities, modes: rules.modes, unmodeled: rules.unmodeled },
+                  null,
+                  2,
+                )}
+              </pre>
+            </div>
+            <div className="text-[10px] text-table-muted">
+              source: {rules.source} · v{rules.version}
+              {rules.coverage ? ` · ${rules.coverage}` : ""}
+              {rules.testsPassing ? " · tests ✓" : ""}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
 
 export function CardDetailModal({
   cardId,
@@ -71,6 +169,7 @@ export function CardDetailModal({
                   })}
                 </div>
               </div>
+              {data.rules && <RulesPanel rules={data.rules} />}
               {data.decks && data.decks.length > 0 && (
                 <div className="mt-4">
                   <div className="mb-1 text-xs font-semibold uppercase tracking-wide text-table-muted">Associated Decks</div>

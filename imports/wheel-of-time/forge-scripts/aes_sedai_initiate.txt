@@ -1,0 +1,7 @@
+Name:Aes Sedai Initiate
+ManaCost:1 W
+Types:Creature Human Aes Sedai
+PT:1/1
+T:Mode$ SpellCast | ValidCard$ Card.nonCreature | ValidActivatingPlayer$ You | TriggerZones$ Battlefield | Execute$ Weave | TriggerDescription$ Whenever you cast a noncreature spell, weave.
+SVar:Weave:DB$ PutCounter | Defined$ You | CounterType$ WEAVE | CounterNum$ 1
+Oracle:Whenever you cast a noncreature spell, weave.

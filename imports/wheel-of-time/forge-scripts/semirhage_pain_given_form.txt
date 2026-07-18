@@ -1,0 +1,13 @@
+Name:Semirhage, Pain Given Form
+ManaCost:3 B R
+Types:Legendary Creature Forsaken Avatar
+PT:5/4
+K:Menace
+T:Mode$ SpellCast | ValidCard$ Card.Black | ValidActivatingPlayer$ You | TriggerZones$ Battlefield | Execute$ TrigDrain | TriggerDescription$ Whenever you cast a black or red spell, each opponent loses 1 life.
+T:Mode$ SpellCast | ValidCard$ Card.Red | ValidActivatingPlayer$ You | TriggerZones$ Battlefield | Execute$ TrigDrain | TriggerDescription$ Whenever you cast a black or red spell, each opponent loses 1 life.
+SVar:TrigDrain:DB$ LoseLife | Defined$ Player.Opponent | LifeAmount$ 1
+A:AB$ Pump | Cost$ B R | Defined$ Self | KW$ Indestructible | SpellDescription$ CARDNAME gains indestructible until end of turn.
+A:AB$ Token | Cost$ 2 B R | TokenScript$ b_1_1_shadowspawn | TokenOwner$ You | SpellDescription$ Create a 1/1 black Shadowspawn creature token.
+DeckHas:Ability$Token
+SVar:PlayMain1:TRUE
+Oracle:Menace\nWhenever you cast a black or red spell, each opponent loses 1 life.\n{B}{R}: Semirhage, Pain Given Form gains indestructible until end of turn.\n{2}{B}{R}: Create a 1/1 black Shadowspawn creature token.

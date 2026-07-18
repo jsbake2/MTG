@@ -1,0 +1,5 @@
+Name:Stilled
+ManaCost:1 W W
+Types:Instant
+A:SP$ Animate | ValidTgts$ Creature | Power$ 1 | Toughness$ 1 | RemoveAllAbilities$ True | Duration$ Permanent | IsCurse$ True | SpellDescription$ Target creature loses all abilities and has base power and toughness 1/1. (This effect doesn't end.)
+Oracle:Target creature loses all abilities and has base power and toughness 1/1. (This effect doesn't end.)

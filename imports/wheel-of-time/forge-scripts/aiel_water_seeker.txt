@@ -1,0 +1,6 @@
+Name:Aiel Water Seeker
+ManaCost:G
+Types:Creature Human Aiel Scout
+PT:1/1
+A:AB$ Mana | Cost$ T | Produced$ G | IsPresent$ Creature.Aiel+YouCtrl+Other | SpellDescription$ Add {G}. Activate only if you control another Aiel.
+Oracle:{T}: Add {G}. Activate only if you control another Aiel.

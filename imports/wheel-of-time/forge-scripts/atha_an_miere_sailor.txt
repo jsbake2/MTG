@@ -1,0 +1,8 @@
+Name:Atha'an Miere Sailor
+ManaCost:1 U
+Types:Creature Human Scout
+PT:1/2
+T:Mode$ SpellCast | ValidCard$ Card.Blue | ValidActivatingPlayer$ You | TriggerZones$ Battlefield | Execute$ TrigToken | TriggerDescription$ Whenever you cast a blue spell, create a 1/1 blue Sailor creature token.
+SVar:TrigToken:DB$ Token | TokenScript$ u_1_1_sailor | TokenOwner$ You
+DeckHas:Ability$Token
+Oracle:Whenever you cast a blue spell, create a 1/1 blue Sailor creature token.

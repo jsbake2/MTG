@@ -1,0 +1,6 @@
+Name:The Choedan Kal
+ManaCost:5
+Types:Legendary Artifact
+A:AB$ Mana | Cost$ T | Produced$ C | Amount$ 3 | RestrictValid$ Spell.Channeler,Spell.AesSedai,Spell.Ashaman,Spell.WiseOne,Spell.Windfinder,Spell.Damane,Spell.Dreadlord,Spell.Forsaken,Activated.Channeler+inZoneBattlefield,Activated.AesSedai+inZoneBattlefield,Activated.Ashaman+inZoneBattlefield,Activated.WiseOne+inZoneBattlefield,Activated.Windfinder+inZoneBattlefield,Activated.Damane+inZoneBattlefield,Activated.Dreadlord+inZoneBattlefield,Activated.Forsaken+inZoneBattlefield | SpellDescription$ Add {C}{C}{C}. Spend this mana only to cast Channeler spells or activate their abilities.
+A:AB$ PutCounter | Cost$ T | Defined$ You | CounterType$ WEAVE | CounterNum$ 3 | PlayerTurn$ True | SpellDescription$ Weave three times. Activate only during your turn.
+Oracle:{T}: Add {C}{C}{C}. Spend this mana only to cast Channeler spells or activate their abilities.\n{T}: Weave three times. Activate only during your turn.

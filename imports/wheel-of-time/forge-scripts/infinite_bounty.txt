@@ -1,0 +1,11 @@
+Name:Infinite Bounty
+ManaCost:1 G
+Types:Enchantment
+T:Mode$ ChangesZone | Origin$ Any | Destination$ Battlefield | ValidCard$ Land.YouCtrl | TriggerZones$ Battlefield | Execute$ TrigToken | TriggerDescription$ Whenever a land enters under your control, create a 1/1 green Wolf creature token.
+SVar:TrigToken:DB$ Token | TokenScript$ g_1_1_wolf | TokenOwner$ You
+S:Mode$ Continuous | Affected$ Creature.Wolf+token+YouCtrl | AddPower$ X | AddToughness$ X | Description$ Wolf tokens you control get +1/+1 for each land you control.
+SVar:X:Count$Valid Land.YouCtrl
+SVar:BuffedBy:Land
+DeckHints:Type$Wolf
+DeckHas:Ability$Token
+Oracle:Whenever a land enters under your control, create a 1/1 green Wolf creature token. These tokens get +1/+1 for each land you control.

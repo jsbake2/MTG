@@ -149,8 +149,15 @@ async function handle(conn: Conn, msg: ClientMessage): Promise<void> {
         send(conn.ws, { type: "error", message: "You're spectating — take a seat to act.", recoverable: true });
         return;
       }
-      const r = conn.table.apply(seat, msg.action);
-      if (!r.ok) send(conn.ws, { type: "error", message: r.error ?? "Illegal action", recoverable: true });
+      // Host of the table or a site admin = "judge": may use the privileged
+      // meta-controls (override in a tournament game, set_enforcement, etc.).
+      const privileged = conn.isAdmin || conn.table.hostUserId === conn.userId;
+      const r = conn.table.apply(seat, msg.action, privileged);
+      if (r.manaChoice) {
+        send(conn.ws, { type: "mana_choice", ...r.manaChoice });
+      } else if (!r.ok) {
+        send(conn.ws, { type: "error", message: r.error ?? "Illegal action", recoverable: true });
+      }
       return;
     }
     case "undo": {

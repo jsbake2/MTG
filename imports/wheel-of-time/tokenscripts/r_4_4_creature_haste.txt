@@ -1,0 +1,7 @@
+Name:Creature Token
+ManaCost:no cost
+Colors:red
+Types:Creature Creature
+PT:4/4
+K:Haste
+Oracle:

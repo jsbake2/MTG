@@ -1,0 +1,5 @@
+Name:Mirror Image
+ManaCost:3 U
+Types:Sorcery
+A:SP$ CopyPermanent | ValidTgts$ Creature.YouCtrl | TgtPrompt$ Select target creature you control | SpellDescription$ Create a token that's a copy of target creature you control.
+Oracle:Create a token that's a copy of target creature you control.

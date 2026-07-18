@@ -1,0 +1,6 @@
+Name:Whitecloak Soldier Token
+ManaCost:no cost
+Colors:white
+Types:Creature Whitecloak Soldier
+PT:1/1
+Oracle:

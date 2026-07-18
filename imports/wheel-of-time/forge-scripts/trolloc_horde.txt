@@ -1,0 +1,9 @@
+Name:Trolloc Horde
+ManaCost:2 B
+Types:Creature Trolloc
+PT:2/3
+K:Menace
+T:Mode$ CounterAdded | CounterType$ LEASH | ValidCard$ Creature | TriggerZones$ Battlefield | Execute$ TrigToken | TriggerDescription$ Whenever you leash a creature, create a 1/1 black Trolloc creature token.
+SVar:TrigToken:DB$ Token | TokenAmount$ 1 | TokenScript$ b_1_1_trolloc | TokenOwner$ You
+DeckHas:Ability$Token & Type$Trolloc
+Oracle:Menace\nWhenever you leash a creature, create a 1/1 black Trolloc creature token.

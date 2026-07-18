@@ -1,0 +1,8 @@
+Name:Mental Fortress
+ManaCost:1 U
+Types:Enchantment Aura
+K:Enchant:Creature
+SVar:AttachAILogic:Pump
+S:Mode$ Continuous | Affected$ Creature.EnchantedBy | Description$ Enchanted creature can't be blocked.
+S:Mode$ CantBlockBy | ValidAttacker$ Creature.EnchantedBy
+Oracle:Enchant creature\nEnchanted creature can't be blocked.

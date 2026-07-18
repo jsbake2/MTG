@@ -1,0 +1,6 @@
+Name:Hand of the Light
+ManaCost:1 W B
+Types:Enchantment
+T:Mode$ CounterAdded | CounterType$ WEAVE | ValidPlayer$ Opponent | TriggerZones$ Battlefield | Execute$ TrigLoseLife | TriggerDescription$ Whenever an opponent weaves, that player loses 1 life.
+SVar:TrigLoseLife:DB$ LoseLife | Defined$ TriggeredPlayer | LifeAmount$ 1
+Oracle:Whenever an opponent weaves, that player loses 1 life.

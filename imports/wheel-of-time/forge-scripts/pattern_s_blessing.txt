@@ -1,0 +1,7 @@
+Name:Pattern's Blessing
+ManaCost:2 W
+Types:Sorcery
+A:SP$ PumpAll | ValidCards$ Creature.YouCtrl | KW$ Lifelink | SubAbility$ DBGainLife | SpellDescription$ All creatures you control gain lifelink until end of turn. You gain 1 life for each creature you control.
+SVar:DBGainLife:DB$ GainLife | Defined$ You | LifeAmount$ X
+SVar:X:Count$Valid Creature.YouCtrl
+Oracle:All creatures you control gain lifelink until end of turn. You gain 1 life for each creature you control.

@@ -1,0 +1,13 @@
+Name:True Power
+ManaCost:1 B
+Types:Enchantment Aura
+K:Enchant:Creature.Channeler,Creature.AesSedai,Creature.Ashaman,Creature.WiseOne,Creature.Windfinder,Creature.Damane,Creature.Dreadlord,Creature.Forsaken:Channeler creature
+SVar:AttachAILogic:Pump
+S:Mode$ Continuous | Affected$ Creature.EnchantedBy | AddPower$ 5 | AddKeyword$ Menace | Description$ Enchanted creature gets +5/+0 and has menace.
+S:Mode$ CantRegenerate | ValidCard$ Creature.EnchantedBy | Description$ Enchanted creature can't be regenerated.
+T:Mode$ Phase | Phase$ Upkeep | ValidPlayer$ You | TriggerZones$ Battlefield | Execute$ TrigPutCounter | TriggerDescription$ At the beginning of your upkeep, put a fade counter on CARDNAME. Then if it has three or more fade counters, sacrifice it and the enchanted creature. It can't be regenerated.
+SVar:TrigPutCounter:DB$ PutCounter | Defined$ Self | CounterType$ FADE | CounterNum$ 1 | SubAbility$ DBBranch
+SVar:DBBranch:DB$ Branch | BranchConditionSVar$ Count$CardCounters.FADE | BranchConditionSVarCompare$ GE3 | TrueSubAbility$ DBSacEnchanted
+SVar:DBSacEnchanted:DB$ Sacrifice | SacValid$ Card.AttachedBy | Defined$ You | SacMessage$ enchanted creature | SubAbility$ DBSacSelf
+SVar:DBSacSelf:DB$ Sacrifice | SacValid$ Self
+Oracle:Enchant Channeler creature\nEnchanted creature gets +5/+0 and has menace.\nAt the beginning of your upkeep, put a fade counter on True Power. Then if it has three or more fade counters, sacrifice it and the enchanted creature. It can't be regenerated.

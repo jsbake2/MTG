@@ -1,0 +1,6 @@
+Name:Courage Rekindled
+ManaCost:1 W
+Types:Sorcery
+A:SP$ Token | TokenAmount$ 1 | TokenScript$ w_1_1_soldier | TokenOwner$ You | SubAbility$ Weave | SpellDescription$ Create a 1/1 white Soldier creature token. Weave.
+SVar:Weave:DB$ PutCounter | Defined$ You | CounterType$ WEAVE | CounterNum$ 1
+Oracle:Create a 1/1 white Soldier creature token. Weave.

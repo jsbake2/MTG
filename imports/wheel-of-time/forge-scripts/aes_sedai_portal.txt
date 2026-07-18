@@ -1,0 +1,8 @@
+Name:Aes Sedai Portal
+ManaCost:W U
+Types:Enchantment
+T:Mode$ CounterAdded | CounterType$ WEAVE | ValidPlayer$ You | TriggerZones$ Battlefield | Execute$ TrigToken | TriggerDescription$ Whenever you weave, create a 1/1 white Aes Sedai creature token.
+SVar:TrigToken:DB$ Token | TokenAmount$ 1 | TokenScript$ w_1_1_aes_sedai | TokenOwner$ You
+A:AB$ PumpAll | Cost$ W U | ValidCards$ AesSedai | KW$ Flying | SpellDescription$ All Aes Sedai creatures gain flying until end of turn.
+DeckHas:Ability$Token
+Oracle:Whenever you weave, create a 1/1 white Aes Sedai creature token.\n{W}{U}: All Aes Sedai creatures gain flying until end of turn.

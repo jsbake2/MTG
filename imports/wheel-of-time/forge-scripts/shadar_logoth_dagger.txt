@@ -1,0 +1,9 @@
+Name:Shadar Logoth Dagger
+ManaCost:2
+Types:Artifact Equipment
+S:Mode$ Continuous | Affected$ Creature.EquippedBy | AddPower$ 2 | AddKeyword$ Deathtouch | Description$ Equipped creature gets +2/+0 and has deathtouch.
+T:Mode$ DamageDone | ValidSource$ Creature.EquippedBy | ValidTarget$ Player | CombatDamage$ True | TriggerZones$ Battlefield | Execute$ TrigLoseLife | TriggerDescription$ Whenever equipped creature deals combat damage to a player, that player loses 2 life and you lose 1 life.
+SVar:TrigLoseLife:DB$ LoseLife | Defined$ TriggeredTarget | LifeAmount$ 2 | SubAbility$ DBYouLoseLife
+SVar:DBYouLoseLife:DB$ LoseLife | Defined$ You | LifeAmount$ 1
+K:Equip:2
+Oracle:Equipped creature gets +2/+0 and has deathtouch.\nWhenever equipped creature deals combat damage to a player, that player loses 2 life and you lose 1 life.\nEquip {2}

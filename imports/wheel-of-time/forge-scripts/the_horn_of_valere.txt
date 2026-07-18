@@ -1,0 +1,6 @@
+Name:The Horn of Valere
+ManaCost:3
+Types:Legendary Artifact
+A:AB$ Token | Cost$ 2 T | TokenAmount$ 2 | TokenScript$ w_2_2_spirit_hero_vigilance_lifelink | TokenOwner$ You | ActivationLimit$ 1 | SpellDescription$ Create two 2/2 white Spirit Hero creature tokens with vigilance and lifelink. Activate only once each turn.
+DeckHas:Ability$Token
+Oracle:{2}, {T}: Create two 2/2 white Spirit Hero creature tokens with vigilance and lifelink. Activate only once each turn. (The Heroes of the Horn answer, whoever sounds it.)

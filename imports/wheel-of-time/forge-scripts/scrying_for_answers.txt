@@ -1,0 +1,6 @@
+Name:Scrying for Answers
+ManaCost:1 U
+Types:Sorcery
+A:SP$ Scry | ScryNum$ 3 | SubAbility$ DBDraw | SpellDescription$ Scry 3, then draw a card.
+SVar:DBDraw:DB$ Draw | Defined$ You | NumCards$ 1
+Oracle:Scry 3, then draw a card.

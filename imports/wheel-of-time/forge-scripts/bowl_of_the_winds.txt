@@ -1,0 +1,6 @@
+Name:Bowl of the Winds
+ManaCost:3
+Types:Legendary Artifact
+A:AB$ Tap | Cost$ 2 T | ValidTgts$ Creature | TgtPrompt$ Select up to three target creatures | TargetMin$ 0 | TargetMax$ 3 | SubAbility$ Weave | SpellDescription$ Tap up to three target creatures. Weave twice.
+SVar:Weave:DB$ PutCounter | Defined$ You | CounterType$ WEAVE | CounterNum$ 2
+Oracle:{2}, {T}: Tap up to three target creatures. Weave twice.

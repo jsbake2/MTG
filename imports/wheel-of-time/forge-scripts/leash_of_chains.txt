@@ -1,0 +1,28 @@
+Name:Leash of Chains
+ManaCost:1 U B
+Types:Enchantment Aura
+# Leash of Chains — confidence: medium/low. See notes below.
+#
+# COST SCALING: The card says "{2}, doubling each time you pay" (true exponential: 2, 4, 8…).
+# Forge's Count math cannot natively double a counter; "/Twice" multiplies linearly (LEASH*2).
+# So the implemented cost is 2 per upkeep paid (2, 4, 6, 8…), not true doubling.
+# This is the same approximation used in collar_training.txt.
+#
+# "CAN'T BE LEASHED AGAIN": the "can't be leashed again until your next turn" clause
+# (applied when Leash of Chains is sacrificed at upkeep) has no Forge DSL hook for
+# an Aura leaving the battlefield. Omitted. Players must enforce manually.
+#
+# CONTROL: When this Aura is on the battlefield, you control enchanted creature via
+# continuous static (Control Magic / Binding Grasp idiom). Control reverts automatically
+# when the Aura leaves (continuous effect ends). No separate GainControl SubAbility needed.
+K:Enchant:Creature
+SVar:AttachAILogic:GainControl
+S:Mode$ Continuous | Affected$ Card.EnchantedBy | GainControl$ You | Description$ You control enchanted creature.
+T:Mode$ Phase | Phase$ Upkeep | ValidPlayer$ You | TriggerZones$ Battlefield | Execute$ TrigLeashCounter | TriggerDescription$ At the beginning of your upkeep, pay this creature's leash cost — {2}, doubling each time you pay — or sacrifice CARDNAME.
+SVar:TrigLeashCounter:DB$ PutCounter | Defined$ Self | CounterType$ LEASH | CounterNum$ 1 | SubAbility$ DBLeashPay
+SVar:DBLeashPay:DB$ Sacrifice | Defined$ Self | UnlessCost$ Y | UnlessPayer$ You
+SVar:Y:Count$CardCounters.LEASH/Twice
+AI:RemoveDeck:All
+Oracle:Enchant creature
+You control enchanted creature.
+At the beginning of your upkeep, pay this creature's leash cost — {2}, doubling each time you pay — or sacrifice Leash of Chains and it can't be leashed again until your next turn.

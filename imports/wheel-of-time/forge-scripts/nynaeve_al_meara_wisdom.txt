@@ -1,0 +1,9 @@
+Name:Nynaeve al'Meara, Wisdom
+ManaCost:1 G U
+Types:Legendary Creature Human Aes Sedai
+PT:2/3
+A:AB$ ChangeZone | Cost$ G T | Origin$ Library | Destination$ Battlefield | ChangeType$ Land.Basic | ChangeTypeDesc$ basic land | Tapped$ True | ChangeNum$ 1 | SpellDescription$ Search your library for a basic land card, put it onto the battlefield tapped, then shuffle.
+A:AB$ GainLife | Cost$ U T | Defined$ You | LifeAmount$ 2 | SubAbility$ DBDraw | SpellDescription$ You gain 2 life and draw a card. Weave.
+SVar:DBDraw:DB$ Draw | Defined$ You | NumCards$ 1 | SubAbility$ Weave
+SVar:Weave:DB$ PutCounter | Defined$ You | CounterType$ WEAVE | CounterNum$ 1
+Oracle:{G}, {T}: Search your library for a basic land card, put it onto the battlefield tapped, then shuffle.\n{U}, {T}: You gain 2 life and draw a card. Weave.

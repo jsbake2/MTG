@@ -1,0 +1,7 @@
+Name:The Tower of Ghenjei
+ManaCost:no cost
+Types:Legendary Land
+A:AB$ Mana | Cost$ T | Produced$ C | SpellDescription$ Add {C}.
+A:AB$ Draw | Cost$ 4 T | NumCards$ 1 | SubAbility$ DBLoseLife | SpellDescription$ Draw a card and you lose 2 life.
+SVar:DBLoseLife:DB$ LoseLife | LifeAmount$ 2 | Defined$ You | StackDescription$ None
+Oracle:{T}: Add {C}. {4}, {T}: Draw a card and you lose 2 life. (Courage to strengthen, fire to blind, music to dazzle, iron to bind.)

@@ -1,0 +1,8 @@
+Name:Wisdom's Shield
+ManaCost:2 W W
+Types:Enchantment
+S:Mode$ Continuous | Affected$ Creature.YouCtrl | AddKeyword$ Lifelink | Description$ Creatures you control have lifelink.
+T:Mode$ LifeGained | ValidPlayer$ You | TriggerZones$ Battlefield | Execute$ TrigToken | TriggerDescription$ Whenever you gain life, create a 1/1 white Soldier creature token.
+SVar:TrigToken:DB$ Token | TokenAmount$ 1 | TokenScript$ w_1_1_soldier | TokenOwner$ You
+DeckHas:Ability$Token|LifeGain
+Oracle:Creatures you control have lifelink.\nWhenever you gain life, create a 1/1 white Soldier creature token.

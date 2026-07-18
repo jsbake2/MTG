@@ -1,0 +1,8 @@
+Name:Daes Dae'mar Adept
+ManaCost:2 U
+Types:Creature Human Advisor
+PT:2/1
+T:Mode$ SpellCast | ValidCard$ Card.nonCreature | ValidActivatingPlayer$ Opponent | TriggerZones$ Battlefield | Execute$ TrigDraw | TriggerDescription$ Whenever an opponent casts a noncreature spell, you may draw a card, then discard a card.
+SVar:TrigDraw:DB$ Draw | Defined$ You | NumCards$ 1 | Optional$ True | OptionalDecider$ You | SubAbility$ DBDiscard
+SVar:DBDiscard:DB$ Discard | Defined$ You | Mode$ TgtChoose | NumCards$ 1
+Oracle:Whenever an opponent casts a noncreature spell, you may draw a card, then discard a card.

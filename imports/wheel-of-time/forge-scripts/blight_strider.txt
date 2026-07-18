@@ -1,0 +1,6 @@
+Name:Blight Strider
+ManaCost:2 B
+Types:Creature Shadowspawn
+PT:3/2
+S:Mode$ CantBlock | ValidCard$ Card.Self | Description$ CARDNAME can't block.
+Oracle:Blight Strider can't block.

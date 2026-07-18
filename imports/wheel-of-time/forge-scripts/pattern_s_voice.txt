@@ -1,0 +1,9 @@
+Name:Pattern's Voice
+ManaCost:1 U
+Types:Creature Human Aes Sedai
+PT:2/2
+A:AB$ Draw | Cost$ U | NumCards$ 1 | SpellDescription$ Draw a card, then discard a card. | SubAbility$ DBDiscard
+SVar:DBDiscard:DB$ Discard | Defined$ You | Mode$ TgtChoose | NumCards$ 1
+T:Mode$ CounterAdded | CounterType$ WEAVE | ValidPlayer$ You | TriggerZones$ Battlefield | Execute$ TrigPump | TriggerDescription$ Whenever you weave, CARDNAME gets +1/+0 until end of turn.
+SVar:TrigPump:DB$ Pump | Defined$ Self | NumAtt$ +1
+Oracle:{U}: Draw a card, then discard a card.\nWhenever you weave, Pattern's Voice gets +1/+0 until end of turn.

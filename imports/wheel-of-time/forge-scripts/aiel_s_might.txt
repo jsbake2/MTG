@@ -1,0 +1,7 @@
+Name:Aiel's Might
+ManaCost:1 R G
+Types:Sorcery
+A:SP$ Token | TokenAmount$ 2 | TokenScript$ r_1_1_aiel_warrior_haste | TokenOwner$ You | SubAbility$ DBCounters | SpellDescription$ Create two 1/1 red Aiel Warrior tokens with haste. Put a +1/+1 counter on each creature you control.
+SVar:DBCounters:DB$ PutCounterAll | ValidCards$ Creature.YouCtrl | CounterType$ P1P1 | CounterNum$ 1
+DeckHas:Ability$Token|Counters
+Oracle:Create two 1/1 red Aiel Warrior tokens with haste. Put a +1/+1 counter on each creature you control.

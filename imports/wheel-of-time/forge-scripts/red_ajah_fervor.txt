@@ -1,0 +1,7 @@
+Name:Red Ajah Fervor
+ManaCost:2 R
+Types:Enchantment
+T:Mode$ SpellCast | ValidCard$ Card.Red | ValidActivatingPlayer$ You | TriggerZones$ Battlefield | Execute$ TrigPump | TriggerDescription$ Whenever you cast a red spell, target creature gets +1/+0 until end of turn.
+SVar:TrigPump:DB$ Pump | ValidTgts$ Creature | TgtPrompt$ Select target creature | NumAtt$ +1
+DeckHints:Color$Red
+Oracle:Whenever you cast a red spell, target creature gets +1/+0 until end of turn.

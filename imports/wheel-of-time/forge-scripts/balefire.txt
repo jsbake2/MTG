@@ -1,0 +1,5 @@
+Name:Balefire
+ManaCost:2 R R
+Types:Sorcery
+A:SP$ ChangeZone | ValidTgts$ Creature,Planeswalker | TgtPrompt$ Select target creature or planeswalker | Origin$ Battlefield | Destination$ Exile | SpellDescription$ Exile target creature or planeswalker.
+Oracle:Exile target creature or planeswalker.

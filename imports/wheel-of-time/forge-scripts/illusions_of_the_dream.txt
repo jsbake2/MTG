@@ -1,0 +1,7 @@
+Name:Illusions of the Dream
+ManaCost:1 U
+Types:Sorcery
+A:SP$ CopyPermanent | ValidTgts$ Creature.YouCtrl | TgtPrompt$ Select target creature you control | AddKeywords$ Haste | AddAbilities$ IllusionBounce | SpellDescription$ Create a token that's a copy of target creature you control. That token has haste and "{U}: Return this creature to its owner's hand."
+SVar:IllusionBounce:AB$ ChangeZone | Cost$ U | Defined$ Self | Origin$ Battlefield | Destination$ Hand | SpellDescription$ Return this creature to its owner's hand.
+DeckHas:Ability$Token
+Oracle:Create a token that's a copy of target creature you control. That token has haste and "{U}: Return this creature to its owner's hand."

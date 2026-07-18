@@ -1,0 +1,8 @@
+Name:Burn the Pattern
+ManaCost:1 R R
+Types:Sorcery
+A:SP$ DestroyAll | ValidCards$ Creature.toughnessGE4 | RememberDestroyed$ True | SubAbility$ DBGainLife | SpellDescription$ Destroy all creatures with toughness 4 or greater. You gain 3 life for each creature destroyed this way.
+SVar:DBGainLife:DB$ GainLife | Defined$ You | LifeAmount$ X | SubAbility$ DBCleanup
+SVar:DBCleanup:DB$ Cleanup | ClearRemembered$ True
+SVar:X:Remembered$Amount/Thrice
+Oracle:Destroy all creatures with toughness 4 or greater. You gain 3 life for each creature destroyed this way.

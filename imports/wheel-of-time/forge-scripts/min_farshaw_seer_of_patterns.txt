@@ -1,0 +1,9 @@
+Name:Min Farshaw, Seer of Patterns
+ManaCost:1 W
+Types:Legendary Creature Human Advisor
+PT:1/3
+A:AB$ Scry | Cost$ T | ScryNum$ 2 | SpellDescription$ Scry 2.
+A:AB$ Scry | Cost$ T | ScryNum$ 2 | SubAbility$ DBDraw | ConditionCheckSVar$ X | ConditionSVarCompare$ GE3 | SpellDescription$ Pattern 3 — Scry 2, then draw a card. (Activate only if your weave total is 3 or more.)
+SVar:DBDraw:DB$ Draw
+SVar:X:Count$YourCountersWEAVE
+Oracle:{T}: Scry 2. Pattern 3 — {T}: Scry 2, then draw a card.

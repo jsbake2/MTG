@@ -1,0 +1,23 @@
+Name:Leash Master
+ManaCost:3 U B
+Types:Creature Human
+PT:3/3
+# Triggered: whenever you leash a creature (LEASH counter added to any creature),
+# create a 1/1 blue Damane token. Follows the Seanchan Damane Trainer idiom.
+T:Mode$ CounterAdded | CounterType$ LEASH | ValidCard$ Creature | TriggerZones$ Battlefield | Execute$ TrigToken | TriggerDescription$ Whenever you leash a creature, create a 1/1 blue Damane creature token.
+SVar:TrigToken:DB$ Token | TokenAmount$ 1 | TokenScript$ u_1_1_damane | TokenOwner$ You
+# Activated Leash ability: {2}{U}{B} — gain control permanently, put a LEASH counter on
+# the creature, then arm an upkeep trigger that adds a counter and offers to pay
+# (counter count * 2) generic or give control back. Re-arms itself each time paid.
+# Based on Collar Training (confidence: low — "can't be leashed again" clause omitted,
+# counter scaling is linear x2 not true doubling; see notes).
+A:AB$ GainControl | Cost$ 2 U B | ValidTgts$ Creature.OppCtrl | TgtPrompt$ Select target creature an opponent controls | RememberControlled$ True | SubAbility$ DBLeashCounter | SpellDescription$ Leash target creature. (You gain control of it. At the beginning of your upkeep, pay its leash cost — {2}, doubling each time you pay — or it returns to its owner and can't be leashed again until your next turn.)
+SVar:DBLeashCounter:DB$ PutCounter | Defined$ Remembered | CounterType$ LEASH | CounterNum$ 1 | SubAbility$ DBDelay
+SVar:DBDelay:DB$ DelayedTrigger | Mode$ Phase | Phase$ Upkeep | ValidPlayer$ You | Execute$ TrigLeash | RememberObjects$ Remembered | TriggerDescription$ At the beginning of your upkeep, pay this creature's leash cost or its owner regains control.
+SVar:TrigLeash:DB$ PutCounter | Defined$ DelayTriggerRemembered | CounterType$ LEASH | CounterNum$ 1 | SubAbility$ DBPayOrReturn
+SVar:DBPayOrReturn:DB$ GainControl | Defined$ DelayTriggerRemembered | NewController$ Owner | UnlessCost$ Y | UnlessPayer$ You | UnlessResolveSubs$ WhenNotPaid | SubAbility$ DBRearm
+SVar:DBRearm:DB$ DelayedTrigger | Mode$ Phase | Phase$ Upkeep | ValidPlayer$ You | Execute$ TrigLeash | RememberObjects$ DelayTriggerRemembered | TriggerDescription$ At the beginning of your upkeep, pay this creature's leash cost or its owner regains control.
+SVar:Y:Count$CardCounters.LEASH/Twice
+DeckHas:Ability$Token
+AI:RemoveDeck:All
+Oracle:Whenever you leash a creature, create a 1/1 blue Damane creature token.\n{2}{U}{B}: Leash target creature. (You gain control of it. At the beginning of your upkeep, pay its leash cost — {2}, doubling each time you pay — or it returns to its owner and can't be leashed again until your next turn.)

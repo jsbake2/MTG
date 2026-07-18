@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Navigate, NavLink, Route, Routes, useLocation } from "react-router-dom";
+import { Navigate, NavLink, Route, Routes } from "react-router-dom";
 import { useAuth } from "@/store/auth";
 import { useTheme, THEMES } from "@/store/theme";
 import { useSettings } from "@/store/settings";
@@ -11,14 +11,12 @@ import { useRulebook } from "@/store/rulebook";
 import { Login } from "@/pages/Login";
 import { Browse } from "@/pages/Browse";
 import { Decks } from "@/pages/Decks";
+import { CustomCards } from "@/pages/CustomCards";
 import { DeckBuilder } from "@/pages/DeckBuilder";
-import { Play } from "@/pages/Play";
-import { TablePage } from "@/pages/Table";
-import { Leaderboard } from "@/pages/Leaderboard";
+import { ForgeRequests } from "@/pages/ForgeRequests";
 import { Admin } from "@/pages/Admin";
-import { Rulings } from "@/pages/Rulings";
-import { Issues } from "@/pages/Issues";
-import { ReportIssue, ReportIssueFab } from "@/components/ReportIssue";
+import { CardDetailModal } from "@/components/CardDetailModal";
+import { useCardDetail } from "@/store/cardDetail";
 
 function NavBar() {
   const { user, logout } = useAuth();
@@ -37,25 +35,15 @@ function NavBar() {
         <NavLink to="/decks" className={linkClass}>
           Decks
         </NavLink>
-        <NavLink to="/play" className={linkClass}>
-          Play
+        <NavLink to="/custom" className={linkClass}>
+          Custom
         </NavLink>
-        <NavLink to="/leaderboard" className={linkClass}>
-          Leaderboard
+        <NavLink to="/requests" className={linkClass}>
+          Requests
         </NavLink>
         {user?.isAdmin && (
           <NavLink to="/admin" className={linkClass}>
             Admin
-          </NavLink>
-        )}
-        {user?.isAdmin && (
-          <NavLink to="/rulings" className={linkClass}>
-            Rulings
-          </NavLink>
-        )}
-        {user?.isAdmin && (
-          <NavLink to="/issues" className={linkClass}>
-            Issues
           </NavLink>
         )}
       </nav>
@@ -103,7 +91,6 @@ function NavBar() {
 
 export function App() {
   const { user, loading, init } = useAuth();
-  const location = useLocation();
 
   useEffect(() => {
     init();
@@ -116,12 +103,9 @@ export function App() {
     return <Login />;
   }
 
-  // The table page is full-bleed (no chrome) for maximum board space.
-  const isTable = location.pathname.startsWith("/table/");
-
   return (
     <div className="flex h-full flex-col">
-      {!isTable && <NavBar />}
+      <NavBar />
       <main className="min-h-0 flex-1">
         <Routes>
           <Route path="/" element={<Navigate to="/browse" replace />} />
@@ -129,19 +113,23 @@ export function App() {
           <Route path="/decks" element={<Decks />} />
           <Route path="/decks/:id" element={<DeckBuilder />} />
           <Route path="/decks/new" element={<DeckBuilder />} />
-          <Route path="/play" element={<Play />} />
-          <Route path="/leaderboard" element={<Leaderboard />} />
-          <Route path="/table/:id" element={<TablePage />} />
+          <Route path="/custom" element={<CustomCards />} />
+          <Route path="/requests" element={<ForgeRequests />} />
           {user.isAdmin && <Route path="/admin" element={<Admin />} />}
-          {user.isAdmin && <Route path="/rulings" element={<Rulings />} />}
-          {user.isAdmin && <Route path="/issues" element={<Issues />} />}
           <Route path="*" element={<Navigate to="/browse" replace />} />
         </Routes>
       </main>
       <RulebookFab />
       <Rulebook />
-      <ReportIssueFab />
-      <ReportIssue />
+      <GlobalCardDetail />
     </div>
   );
+}
+
+// Card details modal driven by the global store — opened from any surface
+// (e.g. a battlefield card's right-click "Engine details").
+function GlobalCardDetail() {
+  const { cardId, close } = useCardDetail();
+  if (!cardId) return null;
+  return <CardDetailModal cardId={cardId} onClose={close} />;
 }

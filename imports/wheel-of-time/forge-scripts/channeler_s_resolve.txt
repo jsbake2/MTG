@@ -1,0 +1,8 @@
+Name:Channeler's Resolve
+ManaCost:W U
+Types:Sorcery
+A:SP$ Token | TokenAmount$ 1 | TokenScript$ u_1_1_aes_sedai | TokenOwner$ You | SubAbility$ DBToken2 | SpellDescription$ Create a 1/1 blue Aes Sedai creature token and a 1/1 white Aes Sedai creature token. Weave.
+SVar:DBToken2:DB$ Token | TokenAmount$ 1 | TokenScript$ w_1_1_aes_sedai | TokenOwner$ You | SubAbility$ Weave
+SVar:Weave:DB$ PutCounter | Defined$ You | CounterType$ WEAVE | CounterNum$ 1
+DeckHas:Ability$Token
+Oracle:Create a 1/1 blue Aes Sedai creature token and a 1/1 white Aes Sedai creature token. Weave.

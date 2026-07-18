@@ -1,0 +1,11 @@
+Name:Denounce the Witch
+ManaCost:1 W
+Types:Enchantment Aura
+K:Enchant:Creature
+SVar:AttachAILogic:Curse
+S:Mode$ CantAttack,CantBlock,CantBeActivated | ValidCard$ Creature.EnchantedBy | Description$ Enchanted creature can't attack or block, and its activated abilities can't be activated.
+T:Mode$ ChangesZone | Origin$ Any | Destination$ Battlefield | ValidCard$ Card.Self | CheckSVar$ Chk | SVarCompare$ GE1 | Execute$ TrigGainLife | TriggerDescription$ When CARDNAME enters, if enchanted creature is a Channeler, you gain 2 life.
+SVar:TrigGainLife:DB$ GainLife | Defined$ You | LifeAmount$ 2
+SVar:Chk:Count$Valid Creature.Channeler+AttachedBy,Creature.AesSedai+AttachedBy,Creature.Ashaman+AttachedBy,Creature.WiseOne+AttachedBy,Creature.Windfinder+AttachedBy,Creature.Damane+AttachedBy,Creature.Dreadlord+AttachedBy,Creature.Forsaken+AttachedBy
+DeckHas:Ability$LifeGain
+Oracle:Enchant creature\nEnchanted creature can't attack or block, and its activated abilities can't be activated.\nWhen Denounce the Witch enters, if enchanted creature is a Channeler, you gain 2 life.

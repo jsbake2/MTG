@@ -1,0 +1,9 @@
+Name:Red Ajah Fury
+ManaCost:2 R R
+Types:Enchantment
+T:Mode$ SpellCast | ValidCard$ Card.Red | ValidActivatingPlayer$ You | TriggerZones$ Battlefield | Execute$ TrigPumpAll | TriggerDescription$ Whenever you cast a red spell, all creatures you control get +1/+0 until end of turn.
+SVar:TrigPumpAll:DB$ PumpAll | ValidCards$ Creature.YouCtrl | NumAtt$ +1 | NumDef$ +0
+T:Mode$ DamageDone | ValidSource$ Creature.YouCtrl | ValidTarget$ Player,Planeswalker,Creature | CombatDamage$ True | OptionalDecider$ You | TriggerZones$ Battlefield | Execute$ TrigDealDamage | TriggerDescription$ Whenever a creature you control deals combat damage, you may deal 1 damage to any target.
+SVar:TrigDealDamage:DB$ DealDamage | ValidTgts$ Any | NumDmg$ 1 | TgtPrompt$ Select any target
+SVar:PlayMain1:TRUE
+Oracle:Whenever you cast a red spell, all creatures you control get +1/+0 until end of turn.\nWhenever a creature you control deals combat damage, you may deal 1 damage to any target.

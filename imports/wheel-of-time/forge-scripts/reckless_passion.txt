@@ -1,0 +1,6 @@
+Name:Reckless Passion
+ManaCost:1 R
+Types:Instant
+A:SP$ Pump | ValidTgts$ Creature | TgtPrompt$ Select target creature | NumAtt$ +2 | NumDef$ +0 | KW$ Haste | SubAbility$ Weave | SpellDescription$ Target creature gets +2/+0 and gains haste until end of turn. Weave.
+SVar:Weave:DB$ PutCounter | Defined$ You | CounterType$ WEAVE | CounterNum$ 1
+Oracle:Target creature gets +2/+0 and gains haste until end of turn. Weave.

@@ -1,0 +1,12 @@
+Name:Whitecloak Inquisitor
+ManaCost:1 W B
+Types:Creature Human Whitecloak Cleric
+PT:2/2
+T:Mode$ ChangesZone | Origin$ Any | Destination$ Battlefield | ValidCard$ Card.Self | Execute$ TrigInquest | TriggerDescription$ When CARDNAME enters, target opponent reveals their hand. If they control a Channeler or reveal a Channeler card this way, they discard a card and lose 2 life.
+SVar:TrigInquest:DB$ RevealHand | Defined$ Targeted | ValidTgts$ Opponent | RememberRevealed$ True | SubAbility$ DBCheckCondition
+SVar:DBCheckCondition:DB$ Discard | Defined$ Targeted | NumCards$ 1 | Mode$ TgtChoose | ConditionDefined$ Remembered | ConditionPresent$ Creature.Channeler+IsRemembered,Creature.AesSedai+IsRemembered,Creature.Ashaman+IsRemembered,Creature.WiseOne+IsRemembered,Creature.Windfinder+IsRemembered,Creature.Damane+IsRemembered,Creature.Dreadlord+IsRemembered,Creature.Forsaken+IsRemembered,Creature.Channeler+OppCtrl,Creature.AesSedai+OppCtrl,Creature.Ashaman+OppCtrl,Creature.WiseOne+OppCtrl,Creature.Windfinder+OppCtrl,Creature.Damane+OppCtrl,Creature.Dreadlord+OppCtrl,Creature.Forsaken+OppCtrl | SubAbility$ DBLoseLife
+SVar:DBLoseLife:DB$ LoseLife | Defined$ Targeted | LifeAmount$ 2 | ConditionDefined$ Remembered | ConditionPresent$ Creature.Channeler+IsRemembered,Creature.AesSedai+IsRemembered,Creature.Ashaman+IsRemembered,Creature.WiseOne+IsRemembered,Creature.Windfinder+IsRemembered,Creature.Damane+IsRemembered,Creature.Dreadlord+IsRemembered,Creature.Forsaken+IsRemembered,Creature.Channeler+OppCtrl,Creature.AesSedai+OppCtrl,Creature.Ashaman+OppCtrl,Creature.WiseOne+OppCtrl,Creature.Windfinder+OppCtrl,Creature.Damane+OppCtrl,Creature.Dreadlord+OppCtrl,Creature.Forsaken+OppCtrl | SubAbility$ DBCleanup
+SVar:DBCleanup:DB$ Cleanup | ClearRemembered$ True
+SVar:PlayMain1:ALWAYS
+DeckHints:Type$Whitecloak
+Oracle:When Whitecloak Inquisitor enters, target opponent reveals their hand. If they control a Channeler or reveal a Channeler card this way, they discard a card and lose 2 life.

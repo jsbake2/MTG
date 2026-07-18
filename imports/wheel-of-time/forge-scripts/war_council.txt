@@ -1,0 +1,9 @@
+Name:War Council
+ManaCost:2 W R
+Types:Enchantment
+T:Mode$ SpellCast | ValidCard$ Creature | ValidActivatingPlayer$ You | TriggerZones$ Battlefield | Execute$ TrigPump | TriggerDescription$ Whenever you cast a creature spell, it gains first strike until end of turn.
+SVar:TrigPump:DB$ Pump | Defined$ TriggeredCard | KW$ First Strike | PumpZone$ Stack
+T:Mode$ ChangesZone | Origin$ Any | Destination$ Battlefield | ValidCard$ Creature.YouCtrl+withFirst Strike | TriggerZones$ Battlefield | Execute$ TrigGainLife | TriggerDescription$ Whenever a creature you control with first strike enters, you gain 1 life.
+SVar:TrigGainLife:DB$ GainLife | Defined$ You | LifeAmount$ 1
+SVar:PlayMain1:TRUE
+Oracle:Whenever you cast a creature spell, it gains first strike until end of turn.\nWhenever a creature enters with first strike, you gain 1 life.

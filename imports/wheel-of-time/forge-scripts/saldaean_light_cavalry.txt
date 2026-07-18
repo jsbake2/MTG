@@ -1,0 +1,6 @@
+Name:Saldaean Light Cavalry
+ManaCost:1 R
+Types:Creature Human Soldier
+PT:2/2
+K:Haste
+Oracle:Haste

@@ -20,7 +20,7 @@ import {
   termRefExpr,
 } from "./search.js";
 
-interface CardDbRow {
+export interface CardDbRow {
   id: string;
   oracle_id: string | null;
   name: string;
@@ -95,7 +95,7 @@ export function rowToCard(r: CardDbRow): Card {
   };
 }
 
-function rowToSummary(r: CardDbRow): CardSummary {
+export function rowToSummary(r: CardDbRow): CardSummary {
   return {
     id: r.id,
     oracleId: r.oracle_id ?? r.id,
@@ -275,6 +275,46 @@ export async function getCardsByIds(ids: string[]): Promise<Map<string, Card>> {
   if (ids.length === 0) return new Map();
   const rows = (await query<CardDbRow>(`SELECT ${FULL_COLS} FROM cards WHERE id = ANY($1)`, [ids])).rows;
   return new Map(rows.map((r) => [r.id, rowToCard(r)]));
+}
+
+export async function getCardRules(
+  oracleId: string,
+): Promise<import("@mtg/shared").CardRulesInfo | null> {
+  const r = (
+    await query<{
+      status: string;
+      coverage: string | null;
+      source: string;
+      tags: string[];
+      ops: unknown[];
+      etb: unknown[];
+      triggers: unknown[];
+      abilities: unknown[];
+      modes: unknown[] | null;
+      unmodeled: string[];
+      version: number;
+      tests_passing: boolean;
+    }>(
+      `SELECT status, coverage, source, tags, ops, etb, triggers, abilities, modes, unmodeled, version, tests_passing
+       FROM card_rules WHERE oracle_id = $1`,
+      [oracleId],
+    )
+  ).rows[0];
+  if (!r) return null;
+  return {
+    status: r.status,
+    coverage: r.coverage,
+    source: r.source,
+    tags: r.tags ?? [],
+    ops: r.ops ?? [],
+    etb: r.etb ?? [],
+    triggers: r.triggers ?? [],
+    abilities: r.abilities ?? [],
+    modes: r.modes ?? null,
+    unmodeled: r.unmodeled ?? [],
+    version: r.version,
+    testsPassing: r.tests_passing,
+  };
 }
 
 export async function getPrintings(oracleId: string): Promise<CardSummary[]> {

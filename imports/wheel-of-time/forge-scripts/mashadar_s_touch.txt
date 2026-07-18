@@ -1,0 +1,10 @@
+Name:Mashadar's Touch
+ManaCost:1 B
+Types:Instant
+A:SP$ Pump | ValidTgts$ Creature | TgtPrompt$ Select target creature | NumAtt$ -2 | NumDef$ -2 | IsCurse$ True | SubAbility$ DBAnimate | SpellDescription$ Target creature gets -2/-2 until end of turn. If that creature would die this turn, you may create a 1/1 black Shadowspawn creature token instead.
+SVar:DBAnimate:DB$ Animate | Defined$ ParentTarget | Replacements$ RepDie | Duration$ UntilEOT
+SVar:RepDie:Event$ Moved | ActiveZones$ Battlefield | Origin$ Battlefield | Destination$ Graveyard | ValidCard$ Card.Self | Optional$ True | ReplaceWith$ DBReplaceToken | Description$ If this creature would die, you may create a 1/1 black Shadowspawn creature token instead.
+SVar:DBReplaceToken:DB$ ChangeZone | Defined$ ReplacedCard | Origin$ Battlefield | Destination$ Exile | SubAbility$ DBToken
+SVar:DBToken:DB$ Token | TokenScript$ b_1_1_shadowspawn | TokenOwner$ You
+DeckHas:Ability$Token
+Oracle:Target creature gets -2/-2 until end of turn. If that creature would die, you may create a 1/1 black Shadowspawn creature token instead.

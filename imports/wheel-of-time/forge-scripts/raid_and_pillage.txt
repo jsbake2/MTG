@@ -1,0 +1,6 @@
+Name:Raid and Pillage
+ManaCost:1 R
+Types:Sorcery
+A:SP$ Sacrifice | ValidTgts$ Opponent | TgtPrompt$ Select target opponent | SacValid$ Permanent | SubAbility$ DBDmg | SpellDescription$ Target opponent sacrifices a permanent. CARDNAME deals 1 damage to that player.
+SVar:DBDmg:DB$ DealDamage | NumDmg$ 1 | Defined$ Targeted
+Oracle:Target opponent sacrifices a permanent. Raid and Pillage deals 1 damage to that player.

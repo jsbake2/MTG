@@ -1,0 +1,6 @@
+Name:Growth from Adversity
+ManaCost:1 G
+Types:Sorcery
+A:SP$ Token | TokenAmount$ 1 | TokenScript$ wot_g_1_1_wolf_growth | TokenOwner$ You | SpellDescription$ Create a 1/1 green Wolf creature token. Whenever that token is dealt damage, put a +1/+1 counter on it.
+DeckHas:Ability$Token & Ability$Counters
+Oracle:Create a 1/1 green Wolf creature token. Whenever that token is dealt damage, put a +1/+1 counter on it.

@@ -1,0 +1,9 @@
+Name:Forsaken Madness
+ManaCost:1 B
+Types:Sorcery
+A:SP$ Discard | ValidTgts$ Opponent | Mode$ RevealYouChoose | DiscardValid$ Card | DiscardValidDesc$ card | RememberDiscarded$ True | SubAbility$ DBGainLife | SpellDescription$ Target opponent reveals their hand. You may choose a card from it. That player discards that card. You gain life equal to its mana value.
+SVar:DBGainLife:DB$ GainLife | Defined$ You | LifeAmount$ X | ConditionDefined$ Remembered | ConditionPresent$ Card | ConditionCompare$ GE1 | SubAbility$ DBCleanup
+SVar:DBCleanup:DB$ Cleanup | ClearRemembered$ True
+SVar:X:Remembered$CardManaCost
+DeckHas:Ability$Discard|LifeGain
+Oracle:Target opponent reveals their hand. You may choose a card from their hand. They discard that card. You gain life equal to its mana value.

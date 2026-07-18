@@ -1,0 +1,25 @@
+Name:Rahvin, Compeller of Queens
+ManaCost:2 U B
+Types:Legendary Creature Forsaken Channeler
+PT:3/4
+# ETB: Leash target creature.
+# Idiom: ChangesZone ETB trigger -> GainControl -> PutCounter LEASH -> DelayedTrigger
+# upkeep chain (doubling cost or return control). Copied from leash_master.txt.
+# Confidence: medium/low — same caveats as other Leash cards: cost is linear
+# (LEASH*2) not true exponential (2,4,8,...); "can't be leashed again until your
+# next turn" clause has no DSL hook and is omitted; players enforce manually.
+T:Mode$ ChangesZone | Origin$ Any | Destination$ Battlefield | ValidCard$ Card.Self | Execute$ TrigLeashETB | TriggerDescription$ When CARDNAME enters, leash target creature. (You gain control of it. At the beginning of your upkeep, pay its leash cost — {2}, doubling each time you pay — or it returns to its owner and can't be leashed again until your next turn.)
+SVar:TrigLeashETB:DB$ GainControl | ValidTgts$ Creature.OppCtrl | TgtPrompt$ Select target creature an opponent controls | RememberControlled$ True | SubAbility$ DBLeashCounter | SpellDescription$ Leash target creature. (You gain control of it. At the beginning of your upkeep, pay its leash cost — {2}, doubling each time you pay — or it returns to its owner and can't be leashed again until your next turn.)
+SVar:DBLeashCounter:DB$ PutCounter | Defined$ Remembered | CounterType$ LEASH | CounterNum$ 1 | SubAbility$ DBDelay
+SVar:DBDelay:DB$ DelayedTrigger | Mode$ Phase | Phase$ Upkeep | ValidPlayer$ You | Execute$ TrigLeash | RememberObjects$ Remembered | TriggerDescription$ At the beginning of your upkeep, pay this creature's leash cost or its owner regains control. | SubAbility$ DBCleanup
+SVar:DBCleanup:DB$ Cleanup | ClearRemembered$ True
+SVar:TrigLeash:DB$ PutCounter | Defined$ DelayTriggerRemembered | CounterType$ LEASH | CounterNum$ 1 | SubAbility$ DBPayOrReturn
+SVar:DBPayOrReturn:DB$ GainControl | Defined$ DelayTriggerRemembered | NewController$ Owner | UnlessCost$ Y | UnlessPayer$ You | UnlessResolveSubs$ WhenNotPaid | SubAbility$ DBRearm
+SVar:DBRearm:DB$ DelayedTrigger | Mode$ Phase | Phase$ Upkeep | ValidPlayer$ You | Execute$ TrigLeash | RememberObjects$ DelayTriggerRemembered | TriggerDescription$ At the beginning of your upkeep, pay this creature's leash cost or its owner regains control.
+SVar:Y:Count$CardCounters.LEASH/Twice
+# Static: leashed creatures you control get +1/+0.
+# "Leashed" = has a LEASH counter. Filter: counters_GE1_LEASH+YouCtrl (Abzan Falconer idiom).
+S:Mode$ Continuous | Affected$ Creature.YouCtrl+counters_GE1_LEASH | AddPower$ 1 | Description$ Leashed creatures you control get +1/+0.
+AI:RemoveDeck:All
+DeckHas:Ability$GainControl
+Oracle:When Rahvin, Compeller of Queens enters, leash target creature. (You gain control of it. At the beginning of your upkeep, pay its leash cost — {2}, doubling each time you pay — or it returns to its owner and can't be leashed again until your next turn.)\nLeashed creatures you control get +1/+0.

@@ -1,0 +1,7 @@
+Name:Tel'aran'rhiod, World of Dreams
+ManaCost:2 U
+Types:Sorcery
+A:SP$ Draw | NumCards$ 3 | StackDescription$ {p:You} draws three cards, | SpellDescription$ Draw three cards, then put two cards from your hand on top of your library in any order. Weave. | SubAbility$ DBPutBack
+SVar:DBPutBack:DB$ ChangeZone | Origin$ Hand | Destination$ Library | ChangeNum$ 2 | Mandatory$ True | Reorder$ True | StackDescription$ then puts two cards from their hand on top of their library in any order. | SubAbility$ Weave
+SVar:Weave:DB$ PutCounter | Defined$ You | CounterType$ WEAVE | CounterNum$ 1
+Oracle:Draw three cards, then put two cards from your hand on top of your library in any order. Weave.

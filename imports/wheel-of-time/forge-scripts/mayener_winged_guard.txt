@@ -1,0 +1,6 @@
+Name:Mayener Winged Guard
+ManaCost:1 W
+Types:Creature Human Knight
+PT:2/2
+S:Mode$ Continuous | Affected$ Card.Self | AddToughness$ 2 | IsPresent$ Card.Self+blocking | PresentCompare$ GE1 | Description$ CARDNAME gets +0/+2 as long as it's blocking.
+Oracle:Mayener Winged Guard gets +0/+2 as long as it's blocking.

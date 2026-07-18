@@ -1,0 +1,9 @@
+Name:Whitecloak Standard-Bearer
+ManaCost:1 W
+Types:Creature Human Whitecloak Soldier
+PT:1/2
+T:Mode$ ChangesZone | Origin$ Any | Destination$ Battlefield | ValidCard$ Card.Self | Execute$ TrigPumpAll | TriggerDescription$ When CARDNAME enters, Whitecloaks you control get +1/+1 until end of turn.
+SVar:TrigPumpAll:DB$ PumpAll | ValidCards$ Creature.Whitecloak+YouCtrl | NumAtt$ +1 | NumDef$ +1
+SVar:PlayMain1:ALWAYS
+DeckHints:Type$Whitecloak
+Oracle:When Whitecloak Standard-Bearer enters, Whitecloaks you control get +1/+1 until end of turn.

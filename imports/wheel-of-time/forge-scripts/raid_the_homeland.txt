@@ -1,0 +1,8 @@
+Name:Raid the Homeland
+ManaCost:1 R
+Types:Sorcery
+A:SP$ Token | TokenAmount$ 1 | TokenScript$ r_2_2_aiel_warrior_haste | TokenOwner$ You | RememberTokens$ True | SubAbility$ DBPump | SpellDescription$ Create a 2/2 red Aiel Warrior creature token with haste. Each other creature you control gets +1/+0 until end of turn.
+SVar:DBPump:DB$ PumpAll | ValidCards$ Creature.YouCtrl+!IsRemembered | NumAtt$ +1 | SubAbility$ DBCleanup
+SVar:DBCleanup:DB$ Cleanup | ClearRemembered$ True
+DeckHas:Ability$Token
+Oracle:Create a 2/2 red Aiel Warrior creature token with haste. Each other creature you control gets +1/+0 until end of turn.

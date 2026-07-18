@@ -1,0 +1,9 @@
+Name:Berelain sur Paendrag, First of Mayene
+ManaCost:1 W
+Types:Legendary Creature Human Noble
+PT:2/2
+T:Mode$ ChangesZone | Origin$ Any | Destination$ Battlefield | ValidCard$ Card.Self | Execute$ TrigTap | TriggerDescription$ When CARDNAME enters, tap target creature an opponent controls and you gain 2 life.
+SVar:TrigTap:DB$ Tap | ValidTgts$ Creature.OppCtrl | TgtPrompt$ Choose target creature an opponent controls. | SubAbility$ DBGainLife
+SVar:DBGainLife:DB$ GainLife | Defined$ You | LifeAmount$ 2
+DeckHas:Ability$LifeGain
+Oracle:When Berelain sur Paendrag, First of Mayene enters, tap target creature an opponent controls and you gain 2 life.

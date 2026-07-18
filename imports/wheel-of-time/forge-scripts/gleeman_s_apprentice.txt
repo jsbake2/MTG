@@ -1,0 +1,7 @@
+Name:Gleeman's Apprentice
+ManaCost:1 U
+Types:Creature Human Bard
+PT:1/2
+T:Mode$ ChangesZone | Origin$ Any | Destination$ Battlefield | ValidCard$ Card.Self | Execute$ Weave | TriggerDescription$ When CARDNAME enters, weave.
+SVar:Weave:DB$ PutCounter | Defined$ You | CounterType$ WEAVE | CounterNum$ 1
+Oracle:When Gleeman's Apprentice enters, weave.

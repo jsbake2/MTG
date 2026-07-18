@@ -1,0 +1,11 @@
+Name:Darkhound Alpha
+ManaCost:1 B
+Types:Creature Darkhound
+PT:2/2
+K:Menace
+S:Mode$ Continuous | Affected$ Creature.Darkhound+Other | AddPower$ 1 | Description$ Other Darkhounds get +1/+0.
+T:Mode$ ChangesZone | Origin$ Battlefield | Destination$ Graveyard | ValidCard$ Creature | TriggerZones$ Battlefield | Execute$ TrigToken | TriggerDescription$ Whenever a creature dies, create a 1/1 black Darkhound creature token.
+SVar:TrigToken:DB$ Token | TokenScript$ b_1_1_darkhound | TokenOwner$ You
+DeckHints:Type$Darkhound
+DeckHas:Ability$Token
+Oracle:Menace\nOther Darkhounds get +1/+0.\nWhenever a creature dies, create a 1/1 black Darkhound creature token.

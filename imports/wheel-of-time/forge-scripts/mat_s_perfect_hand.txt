@@ -1,0 +1,10 @@
+Name:Mat's Perfect Hand
+ManaCost:4
+Types:Legendary Artifact
+T:Mode$ ChangesZone | Origin$ Any | Destination$ Battlefield | ValidCard$ Card.Self | Execute$ TrigDig | TriggerDescription$ When CARDNAME enters, reveal the top five cards of your library. Put any number of legendary cards from among them into your hand and the rest on the bottom of your library in a random order.
+SVar:TrigDig:DB$ Dig | DigNum$ 5 | Reveal$ True | ChangeNum$ All | ChangeValid$ Card.Legendary | RestRandomOrder$ True
+T:Mode$ Phase | Phase$ Upkeep | ValidPlayer$ You | TriggerZones$ Battlefield | Execute$ TrigWin | TriggerDescription$ At the beginning of your upkeep, if you control five or more legendary creatures and there are five colors among legendary creatures you control, you win the game.
+SVar:TrigWin:DB$ WinsGame | Defined$ You | ConditionPresent$ Creature.Legendary+YouCtrl | ConditionCompare$ GE5 | ConditionCheckSVar$ Z | ConditionSVarCompare$ EQ5
+SVar:Z:Count$Valid Creature.Legendary+YouCtrl$Colors
+DeckHints:Type$Legendary
+Oracle:When Mat's Perfect Hand enters, reveal the top five cards of your library. Put any number of legendary cards from among them into your hand and the rest on the bottom of your library in a random order.\nAt the beginning of your upkeep, if you control five or more legendary creatures and there are five colors among legendary creatures you control, you win the game.

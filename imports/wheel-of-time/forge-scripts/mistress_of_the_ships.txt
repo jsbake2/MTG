@@ -1,0 +1,9 @@
+Name:Mistress of the Ships
+ManaCost:2 U U
+Types:Creature Human Windfinder
+PT:2/4
+S:Mode$ Continuous | Affected$ Creature.Windfinder+Other+YouCtrl | AddPower$ 1 | AddToughness$ 1 | Description$ Other Windfinders you control get +1/+1.
+S:Mode$ Continuous | Affected$ Creature.Sailor+Other+YouCtrl | AddPower$ 1 | AddToughness$ 1 | Description$ Other Sailors you control get +1/+1.
+T:Mode$ CounterAdded | CounterType$ WEAVE | ValidPlayer$ You | TriggerZones$ Battlefield | Execute$ TrigScry | TriggerDescription$ Whenever you weave, scry 1.
+SVar:TrigScry:DB$ Scry | ScryNum$ 1
+Oracle:Other Windfinders and Sailors you control get +1/+1.\nWhenever you weave, scry 1.

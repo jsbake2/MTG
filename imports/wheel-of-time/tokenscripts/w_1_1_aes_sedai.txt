@@ -1,0 +1,6 @@
+Name:Aes Sedai Token
+ManaCost:no cost
+Colors:white
+Types:Creature Aes Sedai
+PT:1/1
+Oracle:

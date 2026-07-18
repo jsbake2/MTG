@@ -31,6 +31,8 @@ export interface GameLogEntry {
   // For game_start:
   format?: string;
   players?: Array<{ seat: number; name: string; deckId: string | null }>;
+  // Tamper-evident seal of each seat's starting decklist (sha256 of sorted cardIds).
+  sealedDecks?: Array<{ seat: number; name: string; cards: number; hash: string }>;
 }
 
 function fileFor(tableId: string): string {

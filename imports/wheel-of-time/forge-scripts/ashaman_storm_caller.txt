@@ -1,0 +1,7 @@
+Name:Asha'man Storm-Caller
+ManaCost:2 R R
+Types:Creature Human Asha'man Channeler
+PT:3/3
+T:Mode$ CounterAdded | CounterType$ WEAVE | ValidPlayer$ You | TriggerZones$ Battlefield | Execute$ TrigDamage | TriggerDescription$ Whenever you weave, CARDNAME deals 1 damage to each opponent.
+SVar:TrigDamage:DB$ DamageAll | ValidPlayers$ Opponent | NumDmg$ 1 | DamageSource$ Self
+Oracle:Whenever you weave, Asha'man Storm-Caller deals 1 damage to each opponent.

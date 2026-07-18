@@ -35,6 +35,8 @@ export function DeckBuilder() {
   const [entries, setEntries] = useState<Entry[]>([]);
   const [cache, setCache] = useState<Record<string, CardSummary>>({});
   const [validation, setValidation] = useState<DeckValidation | null>(null);
+  const [forgeBusy, setForgeBusy] = useState(false);
+  const [forgeReport, setForgeReport] = useState<null | { deckName: string; total: number; unsupported: string[]; forge: { installed: string | null; latest: string | null; updateAvailable: boolean } }>(null);
   const [dynamicTags, setDynamicTags] = useState<DeckTag[]>([]);
   const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState("");
@@ -226,6 +228,27 @@ export function DeckBuilder() {
     alert("Deck list copied to clipboard.");
   }
 
+  async function exportForge() {
+    if (!id) { alert("Save the deck first, then export to Forge."); return; }
+    setForgeBusy(true);
+    try {
+      const r = await api.get<{ deckName: string; dck: string; total: number; unsupported: string[]; forge: { installed: string | null; latest: string | null; updateAvailable: boolean } }>(`/api/decks/${id}/forge-export`);
+      // download the .dck file
+      const blob = new Blob([r.dck], { type: "text/plain" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${r.deckName.replace(/[^\w .-]+/g, "_")}.dck`;
+      a.click();
+      URL.revokeObjectURL(url);
+      setForgeReport(r);
+    } catch (e) {
+      alert("Forge export failed: " + ((e as Error)?.message ?? "unknown"));
+    } finally {
+      setForgeBusy(false);
+    }
+  }
+
   return (
     <div className="flex h-full min-h-0 flex-col lg:flex-row">
       {/* Search panel */}
@@ -345,6 +368,9 @@ export function DeckBuilder() {
             </button>
             <button className="btn-ghost" onClick={exportText}>
               Export
+            </button>
+            <button className="btn-ghost" onClick={exportForge} disabled={forgeBusy} title="Download a Forge .dck and check every card is supported by Forge">
+              {forgeBusy ? "…" : "→ Forge"}
             </button>
           </div>
           <div className="mt-2 flex items-center gap-3 text-sm text-table-muted">
@@ -481,6 +507,37 @@ export function DeckBuilder() {
         <ArtPicker cardId={artPickerFor.cardId} onPick={(p) => swapArt(artPickerFor.cardId, artPickerFor.board, p)} onClose={() => setArtPickerFor(null)} />
       )}
       {detailId && <CardDetailModal cardId={detailId} onClose={() => setDetailId(null)} onAdd={(cid) => cache[cid] && addCard(cache[cid]!)} />}
+      {forgeReport && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4" onClick={() => setForgeReport(null)}>
+          <div className="panel w-full max-w-lg p-5" onClick={(e) => e.stopPropagation()}>
+            <h3 className="font-display text-lg text-table-accentSoft">Exported “{forgeReport.deckName}” to Forge</h3>
+            <p className="mt-1 text-sm text-table-muted">
+              Downloaded <b className="text-table-ink">{forgeReport.deckName.replace(/[^\w .-]+/g, "_")}.dck</b> — drop it into
+              <code className="mx-1 rounded bg-black/40 px-1">~/.forge/decks/constructed/</code>, then pick it in Forge.
+            </p>
+            {forgeReport.unsupported.length === 0 ? (
+              <div className="mt-3 rounded-md border border-emerald-600/40 bg-emerald-950/30 px-3 py-2 text-sm text-emerald-200">
+                ✓ All {forgeReport.total} cards are supported by Forge {forgeReport.forge.installed}.
+              </div>
+            ) : (
+              <div className="mt-3 rounded-md border border-amber-600/40 bg-amber-950/30 px-3 py-2 text-sm text-amber-100">
+                <b>{forgeReport.unsupported.length}</b> of {forgeReport.total} cards aren’t supported by Forge and were left out of the file:
+                <ul className="mt-1 max-h-40 list-disc overflow-y-auto pl-5 text-xs">
+                  {forgeReport.unsupported.map((n) => (<li key={n}>{n}</li>))}
+                </ul>
+                {forgeReport.forge.updateAvailable ? (
+                  <p className="mt-2 text-xs">A newer Forge (<b>{forgeReport.forge.latest}</b>) is available — updating Forge may add these cards. You’re on {forgeReport.forge.installed}.</p>
+                ) : (
+                  <p className="mt-2 text-xs">You’re on the latest Forge ({forgeReport.forge.installed}). These have been logged under Rulings so we can write Forge scripts for them.</p>
+                )}
+              </div>
+            )}
+            <div className="mt-4 text-right">
+              <button className="btn-primary" onClick={() => setForgeReport(null)}>Done</button>
+            </div>
+          </div>
+        </div>
+      )}
       {importOpen && (
         <ImportModal
           defaultFormat={formatId}

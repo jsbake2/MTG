@@ -1,0 +1,6 @@
+Name:Scry Deeper
+ManaCost:U
+Types:Instant
+A:SP$ Scry | ScryNum$ 2 | SubAbility$ Weave | SpellDescription$ Scry 2. Weave.
+SVar:Weave:DB$ PutCounter | Defined$ You | CounterType$ WEAVE | CounterNum$ 1
+Oracle:Scry 2. Weave.

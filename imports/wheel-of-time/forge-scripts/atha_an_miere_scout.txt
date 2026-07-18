@@ -1,0 +1,8 @@
+Name:Atha'an Miere Scout
+ManaCost:1 U
+Types:Creature Human Scout
+PT:1/2
+A:AB$ Mana | Cost$ T | Produced$ U | Amount$ 1 | ConditionCheckSVar$ X | ConditionSVarCompare$ LT3 | SpellDescription$ Add {U}.
+A:AB$ Mana | Cost$ T | Produced$ U | Amount$ 2 | ConditionCheckSVar$ X | ConditionSVarCompare$ GE3 | SpellDescription$ If you've woven three or more times, add {U}{U}.
+SVar:X:Count$YourCountersWEAVE
+Oracle:{T}: Add {U}. If you've woven three or more times, add {U}{U} instead.

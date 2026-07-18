@@ -1,0 +1,6 @@
+Name:Healing Touch
+ManaCost:1 W
+Types:Instant
+A:SP$ Pump | ValidTgts$ Creature | NumAtt$ +1 | NumDef$ +1 | KW$ Lifelink | SpellDescription$ Target creature gets +1/+1 and gains lifelink until end of turn.
+DeckHas:Ability$LifeGain
+Oracle:Target creature gets +1/+1 and gains lifelink until end of turn.

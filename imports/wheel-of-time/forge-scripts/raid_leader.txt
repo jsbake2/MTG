@@ -1,0 +1,9 @@
+Name:Raid Leader
+ManaCost:1 R
+Types:Creature Human Soldier
+PT:2/1
+K:Haste
+S:Mode$ Continuous | Affected$ Creature.Other+YouCtrl | AddKeyword$ Haste | Description$ Other creatures you control have haste.
+A:AB$ Pump | Cost$ R | Defined$ Self | NumAtt$ +1 | SpellDescription$ CARDNAME gets +1/+0 until end of turn.
+SVar:PlayMain1:TRUE
+Oracle:Haste\nOther creatures you control have haste.\n{R}: Raid Leader gets +1/+0 until end of turn.

@@ -1,0 +1,8 @@
+Name:Tower Guard Sergeant
+ManaCost:2 W
+Types:Creature Human Soldier
+PT:2/3
+K:Vigilance
+T:Mode$ CounterAdded | ValidPlayer$ You | CounterType$ WEAVE | TriggerZones$ Battlefield | Execute$ TrigPump | TriggerDescription$ Whenever you weave, CARDNAME gets +1/+0 until end of turn.
+SVar:TrigPump:DB$ Pump | Defined$ Self | NumAtt$ +1
+Oracle:Vigilance\nWhenever you weave, Tower Guard Sergeant gets +1/+0 until end of turn.

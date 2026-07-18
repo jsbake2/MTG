@@ -1,0 +1,7 @@
+Name:Trolloc Marauder
+ManaCost:1 B
+Types:Creature Trolloc
+PT:3/1
+K:Haste
+S:Mode$ CantBlock | ValidCard$ Card.Self | Description$ CARDNAME can't block.
+Oracle:Haste\nTrolloc Marauder can't block.

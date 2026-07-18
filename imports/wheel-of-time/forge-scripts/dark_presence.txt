@@ -1,0 +1,9 @@
+Name:Dark Presence
+ManaCost:1 B
+Types:Creature Shadowspawn
+PT:2/2
+K:Menace
+A:AB$ Pump | Cost$ B | Defined$ Self | NumAtt$ +1 | SpellDescription$ CARDNAME gets +1/+0 until end of turn.
+T:Mode$ CounterAdded | CounterType$ LEASH | ValidCard$ Creature | TriggerZones$ Battlefield | Execute$ TrigLeashPump | TriggerDescription$ Whenever you leash a creature, CARDNAME gets +0/+1 until end of turn.
+SVar:TrigLeashPump:DB$ Pump | Defined$ Self | NumDef$ +1
+Oracle:Menace\n{B}: Dark Presence gets +1/+0 until end of turn.\nWhenever you leash a creature, Dark Presence gets +0/+1 until end of turn.

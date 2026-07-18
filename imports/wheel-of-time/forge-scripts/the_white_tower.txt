@@ -1,0 +1,6 @@
+Name:The White Tower
+ManaCost:no cost
+Types:Legendary Land
+A:AB$ Mana | Cost$ T | Produced$ Combo W U | SpellDescription$ Add {W} or {U}.
+A:AB$ PutCounter | Cost$ 2 W U T | Defined$ You | CounterType$ WEAVE | CounterNum$ 1 | SorcerySpeed$ True | SpellDescription$ Weave. Activate only as a sorcery.
+Oracle:{T}: Add {W} or {U}. {2}{W}{U}, {T}: Weave. Activate only as a sorcery.

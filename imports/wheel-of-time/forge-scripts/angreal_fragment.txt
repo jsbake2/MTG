@@ -1,0 +1,8 @@
+Name:Angreal Fragment
+ManaCost:2
+Types:Artifact
+A:AB$ Mana | Cost$ T | Produced$ C | ConditionCheckSVar$ Chan | ConditionSVarCompare$ EQ0 | SubAbility$ DBMana | SpellDescription$ Add {C}. If you control a Channeler, add one mana of any color instead.
+SVar:DBMana:DB$ Mana | Produced$ Any | ConditionCheckSVar$ Chan | ConditionSVarCompare$ GE1
+SVar:Chan:Count$Valid Creature.Channeler+YouCtrl,Creature.AesSedai+YouCtrl,Creature.Ashaman+YouCtrl,Creature.WiseOne+YouCtrl,Creature.Windfinder+YouCtrl,Creature.Damane+YouCtrl,Creature.Dreadlord+YouCtrl,Creature.Forsaken+YouCtrl
+DeckHas:Ability$Mana.Colorless
+Oracle:{T}: Add {C}. If you control a Channeler, add one mana of any color instead.

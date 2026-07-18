@@ -1,0 +1,10 @@
+Name:Eternal Bond
+ManaCost:1 W G
+Types:Enchantment
+T:Mode$ ChangesZone | Origin$ Any | Destination$ Battlefield | ValidCard$ Creature.Warder+YouCtrl,Creature.WiseOne+YouCtrl | TriggerZones$ Battlefield | Execute$ TrigCounterDouble | TriggerDescription$ Whenever a creature you control enters, if that creature is a Warder or Wise One, put two +1/+1 counters on target other creature.
+SVar:TrigCounterDouble:DB$ PutCounter | ValidTgts$ Creature.YouCtrl+!TriggeredCard | TgtPrompt$ Select target other creature you control | CounterType$ P1P1 | CounterNum$ 2
+T:Mode$ ChangesZone | Origin$ Any | Destination$ Battlefield | ValidCard$ Creature.nonWarder+nonWiseOne+YouCtrl | TriggerZones$ Battlefield | Execute$ TrigCounterSingle | TriggerDescription$ Whenever a creature you control enters, if that creature is not a Warder or Wise One, put a +1/+1 counter on target other creature.
+SVar:TrigCounterSingle:DB$ PutCounter | ValidTgts$ Creature.YouCtrl+!TriggeredCard | TgtPrompt$ Select target other creature you control | CounterType$ P1P1 | CounterNum$ 1
+SVar:BuffedBy:Creature
+DeckHas:Ability$Counters
+Oracle:Whenever a creature enters under your control, put a +1/+1 counter on target other creature. If that creature is a Warder or Wise One, put two +1/+1 counters instead.

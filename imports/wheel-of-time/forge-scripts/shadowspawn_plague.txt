@@ -1,0 +1,6 @@
+Name:Shadowspawn Plague
+ManaCost:1 B
+Types:Sorcery
+A:SP$ Token | TokenScript$ b_2_2_shadowspawn_menace | TokenOwner$ You | SpellDescription$ Create a 2/2 black Shadowspawn creature token with menace.
+DeckHas:Ability$Token
+Oracle:Create a 2/2 black Shadowspawn creature token with menace.

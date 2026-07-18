@@ -1,0 +1,10 @@
+Name:Pattern's Tapestry
+ManaCost:2 W
+Types:Enchantment
+T:Mode$ CounterAdded | CounterType$ WEAVE | ValidPlayer$ You | TriggerZones$ Battlefield | Execute$ TrigAddTapestry | TriggerDescription$ Whenever you weave, put a tapestry counter on CARDNAME. Then if it has five or more tapestry counters, remove them and create a 3/3 white Construct creature token.
+SVar:TrigAddTapestry:DB$ PutCounter | Defined$ Self | CounterType$ TAPESTRY | CounterNum$ 1 | SubAbility$ DBBranch
+SVar:DBBranch:DB$ Branch | BranchConditionSVar$ TapestryCount | BranchConditionSVarCompare$ GE5 | TrueSubAbility$ DBRemoveCounters
+SVar:DBRemoveCounters:DB$ RemoveCounter | Defined$ Self | CounterType$ TAPESTRY | CounterNum$ All | SubAbility$ DBToken
+SVar:DBToken:DB$ Token | TokenAmount$ 1 | TokenScript$ w_3_3_construct | TokenOwner$ You
+SVar:TapestryCount:Count$CardCounters.TAPESTRY
+Oracle:Whenever you weave, put a tapestry counter on Pattern's Tapestry. Then if it has five or more tapestry counters, remove them and create a 3/3 white Construct creature token.

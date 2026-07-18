@@ -1,0 +1,6 @@
+Name:Tar Valon Crossing
+Types:Land
+R:Event$ Moved | ValidCard$ Card.Self | Destination$ Battlefield | ReplacementResult$ Updated | ReplaceWith$ ETBTapped | Description$ Tar Valon Crossing enters tapped.
+SVar:ETBTapped:DB$ Tap | Defined$ Self | ETB$ True
+A:AB$ Mana | Cost$ T | Produced$ Combo W U | SpellDescription$ Add {W} or {U}.
+Oracle:Tar Valon Crossing enters tapped.\n{T}: Add {W} or {U}.

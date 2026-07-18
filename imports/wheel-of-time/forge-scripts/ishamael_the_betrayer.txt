@@ -1,0 +1,11 @@
+Name:Ishamael, The Betrayer
+ManaCost:3 B B
+Types:Legendary Creature Forsaken
+PT:4/4
+K:Menace
+S:Mode$ Continuous | Affected$ Creature | AddPower$ -1 | Description$ All creatures get -1/-0.
+T:Mode$ ChangesZone | Origin$ Battlefield | Destination$ Graveyard | ValidCard$ Creature | TriggerZones$ Battlefield | Execute$ TrigGainLife | TriggerDescription$ Whenever a creature dies, you gain 1 life.
+SVar:TrigGainLife:DB$ GainLife | Defined$ You | LifeAmount$ 1
+A:AB$ Pump | Cost$ B B B | Defined$ Self | NumAtt$ +2 | NumDef$ +2 | SpellDescription$ CARDNAME gets +2/+2 until end of turn.
+DeckHas:Ability$LifeGain
+Oracle:Menace\nAll creatures get -1/-0.\nWhenever a creature dies, you gain 1 life.\n{B}{B}{B}: Ishamael, The Betrayer gets +2/+2 until end of turn.

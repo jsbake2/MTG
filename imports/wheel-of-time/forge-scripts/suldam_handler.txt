@@ -1,0 +1,23 @@
+Name:Sul'dam Handler
+ManaCost:1 U
+Types:Creature Human Suldam
+PT:1/3
+# Leash — prototype (confidence: low; see notes).
+# ETB trigger offers optional leash on a creature with Mana Value 1 or less.
+# GainControl is permanent. A LEASH counter (value 1) is placed on the stolen creature.
+# A recurring delayed-trigger fires each upkeep: add 1 LEASH counter, then offer the
+# accumulated cost (LEASH counters x2) or the owner regains control.
+# If paid, the delayed trigger re-arms for next upkeep. If not paid, control ends.
+# "Can't be leashed again until your next turn" is omitted (no sorcery DSL hook).
+# Count$CardCounters.LEASH/Twice models linear cost scaling (2, 4, 6, ...) not true
+# exponential doubling (2, 4, 8, ...) — Forge DSL has no native exponentiation.
+T:Mode$ ChangesZone | Origin$ Any | Destination$ Battlefield | ValidCard$ Card.Self | Execute$ TrigETB | OptionalDecider$ You | TriggerDescription$ When CARDNAME enters, you may leash target creature with mana value 1. (You gain control of it. At the beginning of your upkeep, pay its leash cost — {2}, doubling each time you pay — or it returns to its owner.)
+SVar:TrigETB:DB$ GainControl | ValidTgts$ Creature.cmcLE1 | TgtPrompt$ Select target creature with mana value 1 or less | RememberControlled$ True | SubAbility$ DBLeashCounter
+SVar:DBLeashCounter:DB$ PutCounter | Defined$ Remembered | CounterType$ LEASH | CounterNum$ 1 | SubAbility$ DBDelay
+SVar:DBDelay:DB$ DelayedTrigger | Mode$ Phase | Phase$ Upkeep | ValidPlayer$ You | Execute$ TrigLeash | RememberObjects$ Remembered | TriggerDescription$ At the beginning of your upkeep, pay this creature's leash cost or its owner regains control.
+SVar:TrigLeash:DB$ PutCounter | Defined$ DelayTriggerRemembered | CounterType$ LEASH | CounterNum$ 1 | SubAbility$ DBPayOrReturn
+SVar:DBPayOrReturn:DB$ GainControl | Defined$ DelayTriggerRemembered | NewController$ Owner | UnlessCost$ Y | UnlessPayer$ You | UnlessResolveSubs$ WhenNotPaid | SubAbility$ DBRearm
+SVar:DBRearm:DB$ DelayedTrigger | Mode$ Phase | Phase$ Upkeep | ValidPlayer$ You | Execute$ TrigLeash | RememberObjects$ DelayTriggerRemembered | TriggerDescription$ At the beginning of your upkeep, pay this creature's leash cost or its owner regains control.
+SVar:Y:Count$CardCounters.LEASH/Twice
+AI:RemoveDeck:All
+Oracle:When Sul'dam Handler enters, you may leash target creature with mana value 1. (You gain control of it. At the beginning of your upkeep, pay its leash cost — {2}, doubling each time you pay — or it returns to its owner and can't be leashed again until your next turn.)

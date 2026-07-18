@@ -1,0 +1,8 @@
+Name:Endless Blessing
+ManaCost:1 G G
+Types:Sorcery
+A:SP$ Token | TokenAmount$ 4 | TokenScript$ g_1_1_wolf | TokenOwner$ You | SubAbility$ DBCounter | SpellDescription$ Create four 1/1 green Wolf creature tokens. If you control five or more lands, put a +1/+1 counter on each creature you control.
+SVar:DBCounter:DB$ PutCounterAll | ValidCards$ Creature.YouCtrl | CounterType$ P1P1 | CounterNum$ 1 | ConditionCheckSVar$ X | ConditionSVarCompare$ GE5
+SVar:X:Count$Valid Land.YouCtrl
+DeckHas:Ability$Token|Counters
+Oracle:Create four 1/1 green Wolf creature tokens. If you control five or more lands, put a +1/+1 counter on each creature you control.

@@ -1,0 +1,5 @@
+Name:Brown Ajah Archives
+Types:Legendary Land
+A:AB$ Mana | Cost$ T | Produced$ Combo G U | SpellDescription$ Add {G} or {U}.
+A:AB$ ChangeZone | Cost$ 3 G U | Origin$ Library | Destination$ Battlefield | ChangeType$ Land | Tapped$ True | ChangeNum$ 1 | SpellDescription$ Search your library for a land card and put it onto the battlefield tapped, then shuffle.
+Oracle:{T}: Add {G} or {U}.\n{3}{G}{U}: Search your library for a land card and put it onto the battlefield tapped. Shuffle.

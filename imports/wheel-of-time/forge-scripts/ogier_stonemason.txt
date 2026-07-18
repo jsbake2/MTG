@@ -1,0 +1,6 @@
+Name:Ogier Stonemason
+ManaCost:2 G
+Types:Creature Ogier
+PT:2/4
+K:Reach
+Oracle:Reach

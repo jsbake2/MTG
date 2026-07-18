@@ -1,0 +1,9 @@
+Name:Ancient Evil Reborn
+ManaCost:3 B B
+Types:Creature Forsaken
+PT:5/3
+K:Menace
+T:Mode$ ChangesController | ValidCard$ Creature.YouCtrl | ValidOriginalController$ Opponent | TriggerZones$ Battlefield | Execute$ TrigLeashPump | TriggerDescription$ Whenever you leash a creature, CARDNAME gets +1/+0 until end of turn.
+SVar:TrigLeashPump:DB$ Pump | Defined$ Self | NumAtt$ +1
+A:AB$ Token | Cost$ B B B | TokenAmount$ 1 | TokenScript$ b_2_2_shadowspawn | TokenOwner$ You | SpellDescription$ Create a 2/2 black Shadowspawn creature token.
+Oracle:Menace\nWhenever you leash a creature, Ancient Evil Reborn gets +1/+0 until end of turn.\n{B}{B}{B}: Create a 2/2 black Shadowspawn creature token.

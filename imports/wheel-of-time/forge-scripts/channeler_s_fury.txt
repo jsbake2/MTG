@@ -1,0 +1,24 @@
+Name:Channeler's Fury
+ManaCost:2 B R
+Types:Sorcery
+# Effect 1: create a 2/2 black Shadowspawn creature token with haste.
+# Effect 2: Leash target creature with mana value 2 or less.
+# Leash prototype (confidence: medium-low).
+# GainControl is permanent at resolution. A LEASH counter is placed on the creature.
+# A recurring delayed-trigger fires each of your upkeeps: add another LEASH counter,
+# then offer the accumulated cost (LEASH counters x2 generic mana) or owner regains control.
+# If paid, a new delayed trigger re-arms for next upkeep. If not paid, control reverts.
+# Count$CardCounters.LEASH/Twice models linear 2/4/6/... scaling (not true exponential 2/4/8/...);
+# true doubling (2^N) is not expressible in Forge SVar math — this is the closest idiom.
+# "Can't be leashed again until your next turn" restriction is omitted (no DSL hook for it).
+A:SP$ Token | TokenAmount$ 1 | TokenScript$ b_2_2_shadowspawn_haste | TokenOwner$ You | SubAbility$ DBLeash | SpellDescription$ Create a 2/2 black Shadowspawn creature token with haste. Leash target creature with mana value 2 or less.
+SVar:DBLeash:DB$ GainControl | ValidTgts$ Creature.cmcLE2 | TgtPrompt$ Select target creature with mana value 2 or less | RememberControlled$ True | SubAbility$ DBLeashCounter
+SVar:DBLeashCounter:DB$ PutCounter | Defined$ Remembered | CounterType$ LEASH | CounterNum$ 1 | SubAbility$ DBDelay
+SVar:DBDelay:DB$ DelayedTrigger | Mode$ Phase | Phase$ Upkeep | ValidPlayer$ You | Execute$ TrigLeash | RememberObjects$ Remembered | TriggerDescription$ At the beginning of your upkeep, pay this creature's leash cost or its owner regains control.
+SVar:TrigLeash:DB$ PutCounter | Defined$ DelayTriggerRemembered | CounterType$ LEASH | CounterNum$ 1 | SubAbility$ DBPayOrReturn
+SVar:DBPayOrReturn:DB$ GainControl | Defined$ DelayTriggerRemembered | NewController$ Owner | UnlessCost$ Y | UnlessPayer$ You | UnlessResolveSubs$ WhenNotPaid | SubAbility$ DBRearm
+SVar:DBRearm:DB$ DelayedTrigger | Mode$ Phase | Phase$ Upkeep | ValidPlayer$ You | Execute$ TrigLeash | RememberObjects$ DelayTriggerRemembered | TriggerDescription$ At the beginning of your upkeep, pay this creature's leash cost or its owner regains control.
+SVar:Y:Count$CardCounters.LEASH/Twice
+AI:RemoveDeck:All
+DeckHas:Ability$Token
+Oracle:Create a 2/2 black Shadowspawn creature token with haste. Leash target creature with mana value 2 or less. (You gain control of it. At the beginning of your upkeep, pay its leash cost — {2}, doubling each time you pay — or it returns to its owner and can't be leashed again until your next turn.)

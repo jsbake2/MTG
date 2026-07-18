@@ -1,0 +1,9 @@
+Name:Dobraine, Lord of Cairhien
+ManaCost:1 W R
+Types:Legendary Creature Human Noble
+PT:3/3
+T:Mode$ ChangesZone | Origin$ Any | Destination$ Battlefield | ValidCard$ Creature.Legendary+YouCtrl | Execute$ TrigPump | TriggerDescription$ Whenever a legendary creature enters under your control, CARDNAME gets +1/+1 until end of turn.
+SVar:TrigPump:DB$ Pump | Defined$ Self | NumAtt$ +1 | NumDef$ +1
+A:AB$ PumpAll | Cost$ W R | ValidCards$ Creature.YouCtrl | KW$ First Strike | SpellDescription$ Creatures you control gain first strike until end of turn.
+DeckHints:Type$Legendary & Type$Creature
+Oracle:Whenever a legendary creature enters under your control, Dobraine gets +1/+1 until end of turn.\n{W}{R}: Creatures you control gain first strike until end of turn.

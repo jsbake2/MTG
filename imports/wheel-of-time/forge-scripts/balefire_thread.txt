@@ -1,0 +1,5 @@
+Name:Balefire Thread
+ManaCost:1 R
+Types:Instant
+A:SP$ DealDamage | ValidTgts$ Creature | NumDmg$ 3 | ReplaceDyingDefined$ Targeted | SpellDescription$ CARDNAME deals 3 damage to target creature. If that creature would die this turn, exile it instead.
+Oracle:Balefire Thread deals 3 damage to target creature. If that creature would die this turn, exile it instead.

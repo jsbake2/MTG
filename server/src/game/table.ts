@@ -1,6 +1,6 @@
 // In-memory table manager: lobby, seating, starting games, applying actions with
 // undo history, and producing per-seat redacted state views (hidden zones).
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import type { GameAction, TableMode, TableState, TableSummary } from "@mtg/shared";
 import { getFormat, getRuleset } from "@mtg/shared";
 import { getCardsByIds } from "../cards/repo.js";
@@ -9,7 +9,8 @@ import { getDeckDetail, getDeckRow } from "../decks/repo.js";
 import { recordResult } from "./results.js";
 import { validateDeck } from "../decks/validate.js";
 import { applyAction, checkStateBased, type ApplyResult, type CardIndex } from "./engine.js";
-import { buildInitialState, log, type SeatDeck } from "./state.js";
+import { botAction, isBotSeat } from "./bot.js";
+import { buildInitialState, effectivePT, log, type SeatDeck } from "./state.js";
 import { appendGameLog } from "./gameLog.js";
 
 export interface SeatAssignment {
@@ -36,6 +37,7 @@ export class Table {
   history: TableState[] = [];
   listeners = new Set<() => void>();
   private recorded = false;
+  private botPending = new Set<number>();
 
   constructor(opts: { name: string; formatId: string; maxPlayers: number; enforcement: "relaxed" | "strict"; mode?: TableMode; ruleset?: string; enforceBans?: boolean; hostUserId: string }) {
     this.name = opts.name;
@@ -71,6 +73,37 @@ export class Table {
 
   notify(): void {
     for (const fn of this.listeners) fn();
+    this.scheduleBots();
+  }
+
+  // Add an AI opponent: a seat with a synthetic bot userId and a curated deck.
+  addBot(deckId: string, name = "AI opponent"): { ok: boolean; error?: string } {
+    if (this.state && this.state.status !== "lobby") return { ok: false, error: "Game already started." };
+    const open = Array.from({ length: this.maxPlayers }, (_, i) => i).find((i) => !this.seats.some((s) => s.seat === i));
+    if (open === undefined) return { ok: false, error: "No open seats." };
+    this.seats.push({ seat: open, userId: `bot:${randomUUID()}`, name, deckId, avatarCardId: null });
+    this.seats.sort((a, b) => a.seat - b.seat);
+    this.notify();
+    return { ok: true };
+  }
+
+  // Drive every bot seat: ask for one action and apply it after a short "think"
+  // delay. Each applied action calls notify() → scheduleBots() again, so the bot
+  // walks its turn one step at a time until it yields (returns null). Guarded per
+  // seat so we never double-schedule or spin.
+  private scheduleBots(): void {
+    if (!this.state || this.state.status !== "playing") return;
+    for (const s of this.seats) {
+      if (!isBotSeat(s.userId) || this.botPending.has(s.seat)) continue;
+      const view = this.viewFor(s.seat).state;
+      const action = botAction(view, this.cardIndex, s.seat);
+      if (!action) continue;
+      this.botPending.add(s.seat);
+      setTimeout(() => {
+        this.botPending.delete(s.seat);
+        if (this.state?.status === "playing") this.apply(s.seat, action, false);
+      }, 650);
+    }
   }
 
   takeSeat(userId: string, name: string, seat: number, deckId: string | null, avatarCardId: string | null): { ok: boolean; error?: string } {
@@ -157,6 +190,8 @@ export class Table {
         toughness: c.toughness,
         keywords: c.keywords,
         oracleText: c.oracleText,
+        cmc: c.cmc,
+        manaCost: c.manaCost,
       };
     }
 
@@ -178,12 +213,19 @@ export class Table {
     log(this.state, { seat: null, kind: "system", text: `Game started — ${format?.name ?? this.formatId}. Good luck!` });
     this.history = [];
     this.recorded = false;
+    // Seal each seat's decklist: a hash of the sorted cardId multiset at game
+    // start, recorded to the audit log so the starting deck is tamper-evident.
+    const sealed = seatDecks.map((sd) => {
+      const ids = [...sd.library, ...sd.commanders].map((c) => c.cardId).sort();
+      return { seat: sd.seat, name: sd.name, cards: ids.length, hash: createHash("sha256").update(ids.join(",")).digest("hex").slice(0, 16) };
+    });
     appendGameLog({
       ts: Date.now(),
       kind: "game_start",
       tableId: this.id,
       format: this.formatId,
       players: this.seats.map((s) => ({ seat: s.seat, name: s.name, deckId: s.deckId })),
+      sealedDecks: sealed,
     });
     this.notify();
     return { ok: true };
@@ -197,14 +239,14 @@ export class Table {
     for (let i = 0; i < 7 && i < lib.length; i++) lib[i]!.zone = "hand";
   }
 
-  apply(seat: number, action: GameAction): ApplyResult {
+  apply(seat: number, action: GameAction, privileged = false): ApplyResult {
     if (!this.state) return { ok: false, error: "Game not started." };
     // Snapshot for undo (cap history).
     this.history.push(structuredClone(this.state));
     if (this.history.length > 50) this.history.shift();
     const logLenBefore = this.state.log.length;
     const card = actionCardName(this.state, action);
-    const res = applyAction(this.state, this.cardIndex, seat, action);
+    const res = applyAction(this.state, this.cardIndex, seat, action, privileged);
     // Persistent audit log: every action, its result, and the resulting state.
     appendGameLog({
       ts: Date.now(),
@@ -273,7 +315,12 @@ export class Table {
   // seated (solo/testing) it just undoes.
   requestUndo(seat: number): void {
     if (!this.state || this.history.length === 0) return;
-    const others = this.state.players.filter((p) => p.seat !== seat && p.userId && !p.hasConceded && !p.hasLost);
+    // A finished game's result is final — no rewinding a loss/concede.
+    if (this.state.status === "finished") return;
+    // Every OTHER human seat must approve (including conceded/lost players, so you
+    // can't eliminate opponents and then freely rewind to fish for outcomes). Only
+    // a solo game (no other humans) undoes without approval.
+    const others = this.state.players.filter((p) => p.seat !== seat && p.userId);
     if (others.length === 0) {
       this.undo();
       return;
@@ -304,18 +351,53 @@ export class Table {
     const hands: Record<number, string[]> = {};
     for (const o of Object.values(clone.objects)) {
       const ownHand = o.zone === "hand" && o.ownerSeat === viewerSeat;
-      if (o.zone === "library" || (o.zone === "hand" && o.ownerSeat !== viewerSeat)) {
+      // Hidden from this viewer: any library (incl. your own — you must not know
+      // your draw order), opponents' hands, and face-down cards you don't control.
+      const hiddenZone = o.zone === "library" || (o.zone === "hand" && o.ownerSeat !== viewerSeat);
+      const hiddenFaceDown = o.faceDown && o.controllerSeat !== viewerSeat;
+      if (hiddenZone || hiddenFaceDown) {
         o.cardId = null;
         o.oracleId = null;
         o.name = "Card";
         o.faceDown = true;
+        // Don't leak ORDER (draw sequence) or any annotation that could identify
+        // a hidden card. x/y encodes library order; note/targets/counters/attach
+        // can fingerprint a specific card as it moves between hidden zones.
+        o.x = 0;
+        o.y = 0;
+        o.note = null;
+        o.targets = [];
+        o.counters = [];
+        o.attachedTo = null;
+        o.cardTypes = null;
+        o.keywords = null;
+        o.effPower = null;
+        o.effToughness = null;
+        o.basePower = null;
+        o.baseToughness = null;
+        // An OPPONENT's hidden card gets a fresh per-snapshot id so it can't be
+        // tracked across zones/snapshots (e.g. note the id while it's briefly
+        // public, then follow it back into their hand/library). Your own hidden
+        // cards keep stable ids so your UI can still act on them.
+        if (o.ownerSeat !== viewerSeat) o.id = randomUUID();
+        continue; // never enrich a hidden card
       }
       if (ownHand) (hands[viewerSeat!] ??= []).push(o.id);
       // Surface type/keyword info for public objects so the client can drive the
       // combat UX and split land/creature rows.
       if ((o.zone === "battlefield" || o.zone === "stack") && o.cardId && this.cardIndex[o.cardId]) {
-        o.cardTypes = this.cardIndex[o.cardId]!.cardTypes;
-        o.keywords = this.cardIndex[o.cardId]!.keywords;
+        const ci = this.cardIndex[o.cardId]!;
+        o.cardTypes = ci.cardTypes;
+        o.keywords = ci.keywords;
+        // For creatures, compute the real P/T after counters/pumps/overrides so
+        // the client can just display it (no client-side re-derivation needed).
+        if (o.zone === "battlefield" && ci.cardTypes.includes("Creature")) {
+          const eff = effectivePT(this.state, o, { power: ci.power, toughness: ci.toughness });
+          o.effPower = eff.power;
+          o.effToughness = eff.toughness;
+          o.basePower = ci.power === null ? null : parseInt(ci.power.replace(/[^0-9-]/g, ""), 10) || 0;
+          o.baseToughness = ci.toughness === null ? null : parseInt(ci.toughness.replace(/[^0-9-]/g, ""), 10) || 0;
+        }
       }
     }
     return { state: clone, hands };

@@ -1,0 +1,8 @@
+Name:Asha'man Recruit
+ManaCost:R
+Types:Creature Human Ashaman Channeler
+PT:2/1
+A:AB$ Pump | Cost$ R | Defined$ Self | NumAtt$ +1 | SpellDescription$ CARDNAME gets +1/+0 until end of turn.
+T:Mode$ SpellCast | ValidActivatingPlayer$ You | TriggerZones$ Battlefield | Execute$ TrigPump | TriggerDescription$ Whenever you cast a spell, CARDNAME gets +0/+1 until end of turn.
+SVar:TrigPump:DB$ Pump | Defined$ Self | NumDef$ +1
+Oracle:{R}: Asha'man Recruit gets +1/+0 until end of turn.\nWhenever you cast a spell, Asha'man Recruit gets +0/+1 until end of turn.

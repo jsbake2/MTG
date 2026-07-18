@@ -1,0 +1,7 @@
+Name:Dreaming Forward
+ManaCost:2 U U
+Types:Sorcery
+A:SP$ ChangeZone | Origin$ Library | Destination$ Library | LibraryPosition$ 0 | ChangeType$ Card | ChangeNum$ 1 | Optional$ True | SubAbility$ DBDraw | SpellDescription$ You may search your library for a card and put it on top of your library. Draw three cards. Weave.
+SVar:DBDraw:DB$ Draw | Defined$ You | NumCards$ 3 | SubAbility$ Weave
+SVar:Weave:DB$ PutCounter | Defined$ You | CounterType$ WEAVE | CounterNum$ 1
+Oracle:You may search your library for a card and put it on top of your library. Draw three cards. Weave.

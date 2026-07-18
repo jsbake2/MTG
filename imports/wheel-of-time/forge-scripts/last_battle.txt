@@ -1,0 +1,8 @@
+Name:Last Battle
+ManaCost:3 W R
+Types:Sorcery
+A:SP$ PumpAll | ValidCards$ Creature.YouCtrl | NumAtt$ +2 | SubAbility$ DBFirstStrike | SpellDescription$ Creatures you control get +2/+0 and gain first strike until end of turn. Then if you control ten or more creatures, you win the game at the beginning of the next end step.
+SVar:DBFirstStrike:DB$ PumpAll | ValidCards$ Creature.YouCtrl | KW$ First Strike | SubAbility$ DBDelayWin
+SVar:DBDelayWin:DB$ DelayedTrigger | Mode$ Phase | Phase$ End of Turn | Execute$ TrigWinCheck | TriggerDescription$ At the beginning of the next end step, if you control ten or more creatures, you win the game.
+SVar:TrigWinCheck:DB$ WinsGame | Defined$ You | ConditionPresent$ Creature.YouCtrl | ConditionCompare$ GE10
+Oracle:Creatures you control get +2/+0 and gain first strike until end of turn. Then if you control ten or more creatures, you win the game at the beginning of the next end step.

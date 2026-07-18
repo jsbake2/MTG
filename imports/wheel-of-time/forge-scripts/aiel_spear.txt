@@ -1,0 +1,10 @@
+Name:Aiel Spear
+ManaCost:1 R
+Types:Creature Human Aiel Warrior
+PT:2/2
+K:Haste
+T:Mode$ Attacks | ValidCard$ Card.Self | TriggerZones$ Battlefield | Execute$ TrigPutCounter | TriggerDescription$ Whenever CARDNAME attacks, put a +1/+1 counter on target other creature.
+SVar:TrigPutCounter:DB$ PutCounter | ValidTgts$ Creature.Other | TgtPrompt$ Select target other creature | CounterType$ P1P1 | CounterNum$ 1
+SVar:HasAttackEffect:TRUE
+DeckHas:Ability$Counters
+Oracle:Haste\nWhenever Aiel Spear attacks, put a +1/+1 counter on target other creature.

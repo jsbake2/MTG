@@ -20,7 +20,10 @@ import {
   nextSeatInTurnOrder,
   objectsIn,
   recountHiddenZones,
+  shuffle,
 } from "./state.js";
+import { randomInt } from "node:crypto";
+import { parseCost, planPayment, selectionPays, sourceProduction, type ManaSource } from "./mana.js";
 import { derivePT, staticKeywordsFor, combatFlagsFor, controlsLandType } from "./continuous.js";
 import { entersTappedUnconditional, entersTappedConditional, entersWithCounters } from "./replacements.js";
 
@@ -31,12 +34,22 @@ export interface CardInfo {
   toughness: string | null;
   keywords: string[];
   oracleText: string | null;
+  cmc?: number;
+  manaCost?: string | null;
 }
 export type CardIndex = Record<string, CardInfo>;
 
 export interface ApplyResult {
   ok: boolean;
   error?: string;
+  // Set when a cast needs the player to choose which mana sources to tap.
+  manaChoice?: {
+    objectId: string;
+    cardName: string;
+    x: number;
+    cost: { pips: string[]; generic: number };
+    sources: Array<{ id: string; name: string; colors: string[]; amount: number }>;
+  };
 }
 
 const PERMANENT_TYPES = ["Artifact", "Creature", "Enchantment", "Land", "Planeswalker", "Battle"];
@@ -66,11 +79,39 @@ function hasKeyword(state: TableState, ctx: CardIndex, o: GameObject, kw: string
   if (!ci) return false;
   return ci.keywords.some((x) => x.toLowerCase() === k) || (ci.oracleText ?? "").toLowerCase().includes(k);
 }
+// ---- mana enforcement (guided) ------------------------------------------
+// Colour-aware payment: a cost is paid from untapped sources honouring coloured
+// pips. When the payment is forced we tap automatically; when the player could
+// pay more than one way we hand the choice back (see the cast handler + mana.ts).
+
+// The untapped mana sources a player controls, with the colours each can make.
+function manaSourcesOf(state: TableState, ctx: CardIndex, seat: number): ManaSource[] {
+  return objectsIn(state, "battlefield", seat).flatMap((o) => {
+    if (o.tapped) return [];
+    // A summoning-sick creature can't use a {T} mana ability.
+    if (isCreature(ctx, o) && o.summoningSick && !hasKeyword(state, ctx, o, "haste")) return [];
+    const ci = info(ctx, o);
+    if (!ci) return [];
+    const prod = sourceProduction(ci.typeLine, ci.oracleText ?? null);
+    if (!prod) return [];
+    return [{ id: o.id, name: o.name, amount: prod.amount, colors: prod.colors }];
+  });
+}
+
 function isInstantSpeed(state: TableState, ctx: CardIndex, o: GameObject): boolean {
   const ci = info(ctx, o);
   if (!ci) return true; // unknown/token — don't block
   if (ci.cardTypes.includes("Instant")) return true;
   return hasKeyword(state, ctx, o, "flash");
+}
+
+// Does this seat hold anything they could cast at instant speed (so they deserve
+// a response window at end of turn)?
+function seatHasInstant(state: TableState, ctx: CardIndex, seat: number): boolean {
+  return objectsIn(state, "hand", seat).some((o) => {
+    const ci = info(ctx, o);
+    return !!ci && (ci.cardTypes.includes("Instant") || hasKeyword(state, ctx, o, "flash"));
+  });
 }
 function isPermanentSpell(ctx: CardIndex, o: GameObject): boolean {
   const ci = info(ctx, o);
@@ -190,9 +231,13 @@ function moveObject(
       if (entersTappedUnconditional(etbText)) o.tapped = true;
       else if (entersTappedConditional(etbText))
         log(state, { seat: o.controllerSeat, kind: "system", text: `${o.name} may enter tapped — tap it manually if its condition applies.` });
-      // Replacement (CR 614.1c): enters with +1/+1 or -1/-1 counters.
+      // Replacement (CR 614.1c): enters with +1/+1 or -1/-1 counters. "X" counters
+      // use the X chosen when the spell was cast (o.xValue), e.g. Hydras.
       const etbCounters = entersWithCounters(etbText);
-      if (etbCounters) o.counters.push({ type: etbCounters.kind, count: etbCounters.count });
+      if (etbCounters) {
+        const count = etbCounters.xScaled ? o.xValue : etbCounters.count;
+        if (count > 0) o.counters.push({ type: etbCounters.kind, count });
+      }
     }
   } else {
     o.controllerSeat = o.ownerSeat;
@@ -242,6 +287,50 @@ function advanceStep(state: TableState, ctx: CardIndex): void {
   onEnterStep(state, ctx);
 }
 
+// Can this creature legally be declared as an attacker right now?
+function canAttackNow(state: TableState, ctx: CardIndex, o: GameObject): boolean {
+  if (!isCreature(ctx, o)) return false;
+  if (o.tapped) return false;
+  if (o.summoningSick && !hasKeyword(state, ctx, o, "haste")) return false;
+  if (combatFlagsFor(state, ctx, o).cantAttack) return false;
+  return true;
+}
+
+// Guided mode: is the step we just entered one where NO player has a real
+// decision, so we should roll straight through it? This is what makes a casual
+// turn feel like a turn (Main 1 → attack → Main 2 → done) instead of clicking
+// "Next step" a dozen times through empty upkeeps and combat sub-steps. Steps
+// that already self-advance (untap/draw/cleanup) aren't listed — by the time
+// this runs after them, we're already parked on a decision step, so it no-ops.
+function guidedShouldSkip(state: TableState, ctx: CardIndex): boolean {
+  switch (state.step) {
+    case "upkeep":
+    case "begin_combat":
+    case "end":
+      // Nothing to do unless a trigger is waiting on the stack.
+      return state.stackOrder.length === 0;
+    case "end_combat":
+      return true;
+    case "combat_damage":
+      // Damage was just auto-resolved in onEnterStep; nothing left to choose.
+      return true;
+    case "declare_attackers":
+      // Stop only if the active player actually has a creature that can attack.
+      return !objectsIn(state, "battlefield", state.activeSeat).some((o) => canAttackNow(state, ctx, o));
+    case "declare_blockers": {
+      const attackers = objectsIn(state, "battlefield").filter((o) => o.attacking !== null);
+      if (attackers.length === 0) return true;
+      // Stop only if a defending player has an untapped creature to block with.
+      const canBlock = state.players
+        .filter((p) => p.seat !== state.activeSeat)
+        .some((p) => objectsIn(state, "battlefield", p.seat).some((o) => isCreature(ctx, o) && !o.tapped));
+      return !canBlock;
+    }
+    default:
+      return false;
+  }
+}
+
 // Automatic actions that happen when a step begins.
 function onEnterStep(state: TableState, ctx: CardIndex): void {
   const active = playerBySeat(state, state.activeSeat);
@@ -289,6 +378,13 @@ function onEnterStep(state: TableState, ctx: CardIndex): void {
       o.attacking = null;
       o.blocking = null;
     }
+  }
+  // Guided mode: roll through no-decision steps automatically. Safe to recurse —
+  // it always halts at a main phase or a live combat decision. Steps that already
+  // called advanceStep above (untap/draw/cleanup) have moved us onto a decision
+  // step by now, so this is a no-op for them.
+  if (state.mode === "guided" && state.status === "playing" && guidedShouldSkip(state, ctx)) {
+    advanceStep(state, ctx);
   }
 }
 
@@ -521,7 +617,7 @@ function applyOps(state: TableState, ctx: CardIndex, source: GameObject, ops: Ef
         if (tgt.object) tgt.object.tapped = false;
         break;
       case "plus_counter":
-        if (tgt.object) addCounter(tgt.object, op.kind, op.count);
+        if (tgt.object) addCounter(tgt.object, op.kind, amt(op.count, op.xScaled));
         break;
       case "pump":
         if (tgt.object) {
@@ -578,25 +674,29 @@ function applyOps(state: TableState, ctx: CardIndex, source: GameObject, ops: Ef
       case "mass_grant":
         for (const o of massObjects(state, ctx, source, op.filter)) if (!o.grantedKeywords.includes(op.keyword)) o.grantedKeywords.push(op.keyword);
         break;
-      case "mass_counter":
-        for (const o of massObjects(state, ctx, source, op.filter)) addCounter(o, op.kind, op.count);
+      case "mass_counter": {
+        const cc = amt(op.count, op.xScaled);
+        for (const o of massObjects(state, ctx, source, op.filter)) addCounter(o, op.kind, cc);
         break;
+      }
       case "tap_all":
         for (const o of massObjects(state, ctx, source, op.filter)) o.tapped = op.tapped;
         break;
       case "manual":
         log(state, { seat: source.controllerSeat, kind: "action", text: `${source.name}: ${op.hint} — finish manually.` });
         break;
-      case "token":
+      case "token": {
+        const n = amt(op.count, op.xScaled);
         for (const s of tgt.seats.length ? tgt.seats : [source.controllerSeat]) {
-          for (let i = 0; i < op.count; i++) {
+          for (let i = 0; i < n; i++) {
             const tok = newTokenObject(s, op.name);
             tok.ptOverride = { power: op.power, toughness: op.toughness };
             state.objects[tok.id] = tok;
           }
         }
-        log(state, { seat: source.controllerSeat, kind: "action", text: `${source.name} creates ${op.count} ${op.name}.` });
+        log(state, { seat: source.controllerSeat, kind: "action", text: `${source.name} creates ${n} ${op.name}.` });
         break;
+      }
       case "mill":
         for (const s of tgt.seats) {
           const lib = libraryOrdered(state, s);
@@ -623,19 +723,115 @@ function massObjects(state: TableState, ctx: CardIndex, source: GameObject, filt
   });
 }
 
+// ---- anti-cheat authorization -------------------------------------------
+// Runs BEFORE dispatch for every action and is INDEPENDENT of the strict/relaxed
+// toggle and of `override` — there is no legitimate reason, in any mode, to act
+// for another seat or manipulate a card you don't control. `enforce()` is for
+// rules nuance (timing, land drops) that casual play relaxes; this is the hard
+// trust boundary. `privileged` = the table host or a site admin (judge).
+function authorize(
+  state: TableState,
+  seat: number,
+  action: GameAction,
+  privileged: boolean,
+): ApplyResult | null {
+  const deny = (m: string): ApplyResult => ({ ok: false, error: m });
+  const self = (s: number | undefined) => (s === undefined || s === seat ? null : deny("You can only do that for yourself."));
+  const controls = (id: string) => {
+    const o = state.objects[id];
+    if (!o) return deny("Card not found.");
+    return o.controllerSeat === seat ? null : deny("You don't control that permanent.");
+  };
+  const owns = (id: string) => {
+    const o = state.objects[id];
+    if (!o) return deny("Card not found.");
+    return o.ownerSeat === seat ? null : deny("That card isn't yours.");
+  };
+  const strict = state.enforcement === "strict";
+
+  switch (action.type) {
+    // Self-benefit actions — ALWAYS locked to the acting seat (both modes). No
+    // legitimate reason to draw/mill/mulligan/shuffle/gain-mana/concede for
+    // someone else; cross-player effects come from resolving a spell, not a raw
+    // manual action.
+    case "draw": case "mill": case "shuffle": case "scry": case "mulligan":
+    case "keep_hand": case "untap_all": case "add_mana": case "empty_mana":
+    case "pay_mana": case "set_life": case "adjust_life": case "set_poison":
+    case "concede":
+      return self((action as { seat?: number }).seat);
+    case "create_token": {
+      const s = self(action.seat);
+      if (s) return s;
+      // A token can't be backed by a real card in a tournament game — that would
+      // let a player materialize any card not in their sealed deck. (Legit token
+      // copies of a real card go through a judge override.)
+      if (strict && !privileged && (action.cardId || action.oracleId)) {
+        return deny("Tournament play: tokens can't be backed by a real card.");
+      }
+      return null;
+    }
+    case "commander_damage":
+      return action.fromSeat === seat ? null : deny("You can only record damage from your own commander.");
+    case "pass_priority":
+      return seat === state.prioritySeat ? null : deny("You don't have priority.");
+
+    // Meta controls — host/judge only.
+    case "set_enforcement":
+    case "set_active_player":
+      return privileged ? null : deny("Only the host can change that.");
+    case "roll_first":
+      return privileged || state.status === "mulligan" ? null : deny("Re-rolling for first is host-only once the game has begun.");
+
+    // Object actions that are NEVER legitimate on another player's card.
+    case "cast":
+      return owns(action.objectId);
+    case "activate":
+      return controls(action.objectId);
+    case "declare_attacker":
+      return controls(action.objectId);
+    case "declare_blocker":
+      return controls(action.blockerId);
+
+    // Manual object manipulation. In a tournament (strict) table you may only
+    // touch permanents you control; in casual (relaxed) play cross-player manual
+    // manipulation stays allowed so unmodeled effects can be resolved by hand.
+    case "tap": case "set_pt": case "set_damage": case "add_counter":
+    case "flip": case "attach": case "note": case "keyword_action":
+    case "move_card": {
+      if (!strict || privileged) return null;
+      return controls((action as { objectId: string }).objectId);
+    }
+    default:
+      return null;
+  }
+}
+
 // ---- main dispatcher ----------------------------------------------------
-export function applyAction(state: TableState, ctx: CardIndex, seat: number, action: GameAction): ApplyResult {
+export function applyAction(state: TableState, ctx: CardIndex, seat: number, action: GameAction, privileged = false): ApplyResult {
   if (state.status === "finished") return { ok: false, error: "The game is over." };
 
-  // Override wrapper: bypass framework checks, but log it loudly.
+  // Override wrapper: relax RULES gates (mana, draw limit, timing) for the actor,
+  // logged loudly. In a tournament (strict) table this is host/judge-only so a
+  // player can't self-bypass. Note: override does NOT bypass authorize() — you
+  // still can't act for another seat or on cards you don't control.
   if (action.type === "override") {
+    if (state.enforcement === "strict" && !privileged) {
+      return { ok: false, error: "Overrides are host/judge-only in a tournament (strict) game." };
+    }
     const prev = state.enforcement;
+    const prevOverriding = (state as { overriding?: boolean }).overriding;
     state.enforcement = "relaxed";
+    (state as { overriding?: boolean }).overriding = true;
     log(state, { seat, kind: "override", text: `Override by ${playerBySeat(state, seat)?.name}: ${action.description}` });
-    const r = applyAction(state, ctx, seat, action.inner);
+    const r = applyAction(state, ctx, seat, action.inner, privileged);
     state.enforcement = prev;
+    (state as { overriding?: boolean }).overriding = prevOverriding;
     return r;
   }
+
+  // Hard trust boundary — always on, regardless of mode/override.
+  const authz = authorize(state, seat, action, privileged);
+  if (authz) return authz;
 
   const res = dispatch(state, ctx, seat, action);
   if (res && !res.ok) return res;
@@ -683,12 +879,16 @@ function dispatch(state: TableState, ctx: CardIndex, seat: number, action: GameA
     case "draw": {
       const prio = enforce(state, seat === state.prioritySeat, "You do not have priority.");
       if (prio) return prio;
-      // Guided mode already draws for you at your draw step; a card's draw effect
-      // resolves on its own. So a by-hand draw is a manual override — strict blocks
-      // it, relaxed allows it with a nudge. Freeform (manual tabletop) never gates.
-      if (state.mode === "guided") {
-        const gate = enforce(state, false, "You draw automatically at your draw step — extra draws should come from a card's effect. (Use Override to force a manual draw.)");
-        if (gate) return gate;
+      // Guided mode already draws for you at your draw step, and modeled card
+      // draw effects call drawCards() directly. So a by-hand "draw" action is
+      // never legal here — HARD block it regardless of the relaxed/strict toggle,
+      // otherwise a relaxed table could draw infinitely. The only way through is
+      // an explicit Override (⚙ Manual override → Draw), which sets `overriding`.
+      if (state.mode === "guided" && !(state as { overriding?: boolean }).overriding) {
+        return {
+          ok: false,
+          error: "In guided mode you draw automatically at your draw step; extra draws come from card effects. Use ⚙ Manual override → Draw to force one.",
+        };
       }
       const n = drawCards(state, action.seat, action.count);
       log(state, { seat: action.seat, kind: "action", text: `${playerBySeat(state, action.seat)?.name} draws ${n}.` });
@@ -705,11 +905,7 @@ function dispatch(state: TableState, ctx: CardIndex, seat: number, action: GameA
       const prio = enforce(state, seat === state.prioritySeat, "You do not have priority.");
       if (prio) return prio;
       const lib = libraryOrdered(state, action.seat);
-      const ys = lib.map((o) => o.y);
-      for (let i = ys.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [ys[i], ys[j]] = [ys[j]!, ys[i]!];
-      }
+      const ys = shuffle(lib.map((o) => o.y));
       lib.forEach((o, i) => (o.y = ys[i]!));
       log(state, { seat: action.seat, kind: "action", text: `${playerBySeat(state, action.seat)?.name} shuffles.` });
       return null;
@@ -719,18 +915,41 @@ function dispatch(state: TableState, ctx: CardIndex, seat: number, action: GameA
       return null;
     }
     case "mulligan": {
-      // Return hand to library, shuffle, draw 7 (London mulligan bottoming is manual).
+      // London mulligan: return hand, shuffle, draw 7. Each mulligan adds one to
+      // the "owed bottoms" count applied on keep. Capped so you can't mulligan
+      // forever to fish for a perfect hand with no cost.
+      const pm = playerBySeat(state, action.seat);
+      if (pm && pm.mulligansTaken >= 7) return { ok: false, error: "You can't mulligan any further." };
       for (const o of objectsIn(state, "hand", action.seat)) moveObject(state, ctx, o, "library", action.seat, {});
       const lib = libraryOrdered(state, action.seat);
-      const ys = lib.map((o) => o.y).sort(() => Math.random() - 0.5);
+      const ys = shuffle(lib.map((o) => o.y)); // proper Fisher–Yates, not a biased sort()
       lib.forEach((o, i) => (o.y = ys[i]!));
       drawCards(state, action.seat, 7);
-      log(state, { seat: action.seat, kind: "action", text: `${playerBySeat(state, action.seat)?.name} mulligans.` });
+      if (pm) pm.mulligansTaken += 1;
+      log(state, { seat: action.seat, kind: "action", text: `${pm?.name} mulligans${pm ? ` (#${pm.mulligansTaken})` : ""}.` });
       return null;
     }
     case "keep_hand": {
-      log(state, { seat: action.seat, kind: "action", text: `${playerBySeat(state, action.seat)?.name} keeps.` });
-      // When everyone has kept, the host starts the turn via start (status flips in table.ts).
+      const pk = playerBySeat(state, action.seat);
+      const owed = pk?.mulligansTaken ?? 0;
+      if (owed > 0) {
+        const hand = objectsIn(state, "hand", action.seat);
+        let toBottom: GameObject[] = [];
+        if (action.bottom && action.bottom.length) {
+          const chosen = new Set(action.bottom);
+          toBottom = hand.filter((o) => chosen.has(o.id));
+          // In tournament play the count must be exactly right.
+          if (state.enforcement === "strict" && toBottom.length !== owed) {
+            return { ok: false, error: `London mulligan: put exactly ${owed} card${owed > 1 ? "s" : ""} on the bottom.` };
+          }
+        }
+        // Enforce the mulligan cost even without a client picker: auto-bottom the
+        // remainder so a mulligan always costs cards.
+        if (toBottom.length !== owed) toBottom = hand.slice(0, Math.min(owed, hand.length));
+        for (const o of toBottom) moveObject(state, ctx, o, "library", action.seat, { toTop: false });
+        log(state, { seat: action.seat, kind: "action", text: `${pk?.name} puts ${toBottom.length} card${toBottom.length !== 1 ? "s" : ""} on the bottom (mulligan).` });
+      }
+      log(state, { seat: action.seat, kind: "action", text: `${pk?.name} keeps.` });
       return null;
     }
     case "set_life": {
@@ -828,15 +1047,45 @@ function dispatch(state: TableState, ctx: CardIndex, seat: number, action: GameA
         if (timing) return timing;
       }
       // Commander tax (CR 903.8): {2} more for each previous cast from the command
-      // zone. Mana is paid loosely (player-driven), so surface the tax in the log.
+      // zone.
+      const commanderTax = o.zone === "command" && o.isCommander ? 2 * o.commanderCasts : 0;
+      // Mana enforcement (guided): pay the cost from untapped sources, respecting
+      // colours. Auto-taps when the payment is forced; asks the player which
+      // sources to tap when there's a real choice. Bypass via explicit Override.
+      if (state.mode === "guided" && !(state as { overriding?: boolean }).overriding) {
+        const ci = info(ctx, o);
+        const cost = parseCost(ci?.manaCost, Math.max(0, action.x ?? 0) + commanderTax, ci?.cmc ?? 0);
+        const sources = manaSourcesOf(state, ctx, seat);
+        const byId = new Map(sources.map((s) => [s.id, s]));
+        if (action.manaSources && action.manaSources.length) {
+          // The player picked their sources explicitly.
+          const chosen = action.manaSources.map((id) => byId.get(id)).filter((s): s is ManaSource => !!s);
+          if (chosen.length !== action.manaSources.length) return { ok: false, error: "Some chosen mana sources are unavailable." };
+          if (!selectionPays(chosen, cost)) return { ok: false, error: `Those sources don't cover ${o.name}'s cost.` };
+          for (const s of chosen) { const src = state.objects[s.id]; if (src) src.tapped = true; }
+        } else {
+          const plan = planPayment(sources, cost);
+          if (plan.status === "insufficient") {
+            const label = [...cost.pips, cost.generic ? `{${cost.generic}}` : ""].filter(Boolean).join("");
+            return { ok: false, error: `Not enough mana to cast ${o.name} (needs ${label || "mana"}). Tap more, or use ⚙ Manual override.` };
+          }
+          if (plan.status === "choice" && !action.autoMana) {
+            // Hand the decision back to the player.
+            return {
+              ok: false,
+              manaChoice: { objectId: o.id, cardName: o.name, x: Math.max(0, action.x ?? 0), cost, sources: sources.map(({ id, name, colors, amount }) => ({ id, name, colors, amount })) },
+            };
+          }
+          for (const id of plan.tap) { const src = state.objects[id]; if (src) src.tapped = true; }
+        }
+      }
       if (o.zone === "command" && o.isCommander) {
-        const tax = 2 * o.commanderCasts;
         o.commanderCasts += 1;
         log(state, {
           seat,
           kind: "system",
-          text: tax > 0
-            ? `Commander tax: pay {${tax}} extra to cast ${o.name} (cast #${o.commanderCasts} from the command zone).`
+          text: commanderTax > 0
+            ? `Commander tax: {${commanderTax}} extra paid to cast ${o.name} (cast #${o.commanderCasts} from the command zone).`
             : `${o.name} cast from the command zone (no tax yet).`,
         });
       }
@@ -927,17 +1176,38 @@ function dispatch(state: TableState, ctx: CardIndex, seat: number, action: GameA
       return null;
     }
     case "advance_step": {
-      const timing = enforce(state, false, "In strict mode, steps advance automatically when all players pass priority on an empty stack.");
-      if (timing) return timing;
+      // Whoever holds priority may step forward as long as the stack is empty —
+      // this is the primary "progress my turn" control. Gating on priority (not
+      // just "active") means a player given an end-of-turn response window can't
+      // be bulldozed past it. Previously this hard-errored in strict mode, which
+      // left a player with nothing to do unable to move their turn along.
+      const who = enforce(state, seat === state.prioritySeat, "You can only advance while you hold priority.");
+      if (who) return who;
+      const clear = enforce(state, state.stackOrder.length === 0, "Resolve the stack before advancing the step.");
+      if (clear) return clear;
       advanceStep(state, ctx);
       return null;
     }
     case "end_turn": {
       const active = enforce(state, seat === state.activeSeat, "Only the active player can end the turn.");
       if (active) return active;
-      // Fast-forward through the rest of this turn until the next player's turn
-      // begins (activeSeat changes). Guarded against runaway loops.
       const startActive = state.activeSeat;
+      // If an opponent could respond at instant speed, jump straight to the end
+      // step and hand THEM priority so they get a window to act before the turn
+      // ends. They pass (or cast + pass) to move on to the next turn.
+      const responder = state.players.find(
+        (p) => p.seat !== startActive && !p.hasLost && !p.hasConceded && seatHasInstant(state, ctx, p.seat),
+      );
+      if (responder && state.step !== "end") {
+        state.phase = "ending";
+        state.step = "end";
+        state.prioritySeat = responder.seat;
+        state.passStreak = 0;
+        log(state, { seat, kind: "phase", text: `${playerBySeat(state, seat)?.name} passes the turn — ${responder.name} may respond.` });
+        return null;
+      }
+      // Otherwise fast-forward through the rest of the turn to the next player's
+      // turn (activeSeat changes). Guarded against runaway loops.
       let guard = 0;
       while (state.activeSeat === startActive && state.status === "playing" && guard++ < 60) {
         advanceStep(state, ctx);
@@ -1072,7 +1342,7 @@ function dispatch(state: TableState, ctx: CardIndex, seat: number, action: GameA
       const sides = Math.max(2, Math.floor(action.sides));
       const count = Math.min(20, Math.max(1, Math.floor(action.count)));
       const values: number[] = [];
-      for (let i = 0; i < count; i++) values.push(1 + Math.floor(Math.random() * sides));
+      for (let i = 0; i < count; i++) values.push(1 + randomInt(sides));
       const total = values.reduce((a, b) => a + b, 0);
       const who = playerBySeat(state, seat)?.name ?? "Someone";
       const label = action.label ?? (sides === 2 ? "coin" : `d${sides}`);
@@ -1085,10 +1355,10 @@ function dispatch(state: TableState, ctx: CardIndex, seat: number, action: GameA
       return null;
     }
     case "roll_first": {
-      const rolls = state.players.map((p) => ({ seat: p.seat, name: p.name, v: 1 + Math.floor(Math.random() * 20) }));
+      const rolls = state.players.map((p) => ({ seat: p.seat, name: p.name, v: 1 + randomInt(20) }));
       const max = Math.max(...rolls.map((r) => r.v));
       const winners = rolls.filter((r) => r.v === max);
-      const winner = winners[Math.floor(Math.random() * winners.length)]!.seat;
+      const winner = winners[randomInt(winners.length)]!.seat;
       state.activeSeat = winner;
       state.prioritySeat = winner;
       state.startingPlayerSeat = winner;

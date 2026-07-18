@@ -1,0 +1,5 @@
+Name:Death's Whisper
+ManaCost:1 B
+Types:Instant
+A:SP$ Destroy | ValidTgts$ Creature.toughnessLE2 | TgtPrompt$ Select target creature with toughness 2 or less | SpellDescription$ Destroy target creature with toughness 2 or less.
+Oracle:Destroy target creature with toughness 2 or less.

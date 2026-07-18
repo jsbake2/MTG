@@ -1,0 +1,7 @@
+Name:Forsaken Wrath
+ManaCost:2 R
+Types:Enchantment
+T:Mode$ SpellCast | ValidCard$ Card.Red | ValidActivatingPlayer$ You | TriggerZones$ Battlefield | Execute$ TrigToken | TriggerDescription$ Whenever you cast a red spell, create a 1/1 red Elemental creature token with haste. Sacrifice those tokens at the beginning of your end step.
+SVar:TrigToken:DB$ Token | TokenScript$ r_1_1_elemental | TokenOwner$ You | PumpKeywords$ Haste | AtEOT$ Sacrifice
+DeckHas:Ability$Token
+Oracle:Whenever you cast a red spell, create a 1/1 red Elemental creature token with haste. Sacrifice those tokens at the beginning of your end step.

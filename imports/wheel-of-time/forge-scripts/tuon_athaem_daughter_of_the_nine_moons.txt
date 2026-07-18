@@ -1,0 +1,30 @@
+Name:Tuon Athaem, Daughter of the Nine Moons
+ManaCost:1 W B
+Types:Legendary Creature Human Noble
+PT:2/3
+# Static: Damane you control get +1/+1.
+# Copied from Imperious Perfect (Creature.Elf+Other+YouCtrl pattern), adjusted for
+# Damane subtype. Tuon is a Noble, not a Damane, so no "+Other" needed.
+S:Mode$ Continuous | Affected$ Creature.Damane+YouCtrl | AddPower$ 1 | AddToughness$ 1 | Description$ Damane you control get +1/+1.
+# Activated: {W}{B}, {T}: Leash target creature with mana value 2 or less.
+# LEASH MECHANIC: Permanent GainControl + LEASH counter on the stolen creature.
+# A recurring delayed-trigger chain fires at each of your upkeeps: add another
+# LEASH counter, then offer to pay (LEASH count x 2) generic mana — or the
+# creature returns to its owner.
+# Pattern copied from leash_bearer.txt, adapted to {W}{B}T cost and cmcLE2 filter.
+# COST SCALING NOTE: Card says "{2}, doubling each time you pay" (true exponential:
+# 2,4,8,...). Forge Count math cannot natively double; /Twice is linear (2,4,6,...).
+# Same approximation as all other Leash cards in this set; players may enforce
+# true doubling manually.
+# "CAN'T BE LEASHED AGAIN" clause has no Forge DSL hook; omitted — players enforce.
+A:AB$ GainControl | Cost$ W B T | ValidTgts$ Creature.cmcLE2+OppCtrl | TgtPrompt$ Select target creature with mana value 2 or less an opponent controls | RememberControlled$ True | SubAbility$ DBLeashCounter | SpellDescription$ Leash target creature with mana value 2 or less. (You gain control of it. At the beginning of your upkeep, pay its leash cost — {2}, doubling each time you pay — or it returns to its owner and can't be leashed again until your next turn.)
+SVar:DBLeashCounter:DB$ PutCounter | Defined$ Remembered | CounterType$ LEASH | CounterNum$ 1 | SubAbility$ DBDelay
+SVar:DBDelay:DB$ DelayedTrigger | Mode$ Phase | Phase$ Upkeep | ValidPlayer$ You | Execute$ TrigLeash | RememberObjects$ Remembered | TriggerDescription$ At the beginning of your upkeep, pay this creature's leash cost or its owner regains control. | SubAbility$ DBCleanup
+SVar:DBCleanup:DB$ Cleanup | ClearRemembered$ True
+SVar:TrigLeash:DB$ PutCounter | Defined$ DelayTriggerRemembered | CounterType$ LEASH | CounterNum$ 1 | SubAbility$ DBPayOrReturn
+SVar:DBPayOrReturn:DB$ GainControl | Defined$ DelayTriggerRemembered | NewController$ Owner | UnlessCost$ Y | UnlessPayer$ You | UnlessResolveSubs$ WhenNotPaid | SubAbility$ DBRearm
+SVar:DBRearm:DB$ DelayedTrigger | Mode$ Phase | Phase$ Upkeep | ValidPlayer$ You | Execute$ TrigLeash | RememberObjects$ DelayTriggerRemembered | TriggerDescription$ At the beginning of your upkeep, pay this creature's leash cost or its owner regains control.
+SVar:Y:Count$CardCounters.LEASH/Twice
+AI:RemoveDeck:All
+DeckHas:Ability$GainControl
+Oracle:Damane you control get +1/+1.\n{W}{B}, {T}: Leash target creature with mana value 2 or less. (You gain control of it. At the beginning of your upkeep, pay its leash cost — {2}, doubling each time you pay — or it returns to its owner and can't be leashed again until your next turn.)

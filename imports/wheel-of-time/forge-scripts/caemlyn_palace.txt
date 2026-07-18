@@ -1,0 +1,6 @@
+Name:Caemlyn Palace
+Types:Legendary Land
+A:AB$ Mana | Cost$ T | Produced$ Combo W R | SpellDescription$ Add {W} or {R}.
+A:AB$ Pump | Cost$ 2 W R T | ValidTgts$ Creature.Legendary | TgtPrompt$ Select target legendary creature | NumAtt$ +1 | NumDef$ +1 | KW$ First Strike | SpellDescription$ Target legendary creature gets +1/+1 and gains first strike until end of turn.
+DeckHints:Type$Legendary & Type$Creature
+Oracle:{T}: Add {W} or {R}. {2}{W}{R}: Target legendary creature gets +1/+1 and gains first strike until end of turn.

@@ -5,6 +5,7 @@
 import { createHash } from "node:crypto";
 import { mkdir, readFile, writeFile, access } from "node:fs/promises";
 import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { env } from "../env.js";
 import { getArtCropUrl, getFaceImageUrl } from "./repo.js";
 
@@ -86,6 +87,15 @@ async function fetchWithRetry(url: string, attempts = 3): Promise<Buffer | null>
 export async function getCardImage(id: string, face: number): Promise<CachedImage | null> {
   const base = await getFaceImageUrl(id, face);
   if (!base) return null;
+
+  if (base.startsWith("/card-images/")) {
+    const distPath = process.env.CLIENT_DIST ? join(process.env.CLIENT_DIST, base) : "";
+    const publicPath = join(dirname(fileURLToPath(import.meta.url)), "../../../client/public", base);
+    if (distPath && await exists(distPath)) return { data: await readFile(distPath), contentType: "image/jpeg" };
+    if (await exists(publicPath)) return { data: await readFile(publicPath), contentType: "image/jpeg" };
+    return null;
+  }
+
   const candidates = sizeVariants(base);
 
   // Serve any already-cached size (prefer the best we have).
@@ -118,6 +128,15 @@ export async function getCardImage(id: string, face: number): Promise<CachedImag
 export async function getCardArt(id: string): Promise<CachedImage | null> {
   const url = await getArtCropUrl(id);
   if (!url) return null;
+
+  if (url.startsWith("/card-images/")) {
+    const distPath = process.env.CLIENT_DIST ? join(process.env.CLIENT_DIST, url) : "";
+    const publicPath = join(dirname(fileURLToPath(import.meta.url)), "../../../client/public", url);
+    if (distPath && await exists(distPath)) return { data: await readFile(distPath), contentType: "image/jpeg" };
+    if (await exists(publicPath)) return { data: await readFile(publicPath), contentType: "image/jpeg" };
+    return null;
+  }
+
   const file = cacheFileFor(url);
   if (await exists(file)) return { data: await readFile(file), contentType: "image/jpeg" };
   await acquire();

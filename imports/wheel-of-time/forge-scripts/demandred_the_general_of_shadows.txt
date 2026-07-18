@@ -1,0 +1,12 @@
+Name:Demandred, the General of Shadows
+ManaCost:2 B R
+Types:Legendary Creature Forsaken Channeler
+PT:5/4
+K:Menace
+T:Mode$ ChangesZone | Origin$ Any | Destination$ Battlefield | ValidCard$ Card.Self | Execute$ TrigPumpAll | TriggerDescription$ When CARDNAME enters, other creatures you control get +2/+0 and gain haste until end of turn.
+SVar:TrigPumpAll:DB$ PumpAll | ValidCards$ Creature.StrictlyOther+YouCtrl | NumAtt$ +2 | NumDef$ +0 | KW$ Haste
+T:Mode$ Attacks | ValidCard$ Card.Self | Execute$ TrigDmg | TriggerZones$ Battlefield | TriggerDescription$ Whenever CARDNAME attacks, he deals 2 damage to any target.
+SVar:TrigDmg:DB$ DealDamage | ValidTgts$ Any | NumDmg$ 2
+SVar:HasAttackEffect:TRUE
+SVar:PlayMain1:TRUE
+Oracle:Menace\nWhen Demandred, the General of Shadows enters, other creatures you control get +2/+0 and gain haste until end of turn.\nWhenever Demandred attacks, he deals 2 damage to any target.

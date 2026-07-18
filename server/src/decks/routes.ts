@@ -18,6 +18,7 @@ import {
 } from "./repo.js";
 import { analyzeDeckTags, validateDeck, type DeckEntryWithCard } from "./validate.js";
 import { resolveDecklist } from "./import.js";
+import { buildDck, checkForgeSupport, forgeVersionInfo, logUnsupported } from "./forge.js";
 
 export const decksRouter = Router();
 
@@ -156,6 +157,23 @@ decksRouter.get("/:id", async (req, res) => {
   }
   const entries: DeckEntryWithCard[] = detail.cards.map((c) => ({ card: c.card, quantity: c.quantity, board: c.board }));
   res.json({ deck: detail, validation: validateDeck(detail.formatId, entries), dynamicTags: analyzeDeckTags(entries) });
+});
+
+// Export a deck to Forge (.dck) with support validation. Returns the file text,
+// the list of cards Forge doesn't support, and version info. Unsupported cards
+// are logged (under rulings) so we can write our own Forge scripts for them.
+decksRouter.get("/:id/forge-export", async (req, res) => {
+  const detail = await getDeckDetail(String(req.params.id));
+  if (!detail) { res.status(404).json({ error: "Deck not found" }); return; }
+  if (detail.ownerId !== req.user!.id && !req.user!.isAdmin && !detail.isPrecon) { res.status(403).json({ error: "Not your deck" }); return; }
+  const names = detail.cards.map((c) => c.card.name);
+  const { unsupported } = await checkForgeSupport(names);
+  const forge = await forgeVersionInfo();
+  // Only log as "needs a script" when we're already on the latest Forge — an
+  // out-of-date Forge might simply not have imported the card yet.
+  if (unsupported.length && !forge.updateAvailable) await logUnsupported(unsupported, forge.installed);
+  const dck = buildDck(detail, { omit: new Set(unsupported) });
+  res.json({ deckName: detail.name, dck, total: names.length, unsupported, forge });
 });
 
 async function assertOwner(req: import("express").Request, res: import("express").Response): Promise<boolean> {

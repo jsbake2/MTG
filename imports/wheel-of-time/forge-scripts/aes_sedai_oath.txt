@@ -1,0 +1,8 @@
+Name:Aes Sedai Oath
+ManaCost:2
+Types:Artifact
+S:Mode$ Continuous | Affected$ Creature.AesSedai+YouCtrl | AddToughness$ 2 | Description$ Aes Sedai you control get +0/+2.
+S:Mode$ Continuous | Affected$ Creature.AesSedai+YouCtrl | AddKeyword$ Vigilance | CheckSVar$ X | SVarCompare$ GE3 | Secondary$ True | Description$ Pattern 3 — They also have vigilance.
+SVar:X:Count$YourCountersWEAVE
+SVar:PlayMain1:TRUE
+Oracle:Aes Sedai you control get +0/+2.\nPattern 3 — They also have vigilance.

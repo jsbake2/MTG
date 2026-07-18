@@ -1,0 +1,6 @@
+Name:Mounted Patrol
+ManaCost:3 W
+Types:Creature Human Whitecloak Knight
+PT:3/3
+K:Vigilance
+Oracle:Vigilance.

@@ -1,0 +1,7 @@
+Name:Court-Bard of Cairhien
+ManaCost:1 U R
+Types:Creature Human Bard
+PT:2/2
+T:Mode$ CounterAdded | CounterType$ WEAVE | ValidPlayer$ You | TriggerZones$ Battlefield | Execute$ TrigDamage | ActivationLimit$ 1 | TriggerDescription$ Whenever you weave, CARDNAME deals 1 damage to each opponent. This ability triggers only once each turn.
+SVar:TrigDamage:DB$ DamageAll | ValidPlayers$ Opponent | NumDmg$ 1 | DamageSource$ Self
+Oracle:Whenever you weave, Court-Bard of Cairhien deals 1 damage to each opponent. This ability triggers only once each turn.

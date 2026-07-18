@@ -1,0 +1,8 @@
+Name:Dreamwalker Adept
+ManaCost:2 U
+Types:Creature Human Channeler
+PT:2/2
+K:Flash
+T:Mode$ ChangesZone | Origin$ Any | Destination$ Battlefield | ValidCard$ Card.Self | Execute$ Weave | TriggerDescription$ When CARDNAME enters, weave.
+SVar:Weave:DB$ PutCounter | Defined$ You | CounterType$ WEAVE | CounterNum$ 1
+Oracle:Flash\nWhen Dreamwalker Adept enters, weave.

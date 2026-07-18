@@ -1,0 +1,7 @@
+Name:Sacrifice for Power
+ManaCost:B R
+Types:Sorcery
+A:SP$ Sacrifice | SacValid$ Creature | SubAbility$ DBToken | SpellDescription$ Sacrifice a creature. Create a 2/2 black Shadowspawn creature token with haste.
+SVar:DBToken:DB$ Token | TokenAmount$ 1 | TokenScript$ b_2_2_shadowspawn_haste | TokenOwner$ You
+DeckHas:Ability$Token|Sacrifice
+Oracle:Sacrifice a creature. Create a 2/2 black Shadowspawn creature token with haste.

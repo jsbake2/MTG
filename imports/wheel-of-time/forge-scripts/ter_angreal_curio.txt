@@ -1,0 +1,7 @@
+Name:Ter'angreal Curio
+ManaCost:2
+Types:Artifact
+T:Mode$ ChangesZone | Origin$ Any | Destination$ Battlefield | ValidCard$ Card.Self | Execute$ TrigScry | TriggerDescription$ When CARDNAME enters, scry 1.
+SVar:TrigScry:DB$ Scry | ScryNum$ 1
+A:AB$ Mana | Cost$ T | Produced$ C | Amount$ 1 | SpellDescription$ Add {C}.
+Oracle:When Ter'angreal Curio enters, scry 1.\n{T}: Add {C}.

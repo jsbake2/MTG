@@ -1,0 +1,8 @@
+Name:Warder's Oath
+ManaCost:1 W G
+Types:Sorcery
+A:SP$ Token | TokenAmount$ 1 | TokenScript$ w_2_2_soldier | TokenOwner$ You | SubAbility$ DBWolf | SpellDescription$ Create a 2/2 white Soldier creature token and a 2/2 green Wolf creature token. Creatures you control get +0/+1 until end of turn.
+SVar:DBWolf:DB$ Token | TokenAmount$ 1 | TokenScript$ g_2_2_wolf | TokenOwner$ You | SubAbility$ DBPump
+SVar:DBPump:DB$ PumpAll | ValidCards$ Creature.YouCtrl | NumDef$ +1
+DeckHas:Ability$Token
+Oracle:Create a 2/2 white Soldier creature token and a 2/2 green Wolf creature token. Creatures you control get +0/+1 until end of turn.

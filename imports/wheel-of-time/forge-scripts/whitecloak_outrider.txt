@@ -1,0 +1,6 @@
+Name:Whitecloak Outrider
+ManaCost:1 W
+Types:Creature Human Whitecloak Scout
+PT:2/1
+S:Mode$ CantBlockBy | ValidAttacker$ Creature.Self | ValidBlocker$ Creature.Channeler,Creature.AesSedai,Creature.Ashaman,Creature.WiseOne,Creature.Windfinder,Creature.Damane,Creature.Dreadlord,Creature.Forsaken | Description$ CARDNAME can't be blocked by Channelers.
+Oracle:Whitecloak Outrider can't be blocked by Channelers.

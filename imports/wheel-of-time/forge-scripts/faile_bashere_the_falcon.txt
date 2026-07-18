@@ -1,0 +1,8 @@
+Name:Faile Bashere, the Falcon
+ManaCost:R W
+Types:Legendary Creature Human Noble Warrior
+PT:2/2
+K:First Strike
+T:Mode$ Attacks | ValidCard$ Card.Self | TriggerZones$ Battlefield | Execute$ TrigPump | TriggerDescription$ Whenever CARDNAME attacks, another target attacking creature gets +1/+1 and gains first strike until end of turn.
+SVar:TrigPump:DB$ Pump | ValidTgts$ Creature.Other+attacking | TgtPrompt$ Select another target attacking creature | NumAtt$ +1 | NumDef$ +1 | KW$ First Strike
+Oracle:First strike\nWhenever Faile Bashere, the Falcon attacks, another target attacking creature gets +1/+1 and gains first strike until end of turn.

@@ -1,0 +1,6 @@
+Name:Shienaran Heavy Lancer
+ManaCost:3 R
+Types:Creature Human Knight
+PT:4/2
+S:Mode$ Continuous | Affected$ Card.Self+attacking | AddKeyword$ First Strike | Description$ Shienaran Heavy Lancer has first strike as long as it's attacking.
+Oracle:First strike as long as Shienaran Heavy Lancer is attacking.

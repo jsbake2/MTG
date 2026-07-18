@@ -1,0 +1,6 @@
+Name:Weaving of the Pattern
+ManaCost:1 U
+Types:Sorcery
+A:SP$ PutCounter | Defined$ You | CounterType$ WEAVE | CounterNum$ 2 | SubAbility$ DBSearch | SpellDescription$ Weave twice. Search your library for a card, put it on top of your library, then shuffle.
+SVar:DBSearch:DB$ ChangeZone | Origin$ Library | Destination$ Library | LibraryPosition$ 0 | ChangeType$ Card | ChangeNum$ 1 | Mandatory$ True
+Oracle:Weave twice. Search your library for a card, put it on top of your library, then shuffle.

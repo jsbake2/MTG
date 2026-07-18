@@ -1,0 +1,7 @@
+Name:Stone Dog Vanguard
+ManaCost:2 R
+Types:Creature Human Aiel Warrior
+PT:3/2
+K:Vigilance
+S:Mode$ Continuous | Affected$ Card.Self+blocking | AddToughness$ 2 | Description$ Shae'en M'taal — CARDNAME gets +0/+2 as long as it's blocking.
+Oracle:Vigilance\nShae'en M'taal — Stone Dog Vanguard gets +0/+2 as long as it's blocking.

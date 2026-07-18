@@ -1,0 +1,5 @@
+Name:Shadowstep
+ManaCost:1 B
+Types:Instant
+A:SP$ Pump | ValidTgts$ Creature | NumAtt$ +1 | KW$ Menace | SpellDescription$ Target creature gets +1/+0 and gains menace until end of turn.
+Oracle:Target creature gains menace and +1/+0 until end of turn.

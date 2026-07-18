@@ -1,0 +1,9 @@
+Name:Aes Sedai Convocation
+ManaCost:W U
+Types:Sorcery
+A:SP$ Token | TokenAmount$ 1 | TokenScript$ w_2_2_aes_sedai | TokenOwner$ You | SubAbility$ DBBlueToken | SpellDescription$ Create a 2/2 white Aes Sedai creature token and a 2/2 blue Aes Sedai creature token. If you control three or more Aes Sedai, those tokens get +1/+1 and gain flying.
+SVar:DBBlueToken:DB$ Token | TokenAmount$ 1 | TokenScript$ u_2_2_aes_sedai | TokenOwner$ You | SubAbility$ DBBuff
+SVar:DBBuff:DB$ PumpAll | ValidCards$ Creature.AesSedai+YouCtrl+token | NumAtt$ +1 | NumDef$ +1 | KW$ Flying | ConditionCheckSVar$ X | ConditionSVarCompare$ GE3
+SVar:X:Count$Valid Creature.AesSedai+YouCtrl
+DeckHas:Ability$Token
+Oracle:Create a 2/2 white Aes Sedai creature token and a 2/2 blue Aes Sedai creature token. If you control three or more Aes Sedai, those tokens get +1/+1 and gain flying.

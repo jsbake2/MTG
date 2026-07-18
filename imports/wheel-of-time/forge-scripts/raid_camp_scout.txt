@@ -1,0 +1,8 @@
+Name:Raid Camp Scout
+ManaCost:1 R
+Types:Creature Human Soldier
+PT:2/1
+K:Haste
+T:Mode$ DamageDone | ValidSource$ Card.Self | ValidTarget$ Player | CombatDamage$ True | OptionalDecider$ You | TriggerZones$ Battlefield | Execute$ TrigLoot | TriggerDescription$ Whenever CARDNAME deals combat damage to a player, you may discard a card. If you do, draw a card.
+SVar:TrigLoot:AB$ Draw | Cost$ Discard<1/Card> | NumCards$ 1
+Oracle:Haste\nWhenever Raid Camp Scout deals combat damage to a player, you may discard a card. If you do, draw a card.

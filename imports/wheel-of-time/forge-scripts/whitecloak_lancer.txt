@@ -1,0 +1,6 @@
+Name:Whitecloak Lancer
+ManaCost:2 W
+Types:Creature Human Whitecloak Knight
+PT:3/1
+K:First Strike
+Oracle:First strike

@@ -1,0 +1,8 @@
+Name:Illian Merchant
+ManaCost:1 U
+Types:Creature Human Merchant
+PT:2/1
+T:Mode$ Attacks | ValidCard$ Card.Self | Execute$ TrigToken | TriggerDescription$ Whenever CARDNAME attacks, create a Treasure token.
+SVar:TrigToken:DB$ Token | TokenScript$ c_a_treasure_sac | TokenOwner$ You
+DeckHas:Ability$Token & Type$Treasure
+Oracle:Whenever Illian Merchant attacks, create a Treasure token.

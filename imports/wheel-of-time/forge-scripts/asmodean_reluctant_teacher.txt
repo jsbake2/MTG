@@ -1,0 +1,7 @@
+Name:Asmodean, Reluctant Teacher
+ManaCost:1 U R
+Types:Legendary Creature Forsaken Channeler
+PT:2/3
+A:AB$ PutCounter | Cost$ T | Defined$ You | CounterType$ WEAVE | CounterNum$ 1 | SpellDescription$ Weave.
+S:Mode$ ReduceCost | ValidCard$ Creature.Channeler,Creature.AesSedai,Creature.Ashaman,Creature.WiseOne,Creature.Windfinder,Creature.Damane,Creature.Dreadlord,Creature.Forsaken | Type$ Spell | Activator$ You | Amount$ 1 | Description$ Channeler spells you cast cost {1} less to cast.
+Oracle:{T}: Weave.\nChanneler spells you cast cost {1} less to cast.

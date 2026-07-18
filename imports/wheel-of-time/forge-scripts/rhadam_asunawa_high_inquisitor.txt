@@ -1,0 +1,7 @@
+Name:Rhadam Asunawa, High Inquisitor
+ManaCost:1 W B
+Types:Legendary Creature Human Whitecloak Cleric
+PT:1/4
+A:AB$ Discard | Cost$ 1 W B T | ValidTgts$ Opponent | TgtPrompt$ Select target opponent | Mode$ RevealYouChoose | DiscardValid$ Card.nonLand | NumCards$ 1 | UnlessCost$ PayLife<3> | UnlessPayer$ Targeted | SpellDescription$ Target opponent reveals their hand. You choose a nonland card from it. That player discards that card unless they pay 3 life.
+DeckHints:Type$Whitecloak
+Oracle:{1}{W}{B}, {T}: Target opponent reveals their hand. You choose a nonland card from it. That player discards that card unless they pay 3 life.

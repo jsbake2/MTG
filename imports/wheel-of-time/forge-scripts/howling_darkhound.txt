@@ -1,0 +1,8 @@
+Name:Howling Darkhound
+ManaCost:2 B
+Types:Creature Shadowspawn Hound
+PT:2/2
+K:Menace
+T:Mode$ ChangesZone | Origin$ Any | Destination$ Battlefield | ValidCard$ Card.Self | Execute$ TrigLoseLife | TriggerDescription$ When CARDNAME enters, each opponent loses 1 life.
+SVar:TrigLoseLife:DB$ LoseLife | Defined$ Player.Opponent | LifeAmount$ 1
+Oracle:Menace\nWhen Howling Darkhound enters, each opponent loses 1 life.

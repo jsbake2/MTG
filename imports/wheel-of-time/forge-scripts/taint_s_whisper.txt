@@ -1,0 +1,8 @@
+Name:Taint's Whisper
+ManaCost:B
+Types:Enchantment Aura
+K:Enchant:Creature
+SVar:AttachAILogic:Curse
+S:Mode$ Continuous | Affected$ Creature.EnchantedBy | AddPower$ -1 | AddToughness$ -1 | AddAbility$ TaintPing | Description$ Enchanted creature gets -1/-1 and has "{B}: This creature deals 1 damage to target opponent."
+SVar:TaintPing:AB$ DealDamage | Cost$ B | ValidTgts$ Opponent | TgtPrompt$ Select target opponent | NumDmg$ 1 | SpellDescription$ CARDNAME deals 1 damage to target opponent.
+Oracle:Enchant creature\nEnchanted creature gets -1/-1 and has "{B}: This creature deals 1 damage to target opponent."

@@ -1,0 +1,6 @@
+Name:Discard Pact
+ManaCost:1 B
+Types:Sorcery
+A:SP$ Discard | ValidTgts$ Opponent | NumCards$ 2 | Mode$ TgtChoose | SpellDescription$ Target opponent discards two cards.
+DeckHas:Ability$Discard
+Oracle:Target opponent discards two cards.

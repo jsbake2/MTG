@@ -1,0 +1,6 @@
+Name:Black Tower Trainee
+ManaCost:R
+Types:Creature Human Asha'man Channeler
+PT:1/1
+A:AB$ PutCounter | Cost$ 1 R T | Defined$ You | CounterType$ WEAVE | CounterNum$ 1 | SorcerySpeed$ True | SpellDescription$ Weave. Activate only as a sorcery.
+Oracle:{1}{R}, {T}: Weave. Activate only as a sorcery.

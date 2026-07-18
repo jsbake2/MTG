@@ -1,0 +1,9 @@
+Name:Death Comes
+ManaCost:1 B B
+Types:Creature Forsaken Avatar
+PT:3/3
+K:Menace
+T:Mode$ DamageDone | ValidSource$ Card.Self | ValidTarget$ Opponent | CombatDamage$ True | TriggerZones$ Battlefield | Execute$ TrigDrain | TriggerDescription$ Whenever CARDNAME deals combat damage, target opponent loses 2 life and discards a card.
+SVar:TrigDrain:DB$ LoseLife | Defined$ TriggeredTarget | LifeAmount$ 2 | SubAbility$ DBDiscard
+SVar:DBDiscard:DB$ Discard | Defined$ TriggeredTarget | NumCards$ 1 | Mode$ TgtChoose
+Oracle:Menace\nWhenever Death Comes deals combat damage, target opponent loses 2 life and discards a card.

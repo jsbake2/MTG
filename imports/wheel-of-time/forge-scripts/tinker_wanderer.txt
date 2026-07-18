@@ -1,0 +1,8 @@
+Name:Tinker Wanderer
+ManaCost:1 R
+Types:Creature Human Tinker
+PT:1/2
+A:AB$ Mana | Cost$ T | Produced$ R | Amount$ 1 | ConditionCheckSVar$ X | ConditionSVarCompare$ LT3 | SpellDescription$ Add {R}.
+A:AB$ Mana | Cost$ T | Produced$ R | Amount$ 2 | ConditionCheckSVar$ X | ConditionSVarCompare$ GE3 | SpellDescription$ If you've woven three or more times, add {R}{R}.
+SVar:X:Count$YourCountersWEAVE
+Oracle:{T}: Add {R}. If you've woven three or more times, add {R}{R} instead.

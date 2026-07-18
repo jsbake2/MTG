@@ -1,0 +1,7 @@
+Name:Endless Wood
+ManaCost:1 G
+Types:Enchantment
+T:Mode$ ChangesZone | Origin$ Any | Destination$ Battlefield | ValidCard$ Land.YouCtrl | TriggerZones$ Battlefield | Execute$ TrigToken | TriggerDescription$ Whenever a land enters under your control, create a 1/1 green Wolf creature token.
+SVar:TrigToken:DB$ Token | TokenScript$ g_1_1_wolf | TokenOwner$ You
+DeckHas:Ability$Token & Type$Wolf
+Oracle:Whenever a land enters under your control, create a 1/1 green Wolf creature token.

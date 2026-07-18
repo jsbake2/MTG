@@ -1,0 +1,9 @@
+Name:Banner-Sergeant of the Band
+ManaCost:1 R W
+Types:Creature Human Soldier
+PT:3/2
+T:Mode$ Attacks | ValidCard$ Card.Self | TriggerZones$ Battlefield | Execute$ TrigPump | TriggerDescription$ Whenever CARDNAME attacks, other attacking Soldiers get +1/+0 until end of turn.
+SVar:TrigPump:DB$ PumpAll | ValidCards$ Creature.attacking+Soldier+Other | NumAtt$ +1
+SVar:HasAttackEffect:TRUE
+DeckHints:Type$Soldier
+Oracle:Whenever Banner-Sergeant of the Band attacks, other attacking Soldiers get +1/+0 until end of turn.

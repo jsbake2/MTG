@@ -1,0 +1,29 @@
+Name:Black Ajah Sanctuary
+Types:Legendary Land
+# Mana ability: {T}: Add {U} or {B}.
+# Produced$ Combo U B = "Add {U} or {B}" per Choked Estuary / Creeping Tar Pit idiom.
+A:AB$ Mana | Cost$ T | Produced$ Combo U B | SpellDescription$ Add {U} or {B}.
+# Leash ability: {2}{U}{B}, {T} — permanent GainControl, LEASH counter upkeep chain.
+# Follows the leash_bearer.txt / leash_master.txt pattern (WoT convention):
+#   1. GainControl — permanent, no LoseControl clause; creature stays until upkeep fails.
+#   2. DBLeashCounter — put LEASH counter on the stolen creature.
+#   3. DBDelay — arm a one-shot upkeep trigger.
+#   4. TrigLeash — fires on your upkeep: add another LEASH counter, then offer pay-or-return.
+#   5. DBPayOrReturn — UnlessCost$ Y (= LEASH-counter count × 2): if not paid, return control
+#      to owner. If paid, DBRearm re-arms the trigger for next upkeep.
+# Cost scaling: SVar:Y:Count$CardCounters.LEASH/Twice gives a linear x2 per counter
+# (2 counters=4, 3 counters=6, etc.) — closest DSL approximation to true exponential
+# doubling (2,4,8,...); true power-of-2 math is not available in the DSL.
+# "Can't be leashed again until your next turn" clause is omitted — no Forge hook.
+# Confidence: medium/low for the Leash chain (same as all WoT Leash cards).
+# SorcerySpeed$ True enforces "Activate only as a sorcery."
+A:AB$ GainControl | Cost$ 2 U B T | ValidTgts$ Creature.OppCtrl+cmcLE2 | TgtPrompt$ Select target creature with mana value 2 or less an opponent controls | RememberControlled$ True | SubAbility$ DBLeashCounter | SorcerySpeed$ True | SpellDescription$ Leash target creature with mana value 2 or less. (You gain control of it. At the beginning of your upkeep, pay its leash cost — {2}, doubling each time you pay — or it returns to its owner and can't be leashed again until your next turn.) Activate only as a sorcery.
+SVar:DBLeashCounter:DB$ PutCounter | Defined$ Remembered | CounterType$ LEASH | CounterNum$ 1 | SubAbility$ DBDelay
+SVar:DBDelay:DB$ DelayedTrigger | Mode$ Phase | Phase$ Upkeep | ValidPlayer$ You | Execute$ TrigLeash | RememberObjects$ Remembered | TriggerDescription$ At the beginning of your upkeep, pay this creature's leash cost or its owner regains control. | SubAbility$ DBCleanup
+SVar:DBCleanup:DB$ Cleanup | ClearRemembered$ True
+SVar:TrigLeash:DB$ PutCounter | Defined$ DelayTriggerRemembered | CounterType$ LEASH | CounterNum$ 1 | SubAbility$ DBPayOrReturn
+SVar:DBPayOrReturn:DB$ GainControl | Defined$ DelayTriggerRemembered | NewController$ Owner | UnlessCost$ Y | UnlessPayer$ You | UnlessResolveSubs$ WhenNotPaid | SubAbility$ DBRearm
+SVar:DBRearm:DB$ DelayedTrigger | Mode$ Phase | Phase$ Upkeep | ValidPlayer$ You | Execute$ TrigLeash | RememberObjects$ DelayTriggerRemembered | TriggerDescription$ At the beginning of your upkeep, pay this creature's leash cost or its owner regains control.
+SVar:Y:Count$CardCounters.LEASH/Twice
+AI:RemoveDeck:All
+Oracle:{T}: Add {U} or {B}.\n{2}{U}{B}, {T}: Leash target creature with mana value 2 or less. (You gain control of it. At the beginning of your upkeep, pay its leash cost — {2}, doubling each time you pay — or it returns to its owner and can't be leashed again until your next turn.) Activate only as a sorcery.

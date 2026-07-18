@@ -1,0 +1,7 @@
+Name:Sunburst Banner
+ManaCost:2
+Types:Artifact
+S:Mode$ Continuous | Affected$ Creature.Whitecloak+YouCtrl | AddPower$ 1 | Description$ Whitecloaks you control get +1/+0.
+A:AB$ Mana | Cost$ T | Produced$ Combo W B | SpellDescription$ Add {W} or {B}.
+DeckHints:Type$Whitecloak
+Oracle:Whitecloaks you control get +1/+0.\n{T}: Add {W} or {B}.
